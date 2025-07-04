@@ -12,6 +12,7 @@ using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Enchantments;
 using StardewValley.Objects;
+using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source;
 
@@ -60,17 +61,20 @@ public class MainGameActions
                 return ExecutionResult.Failure("Invalid or missing x/y position values.");
             }
 
-            if (int.Parse(xStr) >= Game1.currentLocation.Map.DisplayWidth || int.Parse(xStr) < 0 ||
-                int.Parse(yStr) >= Game1.currentLocation.Map.DisplayWidth || int.Parse(yStr) < 0)
+            if (int.Parse(xStr) > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || int.Parse(xStr) < 0 ||
+                int.Parse(yStr) > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || int.Parse(yStr) < 0)
             {
                 Logger.Error($"Values are invalid due to either being larger than map size or less than 0");
                 goal = null;
-                ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map");
+                return ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map");
             }
 
             ModEntry.Bot.Pathfinding.BuildCollisionMap();
             if (ModEntry.Bot.Pathfinding.IsBlocked(x, y) && (bool)!destructive)
-                ExecutionResult.Failure("You gave a position that is blocked.");
+            {
+                goal = null;
+                return ExecutionResult.Failure("You gave a position that is blocked.");
+            }
 
             goal = new Goal.GoalPosition(int.Parse(xStr), int.Parse(yStr));
             _destructive = (bool)destructive;
@@ -226,4 +230,59 @@ public class MainGameActions
             }
         }
     }
+    
+    public class InteractWithFurniture : NeuroAction<Object>
+    {
+        public override string Name => "interact_object";
+
+        protected override string Description =>
+            "Will interact with an object, This should primarily be used with furniture";
+
+        protected override JsonSchema? Schema => new JsonSchema()
+        {
+            Type = JsonSchemaType.Object,
+            Required = new List<string> { "object_tile" },
+            Properties = new Dictionary<string, JsonSchema>
+            {
+                ["object_tile"] = QJS.Type(JsonSchemaType.String)
+            }
+        };
+        protected override ExecutionResult Validate(ActionData actionData, out Object? resultData)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override Task<Task> Execute(Object? resultData)
+        {
+            ModEntry.Bot.ObjectInteraction.InteractWithObject(resultData);
+            throw new NotImplementedException();
+        }
+    }
+    
+    public class OpenInventory : NeuroAction
+    {
+        public override string Name => "open_inventory";
+        protected override string Description => "Open your inventory and allow altering the placement of items";
+        protected override JsonSchema? Schema => new JsonSchema()
+        {
+            Type = JsonSchemaType.None,
+            Required = new List<string> {},
+            Properties = new Dictionary<string, JsonSchema>{}
+        };
+        protected override ExecutionResult Validate(ActionData actionData)
+        {
+            return ExecutionResult.Success();
+        }
+
+        protected override Task Execute()
+        {
+            ModEntry.Bot.PlayerInformation.OpenInventory();
+
+            NeuroActionHandler.UnregisterActions("use_item","move_character","open_inventory");
+            NeuroActionHandler.RegisterActions(new InventoryActions.MoveItem());
+            return Task.CompletedTask;
+        }
+    }
+    
+    
 }

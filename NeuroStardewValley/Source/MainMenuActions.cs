@@ -1,7 +1,9 @@
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
+using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
 using StardewValley;
+using StardewValley.Menus;
 using StardewValley.Objects;
 
 namespace NeuroStardewValley.Source;
@@ -10,7 +12,7 @@ public class MainMenuActions
 {
     private bool CharacterCreate => ModEntry.CanCreateCharacter;
 
-    class CreateCharacter : NeuroAction
+    public class CreateCharacter : NeuroAction<Dictionary<string, string?>>
     {
         private static Dictionary<string, bool> EnabledCharacterOptions => ModEntry.EnabledCharacterOptions;
     
@@ -24,18 +26,37 @@ public class MainMenuActions
         protected override JsonSchema? Schema => new()
         {
             Type = JsonSchemaType.Object,
-            Required = new List<string> { "item", "direction" },
+            Required = EnabledCharacterOptions.Keys.ToList(),
             Properties = CharacterSchema()
         };
         
-        protected override ExecutionResult Validate(ActionData actionData)
+        protected override ExecutionResult Validate(ActionData actionData, out Dictionary<string,string?> data)
         {
-            throw new NotImplementedException();
+            data = new();
+            foreach (var kvp in EnabledCharacterOptions)
+            {
+                data[kvp.Key] =  actionData.Data?.Value<string>(kvp.Key);   
+            }
+            
+            return ExecutionResult.Success();
         }
 
-        protected override Task Execute()
+        protected override async Task<Task> Execute(Dictionary<string,string?>? data)
         {
-            throw new NotImplementedException();
+            if (data["gender"] == "Male")
+            {
+                ModEntry.Bot.CharacterCreation.ChangeGender(true);
+            }
+            else
+            {
+                ModEntry.Bot.CharacterCreation.ChangeGender(false);
+            }
+            
+            ModEntry.Bot.CharacterCreation.ChangeAccessory(int.Parse(data["accessories"]));
+
+            ModEntry.Bot.CharacterCreation.SetName(data["name"]);
+            ModEntry.Bot.CharacterCreation.SetFarmName(data["farm_name"]);
+            return Task.CompletedTask;
         }
 
         private static List<string> _catBreedStrings = new()
@@ -59,6 +80,7 @@ public class MainMenuActions
         {
             Dictionary<string, JsonSchema> properties = new();
             
+            ModEntry.Bot.CharacterCreation.SetCreator((CharacterCustomization)TitleMenu.subMenu);
             foreach (var kvp in EnabledCharacterOptions)
             {
                 if (kvp.Value)
@@ -75,10 +97,24 @@ public class MainMenuActions
                             properties.Add(kvp.Key,QJS.Enum(new []{"male","female"}));
                             break;
                         case "shirt": // 0-111
-                            properties.Add(kvp.Key,QJS.Enum(ModEntry.Bot.CharacterCreation.GetPossibleShirts().Values));
+                            List<string> shirtList = new();
+                            for (int i = 0; i < ModEntry.Bot.CharacterCreation.GetPossibleShirts().Values.Count; i++)
+                            {
+                                shirtList.Add($"string id: {ModEntry.Bot.CharacterCreation.GetPossibleShirts().Keys.ToArray()[i]} shirt name: {ModEntry.Bot.CharacterCreation.GetPossibleShirts().Values.ToArray()[i]}");
+                            }
+                            IEnumerable<string> shirtEnumerable = shirtList;
+                            Context.Send($"All possible shirts: {shirtEnumerable}");
+                            properties.Add("Shirt",QJS.Enum(Enumerable.Range(0,ModEntry.Bot.CharacterCreation.GetPossibleShirts().Values.Count)));
                             break;
                         case "pants": // 0-3
-                            properties.Add(kvp.Key,QJS.Enum(ModEntry.Bot.CharacterCreation.GetPossiblePants().Values));
+                            List<string> pantsList = new();
+                            for (int i = 0; i < ModEntry.Bot.CharacterCreation.GetPossiblePants().Values.Count; i++)
+                            {
+                                pantsList.Add($"pants id: {ModEntry.Bot.CharacterCreation.GetPossiblePants().Keys.ToArray()[i]} pants name: {ModEntry.Bot.CharacterCreation.GetPossiblePants().Values.ToArray()[i]}");
+                            }
+                            IEnumerable<string> pantsEnumerable = pantsList;
+                            Context.Send($"All possible pants: {pantsEnumerable}");
+                            properties.Add("Pants",QJS.Enum(Enumerable.Range(0,ModEntry.Bot.CharacterCreation.GetPossiblePants().Values.Count)));
                             break;
                         case "accessories": // 0-30
                             properties.Add(kvp.Key,QJS.Enum(Enumerable.Range(0,30)));

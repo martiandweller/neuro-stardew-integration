@@ -4,12 +4,15 @@ public class ModConfig
 {
     public bool AllowCharacterCreation { get; set; }// Allow Neuro to create her own character
 
+    public int SaveSlot { get; set; } // save slot to use
     public Dictionary<string,bool> CharacterCreationOptions { get; set; }
     public Dictionary<string,string> CharacterCreationDefault { get; set; }
      public ModConfig()
      { 
          AllowCharacterCreation = false;
 
+         SaveSlot = 0;
+         
          CharacterCreationOptions = new()
          {
              { "skin", true },
