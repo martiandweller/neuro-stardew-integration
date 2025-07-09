@@ -1,7 +1,9 @@
+using System.Text;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
+using StardewBotFramework.Source;
 using StardewValley;
 using StardewValley.Menus;
 using StardewValley.Objects;
@@ -10,18 +12,29 @@ namespace NeuroStardewValley.Source;
 
 public class MainMenuActions
 {
-    private bool CharacterCreate => ModEntry.CanCreateCharacter;
-
     public class CreateCharacter : NeuroAction<Dictionary<string, string?>>
     {
+        private static bool CanCreateCharacter => ModEntry.CanCreateCharacter;
+
         private static Dictionary<string, bool> EnabledCharacterOptions => ModEntry.EnabledCharacterOptions;
     
-        private Dictionary<string, string> DefaultCharacterOptions => ModEntry.DefaultCharacterOptions;
+        private static Dictionary<string, string> DefaultCharacterOptions => ModEntry.DefaultCharacterOptions;
         
         public override string Name => "create_character";
 
-        protected override string Description =>
-            "Create a character, this character can be anything or anyone as long you can make it.";
+        protected override string Description {
+            get
+            {
+                if (CanCreateCharacter)
+                {
+                    return "Create a character, this character can be anything or anyone as long you can make it. This will not be able to be changed in the future so be careful.";
+                }
+                else
+                {
+                    return "This will start the game as a default character that has already been decided.";
+                }
+            }
+        }
 
         protected override JsonSchema? Schema => new()
         {
@@ -32,10 +45,15 @@ public class MainMenuActions
         
         protected override ExecutionResult Validate(ActionData actionData, out Dictionary<string,string?> data)
         {
+            if (CanCreateCharacter)
+            {
+                data = null;
+                return ExecutionResult.Success();
+            }
             data = new();
             foreach (var kvp in EnabledCharacterOptions)
             {
-                data[kvp.Key] =  actionData.Data?.Value<string>(kvp.Key);   
+                data[kvp.Key] = actionData.Data?.Value<string>(kvp.Key);   
             }
             
             return ExecutionResult.Success();
@@ -43,19 +61,10 @@ public class MainMenuActions
 
         protected override async Task<Task> Execute(Dictionary<string,string?>? data)
         {
-            if (data["gender"] == "Male")
-            {
-                ModEntry.Bot.CharacterCreation.ChangeGender(true);
-            }
-            else
-            {
-                ModEntry.Bot.CharacterCreation.ChangeGender(false);
-            }
+            if (CanCreateCharacter) return Task.CompletedTask;
+            if (data is null) return Task.FromCanceled(CancellationToken.None);
             
-            ModEntry.Bot.CharacterCreation.ChangeAccessory(int.Parse(data["accessories"]));
-
-            ModEntry.Bot.CharacterCreation.SetName(data["name"]);
-            ModEntry.Bot.CharacterCreation.SetFarmName(data["farm_name"]);
+            SetCharacter(data);
             return Task.CompletedTask;
         }
 
@@ -81,20 +90,28 @@ public class MainMenuActions
             Dictionary<string, JsonSchema> properties = new();
             
             ModEntry.Bot.CharacterCreation.SetCreator((CharacterCustomization)TitleMenu.subMenu);
+            ModEntry.Bot.CharacterCreation.SkipIntro();
+            if (!CanCreateCharacter)
+            {
+                SetCharacter(DefaultCharacterOptions!);
+                
+                return new();
+            }
+            
             foreach (var kvp in EnabledCharacterOptions)
             {
                 if (kvp.Value)
                 {
                     switch (kvp.Key) // No way to get name for a lot of this stuff, and I am a bit too lazy to do it manually
                     {
+                        case "gender":
+                            properties.Add(kvp.Key,QJS.Enum(new []{"male","female"}));
+                            break;
                         case "skin": // 0-23
                             properties.Add(kvp.Key,QJS.Enum(Enumerable.Range(0,23)));
                             break;
                         case "hair": // 0-73
                             properties.Add(kvp.Key,QJS.Enum(Enumerable.Range(0,73)));
-                            break;
-                        case "gender":
-                            properties.Add(kvp.Key,QJS.Enum(new []{"male","female"}));
                             break;
                         case "shirt": // 0-111
                             List<string> shirtList = new();
@@ -133,17 +150,17 @@ public class MainMenuActions
                             properties.Add(kvp.Key + "_dog_breed",QJS.Enum(_dogBreedStrings));// find better way to do this
                             properties.Add(kvp.Key + "_cat_breed",QJS.Enum(_catBreedStrings));
                             break;
-                        case "eye_colour":
+                        case "eye_hue":
                             properties.Add(kvp.Key + "_hue",QJS.Type(JsonSchemaType.Integer));
                             properties.Add(kvp.Key + "_saturation",QJS.Type(JsonSchemaType.Integer));
                             properties.Add(kvp.Key + "_brightness",QJS.Type(JsonSchemaType.Integer));
                             break;
-                        case "hair_colour":
+                        case "hair_hue":
                             properties.Add(kvp.Key + "_hue",QJS.Type(JsonSchemaType.Integer));
                             properties.Add(kvp.Key + "_saturation",QJS.Type(JsonSchemaType.Integer));
                             properties.Add(kvp.Key + "_brightness",QJS.Type(JsonSchemaType.Integer));
                             break;
-                        case "pants_colour":
+                        case "pants_hue":
                             properties.Add(kvp.Key + "_hue",QJS.Type(JsonSchemaType.Integer));
                             properties.Add(kvp.Key + "_saturation",QJS.Type(JsonSchemaType.Integer));
                             properties.Add(kvp.Key + "_brightness",QJS.Type(JsonSchemaType.Integer));
@@ -154,9 +171,116 @@ public class MainMenuActions
                     }
                     
                 }
+                else
+                {
+                    switch (kvp.Key)
+                    {
+                        case "gender":
+                            ModEntry.Bot.CharacterCreation.ChangeGender(DefaultCharacterOptions["gender"] == "male");
+                            break;
+                        case "skin":
+                            ModEntry.Bot.CharacterCreation.ChangeSkinColour(int.Parse(DefaultCharacterOptions["skin"]));
+                            break;
+                        case "hair":
+                            ModEntry.Bot.CharacterCreation.ChangeHair(int.Parse(DefaultCharacterOptions["hair"]));
+                            break;
+                        case "shirt":
+                            ModEntry.Bot.CharacterCreation.ChangeShirt(int.Parse(DefaultCharacterOptions["shirt"]));
+                            break;
+                        case "pants":
+                            ModEntry.Bot.CharacterCreation.ChangePants(int.Parse(DefaultCharacterOptions["pants"]));
+                            break;
+                        case "accessories":
+                            ModEntry.Bot.CharacterCreation.ChangeAccessory(int.Parse(DefaultCharacterOptions["accessories"]));
+                            break;
+                        case "name":
+                            ModEntry.Bot.CharacterCreation.SetName(DefaultCharacterOptions["name"]);
+                            break;
+                        case "farm_name":
+                            ModEntry.Bot.CharacterCreation.SetFarmName(DefaultCharacterOptions["farm_name"]);
+                            break;
+                        case "favourite_thing":
+                            ModEntry.Bot.CharacterCreation.SetFavThing(DefaultCharacterOptions["favourite_thing"]);
+                            break;
+                        case "animal_preference":
+                            ModEntry.Bot.CharacterCreation.ChangePet(DefaultCharacterOptions["animal_preference"], DefaultCharacterOptions["animal_breed"]);
+                            break;
+                        case "eye_hue":
+                            ModEntry.Bot.CharacterCreation.ChangeColour(0,int.Parse(DefaultCharacterOptions["eye_hue"]),int.Parse(DefaultCharacterOptions["eye_saturation"]),int.Parse(DefaultCharacterOptions["eye_brightness"]));
+                            break;
+                        case "hair_hue":
+                            ModEntry.Bot.CharacterCreation.ChangeColour(1,int.Parse(DefaultCharacterOptions["hair_hue"]),int.Parse(DefaultCharacterOptions["hair_saturation"]),int.Parse(DefaultCharacterOptions["hair_brightness"]));
+                            break;
+                        case "pants_hue":
+                            ModEntry.Bot.CharacterCreation.ChangeColour(2,int.Parse(DefaultCharacterOptions["pants_hue"]),int.Parse(DefaultCharacterOptions["pants_saturation"]),int.Parse(DefaultCharacterOptions["pants_brightness"]));
+                            break;
+                        case "farm_type":
+                            ModEntry.Bot.CharacterCreation.ChangeFarmTypes(int.Parse(DefaultCharacterOptions["farm_type"]));
+                            break;
+                    }
+                }
             }
+            
 
             return properties;
+        }
+
+        private static void SetCharacter(Dictionary<string, string?> choice)
+        {
+            foreach (var kvp in EnabledCharacterOptions)
+            {
+                if (!kvp.Value)
+                {
+                    continue;
+                }
+                
+                switch (kvp.Key)
+                {
+                    case "gender":
+                        ModEntry.Bot.CharacterCreation.ChangeGender(choice["gender"] == "male");
+                        break;
+                    case "skin":
+                        ModEntry.Bot.CharacterCreation.ChangeSkinColour(int.Parse(choice["skin"]));
+                        break;
+                    case "hair":
+                        ModEntry.Bot.CharacterCreation.ChangeHair(int.Parse(choice["hair"]));
+                        break;
+                    case "shirt":
+                        ModEntry.Bot.CharacterCreation.ChangeShirt(int.Parse(choice["shirt"]));
+                        break;
+                    case "pants":
+                        ModEntry.Bot.CharacterCreation.ChangePants(int.Parse(choice["pants"]));
+                        break;
+                    case "accessories":
+                        ModEntry.Bot.CharacterCreation.ChangeAccessory(int.Parse(choice["accessories"]));
+                        break;
+                    case "name":
+                        ModEntry.Bot.CharacterCreation.SetName(choice["name"]);
+                        break;
+                    case "farm_name":
+                        ModEntry.Bot.CharacterCreation.SetFarmName(choice["farm_name"]);
+                        break;
+                    case "favourite_thing":
+                        ModEntry.Bot.CharacterCreation.SetFavThing(choice["favourite_thing"]);
+                        break;
+                    case "animal_preference":
+                        ModEntry.Bot.CharacterCreation.ChangePet(choice["animal_preference"], choice["animal_breed"]);
+                        break;
+                    case "eye_hue":
+                        ModEntry.Bot.CharacterCreation.ChangeColour(0,int.Parse(choice["eye_hue"]),int.Parse(choice["eye_saturation"]),int.Parse(choice["eye_brightness"]));
+                        break;
+                    case "hair_hue":
+                        ModEntry.Bot.CharacterCreation.ChangeColour(1,int.Parse(choice["hair_hue"]),int.Parse(choice["hair_saturation"]),int.Parse(choice["hair_brightness"]));
+                        break;
+                    case "pants_hue":
+                        ModEntry.Bot.CharacterCreation.ChangeColour(2,int.Parse(choice["pants_hue"]),int.Parse(choice["pants_saturation"]),int.Parse(choice["pants_brightness"]));
+                        break;
+                    case "farm_type":
+                        ModEntry.Bot.CharacterCreation.ChangeFarmTypes(int.Parse(choice["farm_type"]));
+                        break;
+                }    
+            }
+            
         }
     }
 }

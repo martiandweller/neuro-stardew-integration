@@ -2,51 +2,67 @@ namespace NeuroStardewValley;
 
 public class ModConfig
 {
-    public bool AllowCharacterCreation { get; set; }// Allow Neuro to create her own character
+    public bool AllowCharacterCreation { get; set; } // Allow Neuro to create her own character
 
     public int SaveSlot { get; set; } // save slot to use
-    public Dictionary<string,bool> CharacterCreationOptions { get; set; }
-    public Dictionary<string,string> CharacterCreationDefault { get; set; }
-     public ModConfig()
-     { 
-         AllowCharacterCreation = false;
+    public Dictionary<string, bool> CharacterCreationOptions { get; set; }
+    public Dictionary<string, string> CharacterCreationDefault { get; set; }
 
-         SaveSlot = 0;
-         
-         CharacterCreationOptions = new()
-         {
-             { "skin", true },
-             { "gender", true},
-             { "hair",true },
-             { "shirt", true},
-             { "pants", true},
-             { "accessories",true},
-             { "name", true},
-             { "farm_name", true},
-             { "favourite_thing", true},
-             { "animal_preference" , true},
-             { "eye_colour", true},
-             { "hair_colour", true},
-             { "pants_colour", true},
-             { "farm_type", true}
-         };
-         
-         CharacterCreationDefault = new () 
-         {
-             { "skin", "" },
-             { "gender", ""},
-             { "hair", "" },
-             { "shirt", ""},
-             { "pants", ""},
-             { "accessories", ""},
-             { "name", ""},
-             { "farm_name", ""},
-             { "favourite_thing", ""},
-             { "animal_preference" , ""},
-             { "eye_colour", ""},
-             { "hair_colour", ""},
-             { "pants_colour", ""},
-             { "farm_type", ""}
-         };
-     }
+
+    public ModConfig()
+    {
+        AllowCharacterCreation = false;
+
+        SaveSlot = 0;
+
+        CharacterCreationOptions = new()
+        {
+            { "skin", true },
+            { "gender", true },
+            { "hair", true },
+            { "shirt", true },
+            { "pants", true },
+            { "accessories", true },
+            { "name", true },
+            { "farm_name", true },
+            { "favourite_thing", true },
+            { "animal_preference", true },
+            { "animal_breed", true },
+            { "eye_hue", true },
+            { "eye_saturation", true },
+            { "eye_brightness", true },
+            { "hair_hue", true },
+            { "hair_saturation", true },
+            { "hair_brightness", true },
+            { "pants_hue", true },
+            { "pants_saturation", true },
+            { "pants_brightness", true },
+            { "farm_type", true }
+        };
+
+        CharacterCreationDefault = new()
+        {
+            { "skin", "" },
+            { "gender", "" },
+            { "hair", "" },
+            { "shirt", "" },
+            { "pants", "" },
+            { "accessories", "" },
+            { "name", "" },
+            { "farm_name", "" },
+            { "favourite_thing", "" },
+            { "animal_preference", "" },
+            { "animal_breed", "" },
+            { "eye_hue", "" },
+            { "eye_saturation", "" },
+            { "eye_brightness", "" },
+            { "hair_hue", "" },
+            { "hair_saturation", "" },
+            { "hair_brightness", "" },
+            { "pants_hue", "" },
+            { "pants_saturation", "" },
+            { "pants_brightness", "" },
+            { "farm_type", "" }
+        };
+    }
 }
