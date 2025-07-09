@@ -1,17 +1,10 @@
-using System.Xml.Linq;
 using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
-using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
-using StardewBotFramework.Source;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
-using StardewModdingAPI;
-using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.Enchantments;
-using StardewValley.Objects;
 using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source;
@@ -83,13 +76,116 @@ public class MainGameActions
 
         protected override async Task<Task> Execute(Goal? goal)
         {
-            if (goal is null)
-            {
-                return Task.FromCanceled(CancellationToken.None); // probably fine
-            }
+            if (goal is null) return Task.FromCanceled(CancellationToken.None); // probably find
 
             await ModEntry.Bot.Pathfinding.Goto(goal, false, _destructive);
             return Task.CompletedTask;
+        }
+    }
+
+    public class PathFindToExit : NeuroAction<Goal?>
+    {
+        private bool _destructive;
+
+        public override string Name => "move_to_exit";
+
+        protected override string Description =>
+            "This will move the character to the provided tile to go to an exit";
+
+        protected override JsonSchema Schema => new()
+        {
+            Type = JsonSchemaType.Object,
+            Required = new List<string> { "x_position", "y_position" },
+            Properties = new Dictionary<string, JsonSchema>
+            {
+                ["x_position"] = QJS.Type(JsonSchemaType.Integer),
+                ["y_position"] = QJS.Type(JsonSchemaType.Integer),
+                ["destructive"] = QJS.Type(JsonSchemaType.Boolean)
+            }
+        };
+
+        protected override ExecutionResult Validate(ActionData actionData, out Goal? goal)
+        {
+            string? xStr = actionData.Data?.Value<string>("x_position");
+            string? yStr = actionData.Data?.Value<string>("y_position");
+            bool? destructive = actionData.Data?.Value<bool>("destructive");
+
+            Logger.Info($"data: {xStr}  yData: {yStr}");
+
+            if (xStr is null || yStr is null || destructive is null)
+            {
+                Logger.Error($"data or yData is null");
+                goal = new Goal();
+                return ExecutionResult.Failure($"A value you gave was null");
+            }
+
+            if (!int.TryParse(xStr, out int x) || !int.TryParse(yStr, out int y))
+            {
+                Logger.Error("Invalid or missing x/y position values.");
+                goal = null;
+                return ExecutionResult.Failure("Invalid or missing x/y position values.");
+            }
+
+            if (int.Parse(xStr) > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || int.Parse(xStr) < 0 ||
+                int.Parse(yStr) > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || int.Parse(yStr) < 0)
+            {
+                Logger.Error($"Values are invalid due to either being larger than map size or less than 0");
+                goal = null;
+                return ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map");
+            }
+
+            ModEntry.Bot.Pathfinding.BuildCollisionMap();
+            if (ModEntry.Bot.Pathfinding.IsBlocked(x, y) && (bool)!destructive)
+            {
+                goal = null;
+                return ExecutionResult.Failure("You gave a position that is blocked.");
+            }
+
+            if (!GetExits().Contains(new Point(int.Parse(xStr), int.Parse(xStr))))
+            {
+                goal = null;
+                return ExecutionResult.Failure($"The provided tile is not an exit");
+            }
+            
+            goal = new Goal.GoalPosition(int.Parse(xStr), int.Parse(yStr));
+            _destructive = (bool)destructive;
+            return ExecutionResult.Success();
+        }
+
+        protected override async Task<Task> Execute(Goal? goal)
+        {
+            if (goal is null) return Task.FromCanceled(CancellationToken.None); // probably fine
+
+            await ModEntry.Bot.Pathfinding.Goto(goal, false, _destructive);
+            return Task.CompletedTask;
+        }
+
+        private List<Point> GetExits()
+        {
+            string warps = GetWarpTiles(Game1.currentLocation);
+            string[] warpExtracts = warps.Split(' ');
+            List<Point> warpLocation = new();
+            int runs = 0;
+            for (int i = 0; i < warpExtracts.Length / 5; i++)
+            {
+                Point tile = new Point(int.Parse(warpExtracts[runs]), int.Parse(warpExtracts[runs + 1]));
+                
+                warpLocation.Add(tile);
+                runs += 5;
+            }
+
+            return warpLocation;
+        }
+        
+        private static string GetWarpTiles(GameLocation location)
+        {
+            if (location.Name == "Farm")
+            {
+                location.TryGetMapProperty("FarmHouseEntry", out var FarmHousewarps);
+                location.TryGetMapProperty("ShippingBinLocation", out var ShippingBin);
+            }
+            location.TryGetMapProperty("Warp", out var warps);
+            return warps;
         }
     }
 
@@ -105,7 +201,7 @@ public class MainGameActions
 
         protected override string Description => "This will use the currently selected item in a specified direction.";
 
-        protected override JsonSchema? Schema => new()
+        protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
             Required = new List<string> { "item", "direction" },
@@ -238,24 +334,42 @@ public class MainGameActions
         protected override string Description =>
             "Will interact with an object, This should primarily be used with furniture";
 
-        protected override JsonSchema? Schema => new JsonSchema()
+        protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
-            Required = new List<string> { "object_tile" },
+            Required = new List<string> { "object_tile_x","object_tile_y" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["object_tile"] = QJS.Type(JsonSchemaType.String)
+                ["object_tile_x"] = QJS.Type(JsonSchemaType.Integer),
+                ["object_tile_y"] = QJS.Type(JsonSchemaType.Integer),
             }
         };
         protected override ExecutionResult Validate(ActionData actionData, out Object? resultData)
         {
-            throw new NotImplementedException();
+            int? objectTileX = actionData.Data?.Value<int>("object_tile_x");
+            int? objectTileY = actionData.Data?.Value<int>("object_tile_y");
+            
+            if (objectTileX is null || objectTileY is null)
+            {
+                resultData = null;
+                return ExecutionResult.Failure($"You have provided a null value.");
+            }
+            if (ModEntry.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY) is null)
+            {
+                resultData = null;
+                return ExecutionResult.Failure($"There is no object at the provided tile.");
+            }
+
+            resultData = ModEntry.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY);
+            return ExecutionResult.Success();
         }
 
-        protected override Task<Task> Execute(Object? resultData)
+        protected override Task Execute(Object? resultData)
         {
+            if (resultData is null) return Task.CompletedTask;
+            
             ModEntry.Bot.ObjectInteraction.InteractWithObject(resultData);
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
     

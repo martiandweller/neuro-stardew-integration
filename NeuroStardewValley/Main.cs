@@ -5,6 +5,9 @@ using StardewModdingAPI.Events;
 using Context = NeuroSDKCsharp.Messages.Outgoing.Context;
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Source;
+using StardewBotFramework.Source.Events;
+using StardewBotFramework.Source.Events.EventArgs;
+using StardewBotFramework.Source.Events.GamePlayEvents;
 using StardewValley;
 using StardewValley.Menus;
 using Logger = NeuroStardewValley.Debug.Logger;
@@ -32,7 +35,7 @@ internal sealed class ModEntry : Mod
 
     public override void Entry(IModHelper helper)
     {
-        Bot = new StardewClient(helper, Monitor, helper.Multiplayer);
+        Bot = new StardewClient(helper, ModManifest,Monitor, helper.Multiplayer);
 
         Config = this.Helper.ReadConfig<ModConfig>();
         CanCreateCharacter = this.Config.AllowCharacterCreation;
@@ -47,26 +50,41 @@ internal sealed class ModEntry : Mod
         helper.Events.GameLoop.UpdateTicking += UpdateTicking;
         helper.Events.GameLoop.SaveLoaded += GameLoopOnSaveLoaded;
         helper.Events.Display.MenuChanged += MenuChanged;
-        helper.Events.Player.Warped += OnWarped;
+        Bot.GameEvents.BotWarped += OnWarped;
     }
 
-    private void OnWarped(object? sender, WarpedEventArgs e)
+    private void OnWarped(object? sender, BotWarpedEventArgs e)
     {
-        if (!e.IsLocalPlayer)
+        string tilesString = "";
+        foreach (var tile in GetTilesInLocation(e.NewLocation))
         {
-            Context.Send($"Player: {e.Player.Name} has moved to: {e.NewLocation.Name} from: {e.OldLocation.Name}");
-            return;
+            tilesString += "\n" + tile;
         }
-        Context.Send($"You have moved to {e.NewLocation.Name} from {e.OldLocation.Name}\n These are the tiles around you: {GetTilesInLocation(e.NewLocation)}");
-        foreach (var tileString in GetTilesInLocation(e.NewLocation))
-        {
-            Context.Send(tileString,true);
-        }
-
+        Context.Send($"You have moved to {e.NewLocation.Name} from {e.OldLocation.Name}.\n These are the tiles that have an object on them around you: {tilesString}");
+        
         string warps = GetWarpTiles(e.NewLocation);
         string[] warpExtracts = warps.Split(' ');
-        Point warpTile = new Point(int.Parse(warpExtracts[0]), int.Parse(warpExtracts[1]));
-        Logger.Info($"warps: {warpExtracts.Length}");
+        Dictionary<Point, string> warpLocation = new();
+        int runs = 0;
+        for (int i = 0; i < warpExtracts.Length / 5; i++)
+        {
+            Logger.Info($"tile: {warpExtracts[runs]} next tile: {warpExtracts[runs + 1]}");
+            Point tile = new Point(int.Parse(warpExtracts[runs]), int.Parse(warpExtracts[runs + 1]));
+            
+            string locationName = warpExtracts[runs + 2];
+            // Point LocationTile = new Point(int.Parse(warpExtracts[runs + 3]), int.Parse(warpExtracts[runs + 4]));
+            warpLocation.Add(tile,locationName);
+            runs += 5;
+        }
+
+        string s = "";
+        foreach (var kvp in warpLocation)
+        {
+            Logger.Info(kvp.Key.ToString());
+            Logger.Info(kvp.Value);
+            s +=  "\n" + kvp.Key + " " + kvp.Value;
+        }
+        Context.Send(s,true);
     }
 
     private void MenuChanged(object? sender, MenuChangedEventArgs e)
