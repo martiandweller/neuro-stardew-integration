@@ -138,7 +138,7 @@ internal sealed class ModEntry : Mod
     private void GameLoopOnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
         Context.Send($"This should send a save is loaded starts :)");
-        NeuroActionHandler.RegisterActions(new MainGameActions.Pathfinding(), new MainGameActions.UseItem(), new MainGameActions.OpenInventory());
+        NeuroActionHandler.RegisterActions(new MainGameActions.Pathfinding(), new MainGameActions.UseItem(), new MainGameActions.OpenInventory(), new MainGameActions.PathFindToExit());
     }
 
     private static List<string> GetTilesInLocation(GameLocation location)

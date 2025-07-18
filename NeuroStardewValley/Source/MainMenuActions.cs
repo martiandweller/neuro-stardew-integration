@@ -221,7 +221,6 @@ public class MainMenuActions
                 }
             }
             
-
             return properties;
         }
 

@@ -83,10 +83,21 @@ public class MainGameActions
         }
     }
 
-    public class PathFindToExit : NeuroAction<Goal?>
+    public class PathFindToExit : NeuroAction<Goal?> // TODO: remove and resend when location changes
     {
         private bool _destructive;
 
+        private IEnumerable<string> ExitStrings(List<Point> exits)
+        {
+            IEnumerable<string> exitStrings = new List<string>();
+            foreach (var point in exits)
+            {
+                string exitFormat = $"{point.X},{point.Y}";
+                exitStrings = exitStrings.Append(exitFormat);
+            }
+
+            return exitStrings;
+        }
         public override string Name => "move_to_exit";
 
         protected override string Description =>
@@ -95,39 +106,40 @@ public class MainGameActions
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
-            Required = new List<string> { "x_position", "y_position" },
+            Required = new List<string> { "exit" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["x_position"] = QJS.Type(JsonSchemaType.Integer),
-                ["y_position"] = QJS.Type(JsonSchemaType.Integer),
+                ["exit"] = QJS.Enum(ExitStrings(GetExits())),
                 ["destructive"] = QJS.Type(JsonSchemaType.Boolean)
             }
         };
 
         protected override ExecutionResult Validate(ActionData actionData, out Goal? goal)
         {
-            string? xStr = actionData.Data?.Value<string>("x_position");
-            string? yStr = actionData.Data?.Value<string>("y_position");
+            string? pointStr = actionData.Data?.Value<string>("exit");
             bool? destructive = actionData.Data?.Value<bool>("destructive");
 
-            Logger.Info($"data: {xStr}  yData: {yStr}");
-
-            if (xStr is null || yStr is null || destructive is null)
+            Logger.Info($"data: {pointStr}");
+            
+            if (pointStr is null || destructive is null)
             {
                 Logger.Error($"data or yData is null");
                 goal = new Goal();
                 return ExecutionResult.Failure($"A value you gave was null");
             }
+            
+            string[] coords = pointStr.Split(',');
 
-            if (!int.TryParse(xStr, out int x) || !int.TryParse(yStr, out int y))
+            Point exitPoint = new Point(int.Parse(coords[0]), int.Parse(coords[1]));
+
+            if (!GetExits().Contains(exitPoint))
             {
-                Logger.Error("Invalid or missing x/y position values.");
                 goal = null;
-                return ExecutionResult.Failure("Invalid or missing x/y position values.");
+                return ExecutionResult.Failure($"The provided tile is not an exit");
             }
 
-            if (int.Parse(xStr) > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || int.Parse(xStr) < 0 ||
-                int.Parse(yStr) > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || int.Parse(yStr) < 0)
+            if (exitPoint.X > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || exitPoint.X < 0 ||
+                exitPoint.Y > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || exitPoint.Y < 0)
             {
                 Logger.Error($"Values are invalid due to either being larger than map size or less than 0");
                 goal = null;
@@ -135,19 +147,13 @@ public class MainGameActions
             }
 
             ModEntry.Bot.Pathfinding.BuildCollisionMap();
-            if (ModEntry.Bot.Pathfinding.IsBlocked(x, y) && (bool)!destructive)
+            if (ModEntry.Bot.Pathfinding.IsBlocked(exitPoint.X, exitPoint.Y) && (bool)!destructive)
             {
                 goal = null;
                 return ExecutionResult.Failure("You gave a position that is blocked.");
             }
 
-            if (!GetExits().Contains(new Point(int.Parse(xStr), int.Parse(xStr))))
-            {
-                goal = null;
-                return ExecutionResult.Failure($"The provided tile is not an exit");
-            }
-            
-            goal = new Goal.GoalPosition(int.Parse(xStr), int.Parse(yStr));
+            goal = new Goal.GoalPosition(exitPoint.X,exitPoint.Y);
             _destructive = (bool)destructive;
             return ExecutionResult.Success();
         }
@@ -377,12 +383,7 @@ public class MainGameActions
     {
         public override string Name => "open_inventory";
         protected override string Description => "Open your inventory and allow altering the placement of items";
-        protected override JsonSchema? Schema => new JsonSchema()
-        {
-            Type = JsonSchemaType.None,
-            Required = new List<string> {},
-            Properties = new Dictionary<string, JsonSchema>{}
-        };
+        protected override JsonSchema? Schema => null;
         protected override ExecutionResult Validate(ActionData actionData)
         {
             return ExecutionResult.Success();
@@ -392,8 +393,8 @@ public class MainGameActions
         {
             ModEntry.Bot.PlayerInformation.OpenInventory();
 
-            NeuroActionHandler.UnregisterActions("use_item","move_character","open_inventory");
-            NeuroActionHandler.RegisterActions(new InventoryActions.MoveItem());
+            NeuroActionHandler.UnregisterActions("use_item","move_character","open_inventory","move_to_exit");
+            NeuroActionHandler.RegisterActions(new InventoryActions.MoveItem(), new InventoryActions.InteractWithTrinkets(),new InventoryActions.ChangeClothing());
             return Task.CompletedTask;
         }
     }
