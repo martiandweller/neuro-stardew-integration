@@ -19,6 +19,11 @@ namespace NeuroStardewValley;
 /// <summary>The mod entry point.</summary>
 internal sealed class ModEntry : Mod
 {
+    /// <summary>
+    /// This should be used for all ActionWindows
+    /// </summary>
+    public static Game GameInstance => GameRunner.instance;
+    
     public static StardewClient Bot;
 
     private ModConfig Config;
@@ -51,6 +56,7 @@ internal sealed class ModEntry : Mod
         helper.Events.GameLoop.SaveLoaded += GameLoopOnSaveLoaded;
         helper.Events.Display.MenuChanged += MenuChanged;
         Bot.GameEvents.BotWarped += OnWarped;
+        Bot.GameEvents.ChatMessageReceived += OnChatMessage;
     }
 
     private void OnWarped(object? sender, BotWarpedEventArgs e)
@@ -141,6 +147,14 @@ internal sealed class ModEntry : Mod
         NeuroActionHandler.RegisterActions(new MainGameActions.Pathfinding(), new MainGameActions.UseItem(), new MainGameActions.OpenInventory(), new MainGameActions.PathFindToExit());
     }
 
+    private void OnChatMessage(object? sender, ChatMessageReceivedEventArgs e)
+    {
+        ActionWindow.Create(GameInstance)
+            .SetForce(0,$"{e.PlayerName} has said {e.Message} in chat. You can reply to them","", false)
+            .AddAction(new ChatActions.SendChatMessage())
+            .Register();
+    }
+    
     private static List<string> GetTilesInLocation(GameLocation location)
     {
         List<string> tileList = new();
