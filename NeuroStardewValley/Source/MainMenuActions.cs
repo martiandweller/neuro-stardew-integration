@@ -1,8 +1,10 @@
 using System.Text;
+using Microsoft.Xna.Framework.Input;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Debug;
 using StardewBotFramework.Source;
 using StardewValley;
 using StardewValley.Menus;
@@ -20,7 +22,17 @@ public class MainMenuActions
     
         private static Dictionary<string, string> DefaultCharacterOptions => ModEntry.DefaultCharacterOptions;
         
-        public override string Name => "create_character";
+        public override string Name
+        {
+            get 
+            {
+                if (CanCreateCharacter)
+                {
+                    return "create_character";
+                }
+                return "start_new_game";
+            }
+        }
 
         protected override string Description {
             get
@@ -29,28 +41,24 @@ public class MainMenuActions
                 {
                     return "Create a character, this character can be anything or anyone as long you can make it. This will not be able to be changed in the future so be careful.";
                 }
-                else
-                {
-                    return "This will start the game as a default character that has already been decided.";
-                }
+                return "This will start the game as a character that has already been decided for you.";
             }
         }
 
         protected override JsonSchema? Schema => new()
         {
             Type = JsonSchemaType.Object,
-            Required = EnabledCharacterOptions.Keys.ToList(),
+            Required = RequiredOptions(),
             Properties = CharacterSchema()
         };
         
         protected override ExecutionResult Validate(ActionData actionData, out Dictionary<string,string?> data)
         {
-            if (CanCreateCharacter)
+            data = new();
+            if (!CanCreateCharacter)
             {
-                data = null;
                 return ExecutionResult.Success();
             }
-            data = new();
             foreach (var kvp in EnabledCharacterOptions)
             {
                 data[kvp.Key] = actionData.Data?.Value<string>(kvp.Key);   
@@ -61,10 +69,14 @@ public class MainMenuActions
 
         protected override async Task<Task> Execute(Dictionary<string,string?>? data)
         {
-            if (CanCreateCharacter) return Task.CompletedTask;
-            if (data is null) return Task.FromCanceled(CancellationToken.None);
+            if (!CanCreateCharacter)
+            {
+                ModEntry.Bot.CharacterCreation.StartGame();
+                return Task.CompletedTask;
+            }
+            if (data == new Dictionary<string, string>()) return Task.FromCanceled(CancellationToken.None);
             
-            SetCharacter(data);
+            SetCharacter(data,true);
             return Task.CompletedTask;
         }
 
@@ -76,14 +88,20 @@ public class MainMenuActions
         {
             "It is an a yellow Labrador Retriever.", "It is an orange Vizsla.", "It is a beige Poodle.", "It is a gray Schnauzer.", "It is a brown Doberman Pinscher."
         };
-
-        private static List<string> _petBreedStrings = new()
+        
+        private static List<string> RequiredOptions()
         {
-            "It is an orange tabby cat.", "It is a gray British shorthair cat.", "It is a yellow tabby cat.",
-            "It is a white Persian cat.", "It is a black Bombay cat.", "It is an a yellow Labrador Retriever.",
-            "It is an orange Vizsla.", "It is a beige Poodle.", "It is a gray Schnauzer.",
-            "It is a brown Doberman Pinscher."
-        };
+            List<string> enabled = new();
+            foreach (var kvp in EnabledCharacterOptions)
+            {
+                if (kvp.Value)
+                {
+                    enabled.Add(kvp.Key);
+                }
+            }
+
+            return enabled;
+        }
         
         private static Dictionary<string, JsonSchema> CharacterSchema()
         {
@@ -93,7 +111,7 @@ public class MainMenuActions
             ModEntry.Bot.CharacterCreation.SkipIntro();
             if (!CanCreateCharacter)
             {
-                SetCharacter(DefaultCharacterOptions!);
+                SetCharacter(DefaultCharacterOptions!,true);
                 
                 return new();
             }
@@ -151,14 +169,14 @@ public class MainMenuActions
                             properties.Add(kvp.Key + "_cat_breed",QJS.Enum(_catBreedStrings));
                             break;
                         case "eye_hue":
-                            properties.Add(kvp.Key + "_hue",QJS.Type(JsonSchemaType.Integer));
-                            properties.Add(kvp.Key + "_saturation",QJS.Type(JsonSchemaType.Integer));
-                            properties.Add(kvp.Key + "_brightness",QJS.Type(JsonSchemaType.Integer));
+                            properties.Add("eye_hue",QJS.Type(JsonSchemaType.Integer));
+                            properties.Add("eye_saturation",QJS.Type(JsonSchemaType.Integer));
+                            properties.Add("eye_brightness",QJS.Type(JsonSchemaType.Integer));
                             break;
                         case "hair_hue":
-                            properties.Add(kvp.Key + "_hue",QJS.Type(JsonSchemaType.Integer));
-                            properties.Add(kvp.Key + "_saturation",QJS.Type(JsonSchemaType.Integer));
-                            properties.Add(kvp.Key + "_brightness",QJS.Type(JsonSchemaType.Integer));
+                            properties.Add("hair_hue",QJS.Type(JsonSchemaType.Integer));
+                            properties.Add("hair_saturation",QJS.Type(JsonSchemaType.Integer));
+                            properties.Add("hair_brightness",QJS.Type(JsonSchemaType.Integer));
                             break;
                         case "pants_hue":
                             properties.Add(kvp.Key + "_hue",QJS.Type(JsonSchemaType.Integer));
@@ -173,65 +191,64 @@ public class MainMenuActions
                 }
                 else
                 {
-                    switch (kvp.Key)
+                    Dictionary<string, string?> option = new();
+                    switch (kvp.Key) // this is bad but better than what was here before
                     {
-                        case "gender":
-                            ModEntry.Bot.CharacterCreation.ChangeGender(DefaultCharacterOptions["gender"] == "male");
-                            break;
-                        case "skin":
-                            ModEntry.Bot.CharacterCreation.ChangeSkinColour(int.Parse(DefaultCharacterOptions["skin"]));
-                            break;
-                        case "hair":
-                            ModEntry.Bot.CharacterCreation.ChangeHair(int.Parse(DefaultCharacterOptions["hair"]));
-                            break;
-                        case "shirt":
-                            ModEntry.Bot.CharacterCreation.ChangeShirt(int.Parse(DefaultCharacterOptions["shirt"]));
-                            break;
-                        case "pants":
-                            ModEntry.Bot.CharacterCreation.ChangePants(int.Parse(DefaultCharacterOptions["pants"]));
-                            break;
-                        case "accessories":
-                            ModEntry.Bot.CharacterCreation.ChangeAccessory(int.Parse(DefaultCharacterOptions["accessories"]));
-                            break;
-                        case "name":
-                            ModEntry.Bot.CharacterCreation.SetName(DefaultCharacterOptions["name"]);
-                            break;
-                        case "farm_name":
-                            ModEntry.Bot.CharacterCreation.SetFarmName(DefaultCharacterOptions["farm_name"]);
-                            break;
-                        case "favourite_thing":
-                            ModEntry.Bot.CharacterCreation.SetFavThing(DefaultCharacterOptions["favourite_thing"]);
-                            break;
-                        case "animal_preference":
-                            ModEntry.Bot.CharacterCreation.ChangePet(DefaultCharacterOptions["animal_preference"], DefaultCharacterOptions["animal_breed"]);
-                            break;
                         case "eye_hue":
-                            ModEntry.Bot.CharacterCreation.ChangeColour(0,int.Parse(DefaultCharacterOptions["eye_hue"]),int.Parse(DefaultCharacterOptions["eye_saturation"]),int.Parse(DefaultCharacterOptions["eye_brightness"]));
+                            option = ColourKeys("eye");
                             break;
                         case "hair_hue":
-                            ModEntry.Bot.CharacterCreation.ChangeColour(1,int.Parse(DefaultCharacterOptions["hair_hue"]),int.Parse(DefaultCharacterOptions["hair_saturation"]),int.Parse(DefaultCharacterOptions["hair_brightness"]));
+                            option = ColourKeys("hair");
                             break;
                         case "pants_hue":
-                            ModEntry.Bot.CharacterCreation.ChangeColour(2,int.Parse(DefaultCharacterOptions["pants_hue"]),int.Parse(DefaultCharacterOptions["pants_saturation"]),int.Parse(DefaultCharacterOptions["pants_brightness"]));
+                            option = ColourKeys("pants");
                             break;
-                        case "farm_type":
-                            ModEntry.Bot.CharacterCreation.ChangeFarmTypes(int.Parse(DefaultCharacterOptions["farm_type"]));
+                        default:
+                            option.Add(kvp.Key,DefaultCharacterOptions[kvp.Key]);
                             break;
                     }
+                    SetCharacter(option!);
+                    option.Clear();
                 }
             }
             
             return properties;
         }
 
-        private static void SetCharacter(Dictionary<string, string?> choice)
+        private static readonly List<string> Keys = new() { "_hue", "_saturation", "_brightness" };
+        private static Dictionary<string, string?> ColourKeys(string key)
         {
+            Dictionary<string, string?> dict = new();
+            foreach (var keyString in Keys)
+            {
+                var finalString = key + keyString;
+                dict.Add(finalString,DefaultCharacterOptions[finalString]);
+            }
+
+            return dict;
+        }
+        
+        private static void SetCharacter(Dictionary<string, string?> choice,bool enabled = false)
+        {
+            Logger.Info($"Running set character");
             foreach (var kvp in EnabledCharacterOptions)
             {
-                if (!kvp.Value)
+                Logger.Info($"kvp: {kvp.Key}  value: {kvp.Value}");
+                if (enabled)
                 {
-                    continue;
+                    if (!kvp.Value)
+                    {
+                        continue;
+                    }
                 }
+                else
+                {
+                    if (kvp.Value)
+                    {
+                        continue;
+                    }
+                }
+                if (!choice.ContainsKey(kvp.Key)) continue;
                 
                 switch (kvp.Key)
                 {
@@ -263,7 +280,15 @@ public class MainMenuActions
                         ModEntry.Bot.CharacterCreation.SetFavThing(choice["favourite_thing"]);
                         break;
                     case "animal_preference":
-                        ModEntry.Bot.CharacterCreation.ChangePet(choice["animal_preference"], choice["animal_breed"]);
+                        Logger.Info($"animal: {choice["animal_preference"]} int: {_catBreedStrings.IndexOf(choice["animal_breed"]).ToString()}  string: {choice["animal_breed"]}");
+                        if (_dogBreedStrings.IndexOf(choice["animal_breed"]) == -1)
+                        {
+                            ModEntry.Bot.CharacterCreation.ChangePet(choice["animal_preference"], _catBreedStrings.IndexOf(choice["animal_breed"]).ToString());
+                        }
+                        else
+                        {
+                            ModEntry.Bot.CharacterCreation.ChangePet(choice["animal_preference"], _dogBreedStrings.IndexOf(choice["animal_breed"]).ToString());
+                        }
                         break;
                     case "eye_hue":
                         ModEntry.Bot.CharacterCreation.ChangeColour(0,int.Parse(choice["eye_hue"]),int.Parse(choice["eye_saturation"]),int.Parse(choice["eye_brightness"]));

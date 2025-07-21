@@ -30,7 +30,7 @@ internal sealed class ModEntry : Mod
 
     public static bool CanCreateCharacter;
 
-    public static int ConfigSaveSlot;
+    private static int _configSaveSlot;
 
     public static Dictionary<string, bool> EnabledCharacterOptions;
     
@@ -41,10 +41,10 @@ internal sealed class ModEntry : Mod
     public override void Entry(IModHelper helper)
     {
         Bot = new StardewClient(helper, ModManifest,Monitor, helper.Multiplayer);
-
+        
         Config = this.Helper.ReadConfig<ModConfig>();
         CanCreateCharacter = this.Config.AllowCharacterCreation;
-        ConfigSaveSlot = this.Config.SaveSlot;
+        _configSaveSlot = this.Config.SaveSlot;
         
         EnabledCharacterOptions = this.Config.CharacterCreationOptions;
         DefaultCharacterOptions = this.Config.CharacterCreationDefault;
@@ -117,7 +117,7 @@ internal sealed class ModEntry : Mod
                 if (TitleMenu.subMenu is LoadGameMenu)
                 {
                     Bot.LoadMenu.SetLoadMenu((LoadGameMenu)TitleMenu.subMenu);
-                    if (!Bot.LoadMenu.Loading) Bot.LoadMenu.LoadSlot(ConfigSaveSlot);
+                    if (!Bot.LoadMenu.Loading) Bot.LoadMenu.LoadSlot(_configSaveSlot);
                 }
             }
         
@@ -133,7 +133,6 @@ internal sealed class ModEntry : Mod
                 }
             }
         }
-        
     }
 
     private void GameLaunched(object? sender, GameLaunchedEventArgs e)
@@ -143,14 +142,32 @@ internal sealed class ModEntry : Mod
 
     private void GameLoopOnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
-        Context.Send($"This should send a save is loaded starts :)");
+        Context.Send($"Your save has loaded and you are now in the game.");
         NeuroActionHandler.RegisterActions(new MainGameActions.Pathfinding(), new MainGameActions.UseItem(), new MainGameActions.OpenInventory(), new MainGameActions.PathFindToExit());
     }
 
     private void OnChatMessage(object? sender, ChatMessageReceivedEventArgs e)
     {
+        string query;
+        switch (e.ChatKind) // magic number are from the game not me :(
+        {
+            case 0: // normal public message
+                query = $"{e.PlayerName} has said {e.Message} in chat. You can use the action to talk back to them if you want";
+                break;
+            case 1:
+                return;
+            case 2: // notification
+                query = $"THIS IS A NOTIFICATION FROM THE GAME: {e.PlayerName} has said {e.Message} in chat. You can use the action to talk back to them if you want";
+                break;
+            case 3: // private
+                query = $"{e.PlayerName} has said {e.Message} to you in a private message. You can use the action to talk back to them if you want";
+                break;
+            default:
+                return;
+        }
+        
         ActionWindow.Create(GameInstance)
-            .SetForce(0,$"{e.PlayerName} has said {e.Message} in chat. You can reply to them","", false)
+            .SetForce(0,query,"", false)
             .AddAction(new ChatActions.SendChatMessage())
             .Register();
     }
