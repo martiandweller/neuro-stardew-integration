@@ -309,13 +309,13 @@ public class MainGameActions
                     false); // get direction of final this to point
                 int direction = _directions.ToList().IndexOf(_direction);
                 ;
-                ModEntry.Bot.Player.UseTool(direction);
+                ModEntry.Bot.Tool.UseTool(direction);
             }
             else
             {
                 int direction = _directions.ToList().IndexOf(_direction);
                 Logger.Info($"direction int: {direction}");
-                ModEntry.Bot.Player.UseTool(direction);
+                ModEntry.Bot.Tool.UseTool(direction);
             }
 
             return Task.CompletedTask;
@@ -323,7 +323,7 @@ public class MainGameActions
 
         private IEnumerable<string> GetAvailableItems()
         {
-            foreach (var item in ModEntry.Bot.Player.Inventory)
+            foreach (var item in ModEntry.Bot.PlayerInformation.Inventory)
             {
                 if (item is Tool)
                 {

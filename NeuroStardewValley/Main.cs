@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System.Xml;
+using Microsoft.Xna.Framework;
 using StardewBotFramework.Source;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -10,6 +11,7 @@ using StardewBotFramework.Source.Events.EventArgs;
 using StardewBotFramework.Source.Events.GamePlayEvents;
 using StardewValley;
 using StardewValley.Menus;
+using StardewValley.Tools;
 using Logger = NeuroStardewValley.Debug.Logger;
 using Object = StardewValley.Object;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
@@ -61,6 +63,7 @@ internal sealed class ModEntry : Mod
 
     private void OnWarped(object? sender, BotWarpedEventArgs e)
     {
+        ActionWindow window = ActionWindow.Create(GameInstance);
         string tilesString = "";
         foreach (var tile in GetTilesInLocation(e.NewLocation))
         {
@@ -91,6 +94,20 @@ internal sealed class ModEntry : Mod
             s +=  "\n" + kvp.Key + " " + kvp.Value;
         }
         Context.Send(s,true);
+
+        if (e.NewLocation is Farm)
+        {
+            foreach (var item in Bot.PlayerInformation.Inventory)
+            {
+                if (item is WateringCan wateringCan)
+                {
+                    if (!wateringCan.isBottomless.Value) window.AddAction(new ToolActions.RefillWateringCan());
+                }
+                if (item is Pickaxe || item is Axe || item is MeleeWeapon) window.AddAction(new ToolActions.DestroyObject());
+            }
+        }
+        
+        window.Register();
     }
 
     private void MenuChanged(object? sender, MenuChangedEventArgs e)
