@@ -67,17 +67,16 @@ public class MainMenuActions
             return ExecutionResult.Success();
         }
 
-        protected override async Task<Task> Execute(Dictionary<string,string?>? data)
+        protected override void Execute(Dictionary<string,string?>? data)
         {
             if (!CanCreateCharacter)
             {
                 ModEntry.Bot.CharacterCreation.StartGame();
-                return Task.CompletedTask;
+                return;
             }
-            if (data == new Dictionary<string, string>()) return Task.FromCanceled(CancellationToken.None);
+            if (data == new Dictionary<string, string>()) return;
             
             SetCharacter(data,true);
-            return Task.CompletedTask;
         }
 
         private static List<string> _catBreedStrings = new()

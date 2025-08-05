@@ -78,7 +78,7 @@ public class ChatActions
             return ExecutionResult.Success();
         }
 
-        protected override Task Execute(List<string>? resultData)
+        protected override void Execute(List<string>? resultData)
         {
             if (resultData[0] == "Private")
             {
@@ -88,8 +88,6 @@ public class ChatActions
             {
                 ModEntry.Bot.Chat.SendPublicMessage(resultData[1]);
             }
-            
-            return Task.CompletedTask;
         }
     }
 }

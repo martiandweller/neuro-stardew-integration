@@ -62,14 +62,13 @@ public class InventoryActions
             return ExecutionResult.Success();
         }
 
-        protected override Task Execute(Item? resultData)
+        protected override void Execute(Item? resultData)
         {
             ModEntry.Bot.Inventory.MoveItem(resultData!, _position);
 
             // stop issue with unexpected action result
             NeuroActionHandler.UnregisterActions(this);
             NeuroActionHandler.RegisterActions(this);
-            return Task.CompletedTask;
         }
 
         private IEnumerable<string> GetItemNames(Inventory inventory)
@@ -187,7 +186,7 @@ public class InventoryActions
             return ExecutionResult.Success();
         }
 
-        protected override Task Execute(Dictionary<string,string>? resultData)
+        protected override void Execute(Dictionary<string,string>? resultData)
         {
             if (resultData["Action"] == "Equip")
             {
@@ -199,8 +198,6 @@ public class InventoryActions
                 Trinket? trinket = Game1.player.trinketItems[int.Parse(resultData["TrinketSlot"])];
                 ModEntry.Bot.Inventory.RemoveTrinket(trinket);
             }
-
-            return Task.CompletedTask;
         }
     }
 
@@ -268,7 +265,7 @@ public class InventoryActions
             return ExecutionResult.Success();
         }
 
-        protected override Task Execute(Dictionary<string,string>? resultData)
+        protected override void Execute(Dictionary<string,string>? resultData)
         {
             switch (resultData["slot"])
             {
@@ -298,8 +295,8 @@ public class InventoryActions
                     break;
             }
             
-            return Task.CompletedTask;
         }
     }
     
+    // protected static Register
 }

@@ -74,12 +74,11 @@ public class MainGameActions
             return ExecutionResult.Success();
         }
 
-        protected override async Task<Task> Execute(Goal? goal)
+        protected override async void Execute(Goal? goal)
         {
-            if (goal is null) return Task.FromCanceled(CancellationToken.None); // probably find
+            if (goal is null) return; // probably find
 
             await ModEntry.Bot.Pathfinding.Goto(goal, false, _destructive);
-            return Task.CompletedTask;
         }
     }
 
@@ -158,12 +157,11 @@ public class MainGameActions
             return ExecutionResult.Success();
         }
 
-        protected override async Task<Task> Execute(Goal? goal)
+        protected override async void Execute(Goal? goal)
         {
-            if (goal is null) return Task.FromCanceled(CancellationToken.None); // probably fine
+            if (goal is null) return; // probably fine
 
             await ModEntry.Bot.Pathfinding.Goto(goal, false, _destructive);
-            return Task.CompletedTask;
         }
 
         private List<Point> GetExits()
@@ -276,7 +274,7 @@ public class MainGameActions
             return ExecutionResult.Success();
         }
 
-        protected override async Task<Task> Execute(Item? selectedItem)
+        protected override async void Execute(Item? selectedItem)
         {
             for (int i = 0; i < ModEntry.Bot.Inventory.GetInventory().Count; i++)
             {
@@ -317,8 +315,6 @@ public class MainGameActions
                 Logger.Info($"direction int: {direction}");
                 ModEntry.Bot.Tool.UseTool(direction);
             }
-
-            return Task.CompletedTask;
         }
 
         private IEnumerable<string> GetAvailableItems()
@@ -370,12 +366,11 @@ public class MainGameActions
             return ExecutionResult.Success();
         }
 
-        protected override Task Execute(Object? resultData)
+        protected override void Execute(Object? resultData)
         {
-            if (resultData is null) return Task.CompletedTask;
+            if (resultData is null) return;
             
             ModEntry.Bot.ObjectInteraction.InteractWithObject(resultData);
-            return Task.CompletedTask;
         }
     }
     
@@ -389,13 +384,12 @@ public class MainGameActions
             return ExecutionResult.Success();
         }
 
-        protected override Task Execute()
+        protected override void Execute()
         {
             ModEntry.Bot.PlayerInformation.OpenInventory();
 
             NeuroActionHandler.UnregisterActions("use_item","move_character","open_inventory","move_to_exit");
             NeuroActionHandler.RegisterActions(new InventoryActions.MoveItem(), new InventoryActions.InteractWithTrinkets(),new InventoryActions.ChangeClothing());
-            return Task.CompletedTask;
         }
     }
     
