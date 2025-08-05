@@ -62,8 +62,8 @@ public class MainGameActions
                 return ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map");
             }
 
-            ModEntry.Bot.Pathfinding.BuildCollisionMap();
-            if (ModEntry.Bot.Pathfinding.IsBlocked(x, y) && (bool)!destructive)
+            Main.Bot.Pathfinding.BuildCollisionMap();
+            if (Main.Bot.Pathfinding.IsBlocked(x, y) && (bool)!destructive)
             {
                 goal = null;
                 return ExecutionResult.Failure("You gave a position that is blocked.");
@@ -78,16 +78,18 @@ public class MainGameActions
         {
             if (goal is null) return; // probably find
 
-            await ModEntry.Bot.Pathfinding.Goto(goal, false, _destructive);
+            await Main.Bot.Pathfinding.Goto(goal, false, _destructive);
         }
     }
 
     public class PathFindToExit : NeuroAction<Goal?> // TODO: remove and resend when location changes
     {
         private bool _destructive;
+        private GameLocation sentLocation;
 
         private IEnumerable<string> ExitStrings(List<Point> exits)
         {
+            sentLocation = Game1.currentLocation;
             IEnumerable<string> exitStrings = new List<string>();
             foreach (var point in exits)
             {
@@ -119,6 +121,11 @@ public class MainGameActions
             bool? destructive = actionData.Data?.Value<bool>("destructive");
 
             Logger.Info($"data: {pointStr}");
+            if (!Game1.currentLocation.Equals(sentLocation))
+            {
+                goal = null;
+                return ExecutionResult.ModFailure($"This action has been called in a different location than it was registered. This is most likely an issue with the integration");
+            }
             
             if (pointStr is null || destructive is null)
             {
@@ -145,8 +152,8 @@ public class MainGameActions
                 return ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map");
             }
 
-            ModEntry.Bot.Pathfinding.BuildCollisionMap();
-            if (ModEntry.Bot.Pathfinding.IsBlocked(exitPoint.X, exitPoint.Y) && (bool)!destructive)
+            Main.Bot.Pathfinding.BuildCollisionMap();
+            if (Main.Bot.Pathfinding.IsBlocked(exitPoint.X, exitPoint.Y) && (bool)!destructive)
             {
                 goal = null;
                 return ExecutionResult.Failure("You gave a position that is blocked.");
@@ -161,7 +168,7 @@ public class MainGameActions
         {
             if (goal is null) return; // probably fine
 
-            await ModEntry.Bot.Pathfinding.Goto(goal, false, _destructive);
+            await Main.Bot.Pathfinding.Goto(goal, false, _destructive);
         }
 
         private List<Point> GetExits()
@@ -253,7 +260,7 @@ public class MainGameActions
             }
 
             selectedItem = null;
-            foreach (var tool in ModEntry.Bot.Inventory.GetInventory())
+            foreach (var tool in Main.Bot.Inventory.GetInventory())
             {
                 if (tool is null) continue;
 
@@ -276,50 +283,50 @@ public class MainGameActions
 
         protected override async void Execute(Item? selectedItem)
         {
-            for (int i = 0; i < ModEntry.Bot.Inventory.GetInventory().Count; i++)
+            for (int i = 0; i < Main.Bot.Inventory.GetInventory().Count; i++)
             {
-                if (ModEntry.Bot.Inventory.GetInventory()[i] is null)
+                if (Main.Bot.Inventory.GetInventory()[i] is null)
                 {
                     Logger.Info($"item at {i} is null");
                     continue;
                 }
 
-                Logger.Info($"{ModEntry.Bot.Inventory.GetInventory()[i].Name} is at {i}");
+                Logger.Info($"{Main.Bot.Inventory.GetInventory()[i].Name} is at {i}");
             }
 
-            int index = ModEntry.Bot.Inventory.GetInventory().ToList().IndexOf(selectedItem);
+            int index = Main.Bot.Inventory.GetInventory().ToList().IndexOf(selectedItem);
 
             if (index > 11) // first line
             {
-                ModEntry.Bot.Inventory.SelectInventoryRowForToolbar(true);
+                Main.Bot.Inventory.SelectInventoryRowForToolbar(true);
                 if (index > 23) // second line
                 {
-                    ModEntry.Bot.Inventory.SelectInventoryRowForToolbar(true);
+                    Main.Bot.Inventory.SelectInventoryRowForToolbar(true);
                 }
             }
 
-            int itemIndex = ModEntry.Bot.Inventory.GetInventory().IndexOf(selectedItem);
-            ModEntry.Bot.Inventory.SelectSlot(itemIndex);
+            int itemIndex = Main.Bot.Inventory.GetInventory().IndexOf(selectedItem);
+            Main.Bot.Inventory.SelectSlot(itemIndex);
 
             if (_pathfind)
             {
-                await ModEntry.Bot.Pathfinding.Goto(new Goal.GoalPosition(_tile.X, _tile.Y), false,
+                await Main.Bot.Pathfinding.Goto(new Goal.GoalPosition(_tile.X, _tile.Y), false,
                     false); // get direction of final this to point
                 int direction = _directions.ToList().IndexOf(_direction);
                 ;
-                ModEntry.Bot.Tool.UseTool(direction);
+                Main.Bot.Tool.UseTool(direction);
             }
             else
             {
                 int direction = _directions.ToList().IndexOf(_direction);
                 Logger.Info($"direction int: {direction}");
-                ModEntry.Bot.Tool.UseTool(direction);
+                Main.Bot.Tool.UseTool(direction);
             }
         }
 
         private IEnumerable<string> GetAvailableItems()
         {
-            foreach (var item in ModEntry.Bot.PlayerInformation.Inventory)
+            foreach (var item in Main.Bot.PlayerInformation.Inventory)
             {
                 if (item is Tool)
                 {
@@ -356,13 +363,13 @@ public class MainGameActions
                 resultData = null;
                 return ExecutionResult.Failure($"You have provided a null value.");
             }
-            if (ModEntry.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY) is null)
+            if (Main.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY) is null)
             {
                 resultData = null;
                 return ExecutionResult.Failure($"There is no object at the provided tile.");
             }
 
-            resultData = ModEntry.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY);
+            resultData = Main.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY);
             return ExecutionResult.Success();
         }
 
@@ -370,28 +377,7 @@ public class MainGameActions
         {
             if (resultData is null) return;
             
-            ModEntry.Bot.ObjectInteraction.InteractWithObject(resultData);
+            Main.Bot.ObjectInteraction.InteractWithObject(resultData);
         }
     }
-    
-    public class OpenInventory : NeuroAction
-    {
-        public override string Name => "open_inventory";
-        protected override string Description => "Open your inventory and allow altering the placement of items";
-        protected override JsonSchema? Schema => null;
-        protected override ExecutionResult Validate(ActionData actionData)
-        {
-            return ExecutionResult.Success();
-        }
-
-        protected override void Execute()
-        {
-            ModEntry.Bot.PlayerInformation.OpenInventory();
-
-            NeuroActionHandler.UnregisterActions("use_item","move_character","open_inventory","move_to_exit");
-            NeuroActionHandler.RegisterActions(new InventoryActions.MoveItem(), new InventoryActions.InteractWithTrinkets(),new InventoryActions.ChangeClothing());
-        }
-    }
-    
-    
 }

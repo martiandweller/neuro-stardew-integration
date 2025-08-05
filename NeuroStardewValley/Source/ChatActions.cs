@@ -82,11 +82,11 @@ public class ChatActions
         {
             if (resultData[0] == "Private")
             {
-                ModEntry.Bot.Chat.SendPrivateMessage(resultData[2],resultData[1]);
+                Main.Bot.Chat.SendPrivateMessage(resultData[2],resultData[1]);
             }
             else if (resultData[0] == "Public")
             {
-                ModEntry.Bot.Chat.SendPublicMessage(resultData[1]);
+                Main.Bot.Chat.SendPublicMessage(resultData[1]);
             }
         }
     }

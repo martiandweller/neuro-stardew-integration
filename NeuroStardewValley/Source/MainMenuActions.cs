@@ -16,11 +16,11 @@ public class MainMenuActions
 {
     public class CreateCharacter : NeuroAction<Dictionary<string, string?>>
     {
-        private static bool CanCreateCharacter => ModEntry.CanCreateCharacter;
+        private static bool CanCreateCharacter => Main.CanCreateCharacter;
 
-        private static Dictionary<string, bool> EnabledCharacterOptions => ModEntry.EnabledCharacterOptions;
+        private static Dictionary<string, bool> EnabledCharacterOptions => Main.EnabledCharacterOptions;
     
-        private static Dictionary<string, string> DefaultCharacterOptions => ModEntry.DefaultCharacterOptions;
+        private static Dictionary<string, string> DefaultCharacterOptions => Main.DefaultCharacterOptions;
         
         public override string Name
         {
@@ -71,7 +71,7 @@ public class MainMenuActions
         {
             if (!CanCreateCharacter)
             {
-                ModEntry.Bot.CharacterCreation.StartGame();
+                Main.Bot.CharacterCreation.StartGame();
                 return;
             }
             if (data == new Dictionary<string, string>()) return;
@@ -106,8 +106,8 @@ public class MainMenuActions
         {
             Dictionary<string, JsonSchema> properties = new();
             
-            ModEntry.Bot.CharacterCreation.SetCreator((CharacterCustomization)TitleMenu.subMenu);
-            ModEntry.Bot.CharacterCreation.SkipIntro();
+            Main.Bot.CharacterCreation.SetCreator((CharacterCustomization)TitleMenu.subMenu);
+            Main.Bot.CharacterCreation.SkipIntro();
             if (!CanCreateCharacter)
             {
                 SetCharacter(DefaultCharacterOptions!,true);
@@ -132,23 +132,23 @@ public class MainMenuActions
                             break;
                         case "shirt": // 0-111
                             List<string> shirtList = new();
-                            for (int i = 0; i < ModEntry.Bot.CharacterCreation.GetPossibleShirts().Values.Count; i++)
+                            for (int i = 0; i < Main.Bot.CharacterCreation.GetPossibleShirts().Values.Count; i++)
                             {
-                                shirtList.Add($"string id: {ModEntry.Bot.CharacterCreation.GetPossibleShirts().Keys.ToArray()[i]} shirt name: {ModEntry.Bot.CharacterCreation.GetPossibleShirts().Values.ToArray()[i]}");
+                                shirtList.Add($"string id: {Main.Bot.CharacterCreation.GetPossibleShirts().Keys.ToArray()[i]} shirt name: {Main.Bot.CharacterCreation.GetPossibleShirts().Values.ToArray()[i]}");
                             }
                             IEnumerable<string> shirtEnumerable = shirtList;
                             Context.Send($"All possible shirts: {shirtEnumerable}");
-                            properties.Add("Shirt",QJS.Enum(Enumerable.Range(0,ModEntry.Bot.CharacterCreation.GetPossibleShirts().Values.Count)));
+                            properties.Add("Shirt",QJS.Enum(Enumerable.Range(0,Main.Bot.CharacterCreation.GetPossibleShirts().Values.Count)));
                             break;
                         case "pants": // 0-3
                             List<string> pantsList = new();
-                            for (int i = 0; i < ModEntry.Bot.CharacterCreation.GetPossiblePants().Values.Count; i++)
+                            for (int i = 0; i < Main.Bot.CharacterCreation.GetPossiblePants().Values.Count; i++)
                             {
-                                pantsList.Add($"pants id: {ModEntry.Bot.CharacterCreation.GetPossiblePants().Keys.ToArray()[i]} pants name: {ModEntry.Bot.CharacterCreation.GetPossiblePants().Values.ToArray()[i]}");
+                                pantsList.Add($"pants id: {Main.Bot.CharacterCreation.GetPossiblePants().Keys.ToArray()[i]} pants name: {Main.Bot.CharacterCreation.GetPossiblePants().Values.ToArray()[i]}");
                             }
                             IEnumerable<string> pantsEnumerable = pantsList;
                             Context.Send($"All possible pants: {pantsEnumerable}");
-                            properties.Add("Pants",QJS.Enum(Enumerable.Range(0,ModEntry.Bot.CharacterCreation.GetPossiblePants().Values.Count)));
+                            properties.Add("Pants",QJS.Enum(Enumerable.Range(0,Main.Bot.CharacterCreation.GetPossiblePants().Values.Count)));
                             break;
                         case "accessories": // 0-30
                             properties.Add(kvp.Key,QJS.Enum(Enumerable.Range(0,30)));
@@ -252,54 +252,54 @@ public class MainMenuActions
                 switch (kvp.Key)
                 {
                     case "gender":
-                        ModEntry.Bot.CharacterCreation.ChangeGender(choice["gender"] == "male");
+                        Main.Bot.CharacterCreation.ChangeGender(choice["gender"] == "male");
                         break;
                     case "skin":
-                        ModEntry.Bot.CharacterCreation.ChangeSkinColour(int.Parse(choice["skin"]));
+                        Main.Bot.CharacterCreation.ChangeSkinColour(int.Parse(choice["skin"]));
                         break;
                     case "hair":
-                        ModEntry.Bot.CharacterCreation.ChangeHair(int.Parse(choice["hair"]));
+                        Main.Bot.CharacterCreation.ChangeHair(int.Parse(choice["hair"]));
                         break;
                     case "shirt":
-                        ModEntry.Bot.CharacterCreation.ChangeShirt(int.Parse(choice["shirt"]));
+                        Main.Bot.CharacterCreation.ChangeShirt(int.Parse(choice["shirt"]));
                         break;
                     case "pants":
-                        ModEntry.Bot.CharacterCreation.ChangePants(int.Parse(choice["pants"]));
+                        Main.Bot.CharacterCreation.ChangePants(int.Parse(choice["pants"]));
                         break;
                     case "accessories":
-                        ModEntry.Bot.CharacterCreation.ChangeAccessory(int.Parse(choice["accessories"]));
+                        Main.Bot.CharacterCreation.ChangeAccessory(int.Parse(choice["accessories"]));
                         break;
                     case "name":
-                        ModEntry.Bot.CharacterCreation.SetName(choice["name"]);
+                        Main.Bot.CharacterCreation.SetName(choice["name"]);
                         break;
                     case "farm_name":
-                        ModEntry.Bot.CharacterCreation.SetFarmName(choice["farm_name"]);
+                        Main.Bot.CharacterCreation.SetFarmName(choice["farm_name"]);
                         break;
                     case "favourite_thing":
-                        ModEntry.Bot.CharacterCreation.SetFavThing(choice["favourite_thing"]);
+                        Main.Bot.CharacterCreation.SetFavThing(choice["favourite_thing"]);
                         break;
                     case "animal_preference":
                         Logger.Info($"animal: {choice["animal_preference"]} int: {_catBreedStrings.IndexOf(choice["animal_breed"]).ToString()}  string: {choice["animal_breed"]}");
                         if (_dogBreedStrings.IndexOf(choice["animal_breed"]) == -1)
                         {
-                            ModEntry.Bot.CharacterCreation.ChangePet(choice["animal_preference"], _catBreedStrings.IndexOf(choice["animal_breed"]).ToString());
+                            Main.Bot.CharacterCreation.ChangePet(choice["animal_preference"], _catBreedStrings.IndexOf(choice["animal_breed"]).ToString());
                         }
                         else
                         {
-                            ModEntry.Bot.CharacterCreation.ChangePet(choice["animal_preference"], _dogBreedStrings.IndexOf(choice["animal_breed"]).ToString());
+                            Main.Bot.CharacterCreation.ChangePet(choice["animal_preference"], _dogBreedStrings.IndexOf(choice["animal_breed"]).ToString());
                         }
                         break;
                     case "eye_hue":
-                        ModEntry.Bot.CharacterCreation.ChangeColour(0,int.Parse(choice["eye_hue"]),int.Parse(choice["eye_saturation"]),int.Parse(choice["eye_brightness"]));
+                        Main.Bot.CharacterCreation.ChangeColour(0,int.Parse(choice["eye_hue"]),int.Parse(choice["eye_saturation"]),int.Parse(choice["eye_brightness"]));
                         break;
                     case "hair_hue":
-                        ModEntry.Bot.CharacterCreation.ChangeColour(1,int.Parse(choice["hair_hue"]),int.Parse(choice["hair_saturation"]),int.Parse(choice["hair_brightness"]));
+                        Main.Bot.CharacterCreation.ChangeColour(1,int.Parse(choice["hair_hue"]),int.Parse(choice["hair_saturation"]),int.Parse(choice["hair_brightness"]));
                         break;
                     case "pants_hue":
-                        ModEntry.Bot.CharacterCreation.ChangeColour(2,int.Parse(choice["pants_hue"]),int.Parse(choice["pants_saturation"]),int.Parse(choice["pants_brightness"]));
+                        Main.Bot.CharacterCreation.ChangeColour(2,int.Parse(choice["pants_hue"]),int.Parse(choice["pants_saturation"]),int.Parse(choice["pants_brightness"]));
                         break;
                     case "farm_type":
-                        ModEntry.Bot.CharacterCreation.ChangeFarmTypes(int.Parse(choice["farm_type"]));
+                        Main.Bot.CharacterCreation.ChangeFarmTypes(int.Parse(choice["farm_type"]));
                         break;
                 }    
             }

@@ -22,7 +22,7 @@ public class ToolActions
 
 		protected override void Execute()
 		{
-			ModEntry.Bot.Tool.RefillWateringCan();
+			Main.Bot.Tool.RefillWateringCan();
 		}
 	}
 	
@@ -80,7 +80,7 @@ public class ToolActions
 
 		protected override void Execute(Point resultData)
 		{
-			ModEntry.Bot.Tool.RemoveObject(resultData);
+			Main.Bot.Tool.RemoveObject(resultData);
 		}
 	}
 

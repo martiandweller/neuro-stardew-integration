@@ -15,11 +15,9 @@ public class RegisterMainGameActions
 		if (checkCanMove && !Game1.player.CanMove) {}
 		else
 		{
-			window.AddAction(new MainGameActions.Pathfinding());
-			window.AddAction(new MainGameActions.PathFindToExit());
+			window.AddAction(new MainGameActions.Pathfinding()).AddAction(new MainGameActions.PathFindToExit());
 		}
 		
-
 		if (Game1.currentLocation.furniture.Count > 0)
 		{
 			window.AddAction(new MainGameActions.InteractWithFurniture());
@@ -29,6 +27,10 @@ public class RegisterMainGameActions
 		{
 			window.AddAction(new MainGameActions.UseItem());	
 		}
+
+		window.AddAction(new InventoryActions.OpenInventory())
+			.AddAction(new ToolBarActions.ChangeSelectedToolbarSlot())
+			.AddAction(new ToolBarActions.ChangeCurrentToolbar());
 	}
 
 	public static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null)
@@ -37,7 +39,7 @@ public class RegisterMainGameActions
 		{
 			if (e.NewLocation is Farm)
 			{
-				foreach (var item in ModEntry.Bot.PlayerInformation.Inventory)
+				foreach (var item in Main.Bot.PlayerInformation.Inventory)
 				{
 					if (item is WateringCan wateringCan)
 					{
@@ -50,7 +52,7 @@ public class RegisterMainGameActions
 
 			if (e.NewLocation is Mine)
 			{
-				if (ModEntry.Bot.PlayerInformation.Inventory.Any(item => item.GetType() == typeof(Pickaxe)))
+				if (Main.Bot.PlayerInformation.Inventory.Any(item => item.GetType() == typeof(Pickaxe)))
 				{
 					window.AddAction(new ToolActions.DestroyObject());
 				}
@@ -60,12 +62,14 @@ public class RegisterMainGameActions
 
 	public static void LoadGameActions()
 	{
-		ActionWindow actionWindow = ActionWindow.Create(ModEntry.GameInstance);
+		ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
 		actionWindow.SetForce(0,"","");
-		actionWindow.AddAction(new MainGameActions.Pathfinding());
-		// actionWindow.AddAction(new MainGameActions.UseItem());
-		// actionWindow.AddAction(new MainGameActions.OpenInventory());
-		actionWindow.AddAction(new MainGameActions.PathFindToExit());
+		actionWindow.AddAction(new MainGameActions.Pathfinding())
+			.AddAction(new MainGameActions.PathFindToExit())
+			.AddAction(new MainGameActions.UseItem())
+			.AddAction(new InventoryActions.OpenInventory())
+			.AddAction(new ToolBarActions.ChangeSelectedToolbarSlot())
+			.AddAction(new ToolBarActions.ChangeCurrentToolbar());
 		actionWindow.Register();
 	}
 }

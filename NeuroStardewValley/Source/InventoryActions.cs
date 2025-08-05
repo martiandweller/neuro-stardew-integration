@@ -20,7 +20,7 @@ public class InventoryActions
         private int _position = 0;
         
         public override string Name => "move_item";
-        protected override string Description => $"Move an item in inventory, you have {ModEntry.Bot.Inventory.MaxInventory} places in your inventory";
+        protected override string Description => $"Move an item in inventory, you have {Main.Bot.Inventory.MaxInventory} places in your inventory";
 
         protected override JsonSchema? Schema => new ()
         {
@@ -28,8 +28,8 @@ public class InventoryActions
             Required = new List<string> { "item", "position" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["item"] = QJS.Enum(GetItemNames(ModEntry.Bot.Inventory.GetInventory())),
-                ["position"] = QJS.Enum(Enumerable.Range(0,ModEntry.Bot.Inventory.MaxInventory)) // reduce one so we get 0-11
+                ["item"] = QJS.Enum(GetItemNames(Main.Bot.Inventory.GetInventory())),
+                ["position"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory)) // reduce one so we get 0-11
             }
         };
         
@@ -44,19 +44,19 @@ public class InventoryActions
                 return ExecutionResult.Failure($"An argument you gave was null");
             }
             
-            if (itemPosition > ModEntry.Bot.Inventory.MaxInventory)
+            if (itemPosition > Main.Bot.Inventory.MaxInventory)
             {
                 resultData = null;
                 return ExecutionResult.Failure($"You have given a position that is larger than the size of your inventory");
             }
 
-            if (!GetItemNames(ModEntry.Bot.Inventory.GetInventory()).Contains(itemName) || GetItemInInventory(ModEntry.Bot.Inventory.GetInventory(), itemName) is null)
+            if (!GetItemNames(Main.Bot.Inventory.GetInventory()).Contains(itemName) || GetItemInInventory(Main.Bot.Inventory.GetInventory(), itemName) is null)
             {
                 resultData = null;
                 return ExecutionResult.Failure($"You have given an item that is not in your inventory");
             }
 
-            resultData = GetItemInInventory(ModEntry.Bot.Inventory.GetInventory(), itemName)!;
+            resultData = GetItemInInventory(Main.Bot.Inventory.GetInventory(), itemName)!;
             _position = (int)itemPosition;
             
             return ExecutionResult.Success();
@@ -64,7 +64,7 @@ public class InventoryActions
 
         protected override void Execute(Item? resultData)
         {
-            ModEntry.Bot.Inventory.MoveItem(resultData!, _position);
+            Main.Bot.Inventory.MoveItem(resultData!, _position);
 
             // stop issue with unexpected action result
             NeuroActionHandler.UnregisterActions(this);
@@ -109,7 +109,6 @@ public class InventoryActions
             return item;
         }
     }
-
     public class InteractWithTrinkets : NeuroAction<Dictionary<string,string>>
     {
         private string[] TrinketAction()
@@ -142,7 +141,7 @@ public class InventoryActions
             {
                 ["slot"] = QJS.Enum(TrinketSlots()), // explain what these are as I don't even know
                 ["action"] = QJS.Enum(TrinketAction()),
-                ["inventory_slot"] = QJS.Enum(Enumerable.Range(0,ModEntry.Bot.Inventory.MaxInventory - 1))
+                ["inventory_slot"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory - 1))
             }
         };
         protected override ExecutionResult Validate(ActionData actionData, out Dictionary<string,string>? resultData)
@@ -171,7 +170,7 @@ public class InventoryActions
                 return ExecutionResult.Failure($"{action} is not a valid action");
             }
 
-            if (Enumerable.Range(0, ModEntry.Bot.Inventory.MaxInventory - 1).Contains(int.Parse(inventory)))
+            if (Enumerable.Range(0, Main.Bot.Inventory.MaxInventory - 1).Contains(int.Parse(inventory)))
             {
                 resultData = null;
                 return ExecutionResult.Failure($"{inventory} is not a valid inventory slot");
@@ -191,16 +190,15 @@ public class InventoryActions
             if (resultData["Action"] == "Equip")
             {
                 Trinket? trinket = Game1.player.trinketItems[int.Parse(resultData["Inventory"])];
-                ModEntry.Bot.Inventory.EquipTrinket(trinket,int.Parse(resultData["TrinketSlot"]));
+                Main.Bot.Inventory.EquipTrinket(trinket,int.Parse(resultData["TrinketSlot"]));
             }
             else
             {
                 Trinket? trinket = Game1.player.trinketItems[int.Parse(resultData["TrinketSlot"])];
-                ModEntry.Bot.Inventory.RemoveTrinket(trinket);
+                Main.Bot.Inventory.RemoveTrinket(trinket);
             }
         }
     }
-
     public class ChangeClothing : NeuroAction<Dictionary<string,string>>
     {
         private string[] Actions()
@@ -224,7 +222,7 @@ public class InventoryActions
             {
                 ["slot"] = QJS.Enum(Slots()),
                 ["action"] = QJS.Enum(Actions()),
-                ["inventory_slot"] = QJS.Enum(Enumerable.Range(0, ModEntry.Bot.Inventory.MaxInventory))
+                ["inventory_slot"] = QJS.Enum(Enumerable.Range(0, Main.Bot.Inventory.MaxInventory))
             }
         };
         protected override ExecutionResult Validate(ActionData actionData, out Dictionary<string,string>? resultData)
@@ -251,7 +249,7 @@ public class InventoryActions
                 return ExecutionResult.Failure("action was not set correctly");
             }
 
-            if (inventory is not null && Enumerable.Range(0, ModEntry.Bot.Inventory.MaxInventory).Contains(int.Parse(inventory)) && action == "Equip")
+            if (inventory is not null && Enumerable.Range(0, Main.Bot.Inventory.MaxInventory).Contains(int.Parse(inventory)) && action == "Equip")
             {
                 resultData = new();
                 return ExecutionResult.Failure("inventory was not set correctly");
@@ -270,33 +268,77 @@ public class InventoryActions
             switch (resultData["slot"])
             {
                 case "hat":
-                    if (resultData["action"] == "Unequip") ModEntry.Bot.Inventory.ChangeHat(null);
-                    else ModEntry.Bot.Inventory.ChangeHat((Hat)Game1.player.Items[int.Parse(resultData["inventory_slot"])]);
+                    if (resultData["action"] == "Unequip") Main.Bot.Inventory.ChangeHat(null);
+                    else Main.Bot.Inventory.ChangeHat((Hat)Game1.player.Items[int.Parse(resultData["inventory_slot"])]);
                     break;
                 case "shirt":
-                    if (resultData["action"] == "Unequip") ModEntry.Bot.Inventory.ChangeClothing(true, null);
-                    else ModEntry.Bot.Inventory.ChangeClothing(true, (Clothing)Game1.player.Items[int.Parse(resultData["inventory_slot"])]);
+                    if (resultData["action"] == "Unequip") Main.Bot.Inventory.ChangeClothing(true, null);
+                    else Main.Bot.Inventory.ChangeClothing(true, (Clothing)Game1.player.Items[int.Parse(resultData["inventory_slot"])]);
                     break;
                 case "pants":
-                    if (resultData["action"] == "Unequip") ModEntry.Bot.Inventory.ChangeClothing(false, null);
-                    else ModEntry.Bot.Inventory.ChangeClothing(false, (Clothing)Game1.player.Items[int.Parse(resultData["inventory_slot"])]);
+                    if (resultData["action"] == "Unequip") Main.Bot.Inventory.ChangeClothing(false, null);
+                    else Main.Bot.Inventory.ChangeClothing(false, (Clothing)Game1.player.Items[int.Parse(resultData["inventory_slot"])]);
                     break;
                 case "top_ring":
-                    if (resultData["action"] == "Unequip") ModEntry.Bot.Inventory.ChangeRings(null,true);
-                    else ModEntry.Bot.Inventory.ChangeRings((Ring)Game1.player.Items[int.Parse(resultData["inventory_slot"])], true);
+                    if (resultData["action"] == "Unequip") Main.Bot.Inventory.ChangeRings(null,true);
+                    else Main.Bot.Inventory.ChangeRings((Ring)Game1.player.Items[int.Parse(resultData["inventory_slot"])], true);
                     break;
                 case "bottom_ring":
-                    if (resultData["action"] == "Unequip") ModEntry.Bot.Inventory.ChangeRings(null,false);
-                    else ModEntry.Bot.Inventory.ChangeRings((Ring)Game1.player.Items[int.Parse(resultData["inventory_slot"])], false);
+                    if (resultData["action"] == "Unequip") Main.Bot.Inventory.ChangeRings(null,false);
+                    else Main.Bot.Inventory.ChangeRings((Ring)Game1.player.Items[int.Parse(resultData["inventory_slot"])], false);
                     break;
                 case "boots":
-                    if (resultData["action"] == "Unequip") ModEntry.Bot.Inventory.ChangeBoots(null);
-                    else ModEntry.Bot.Inventory.ChangeBoots((Boots)Game1.player.Items[int.Parse(resultData["inventory_slot"])]);
+                    if (resultData["action"] == "Unequip") Main.Bot.Inventory.ChangeBoots(null);
+                    else Main.Bot.Inventory.ChangeBoots((Boots)Game1.player.Items[int.Parse(resultData["inventory_slot"])]);
                     break;
             }
             
         }
     }
+    public class OpenInventory : NeuroAction
+    {
+        public override string Name => "open_inventory";
+        protected override string Description => "Open your inventory and allow altering the placement of items, this will also stop time.";
+        protected override JsonSchema? Schema => null;
+        protected override ExecutionResult Validate(ActionData actionData)
+        {
+            return ExecutionResult.Success();
+        }
+
+        protected override void Execute()
+        {
+            Main.Bot.PlayerInformation.OpenInventory();
+
+            ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
+            RegisterInventoryActions(actionWindow);
+            actionWindow.SetForce(0, "", "You have opened your inventory.");
+            actionWindow.Register();
+        }
+    }
+    public class ExitInventory : NeuroAction
+    {
+        public override string Name => "close_inventory";
+        protected override string Description => "Close your inventory and go back to playing the game, this will make time tick again.";
+        protected override JsonSchema? Schema => null;
+        protected override ExecutionResult Validate(ActionData actionData)
+        {
+            return ExecutionResult.Success();
+        }
+
+        protected override void Execute()
+        {
+            Main.Bot.PlayerInformation.ExitMenu();
+
+            ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
+            RegisterMainGameActions.RegisterActions(actionWindow);
+            RegisterMainGameActions.RegisterToolActions(actionWindow);
+            actionWindow.SetForce(0, "", "You have opened your inventory.");
+            actionWindow.Register();
+        }
+    }
     
-    // protected static Register
+    private static void RegisterInventoryActions(ActionWindow actionWindow)
+    {
+        actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing()).AddAction(new ExitInventory());
+    }
 }
