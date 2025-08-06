@@ -7,9 +7,9 @@ using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using Object = StardewValley.Object;
 
-namespace NeuroStardewValley.Source;
+namespace NeuroStardewValley.Source.Actions;
 
-public class MainGameActions
+public static class MainGameActions
 {
     public class Pathfinding : NeuroAction<Goal?>
     {

@@ -70,4 +70,13 @@ public class Utilities
 
 		return text;
 	}
+
+	public static string FormatBannerMessage(string message)
+	{
+		string formattedMessage = "";
+
+		formattedMessage = message.Replace("\n", " ");
+
+		return formattedMessage;
+	}
 }

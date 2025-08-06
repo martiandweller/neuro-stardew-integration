@@ -6,23 +6,25 @@ using StardewBotFramework.Source;
 using StardewBotFramework.Source.ObjectDestruction;
 using StardewValley;
 
-namespace NeuroStardewValley.Source;
+namespace NeuroStardewValley.Source.Actions;
 
-public class ToolActions
+public static class ToolActions
 {
 	public class RefillWateringCan : NeuroAction
 	{
 		public override string Name => "refill_watering_can";
 		protected override string Description => "This will attempt to refill your watering can in the nearest water.";
-		protected override JsonSchema? Schema => new ();
+		protected override JsonSchema Schema => new ();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
-			return ExecutionResult.Success();
+			return ExecutionResult.Success("Refilling watering can.");
 		}
 
 		protected override void Execute()
 		{
-			Main.Bot.Tool.RefillWateringCan();
+			Task.Run(() => Main.Bot.Tool.RefillWateringCan());
+			
+			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
 	

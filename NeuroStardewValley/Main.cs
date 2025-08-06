@@ -2,19 +2,12 @@
 using StardewBotFramework.Source;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
-using Context = NeuroSDKCsharp.Messages.Outgoing.Context;
 using NeuroSDKCsharp.Actions;
-using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source;
-using StardewBotFramework.Source.Events.EventArgs;
-using StardewModdingAPI.Enums;
-using StardewModdingAPI.Utilities;
+using NeuroStardewValley.Source.Actions;
 using StardewValley;
-using StardewValley.Buildings;
 using StardewValley.Menus;
-using StardewValley.TerrainFeatures;
 using Logger = NeuroStardewValley.Debug.Logger;
-using Object = StardewValley.Object;
 
 namespace NeuroStardewValley;
 
@@ -77,7 +70,7 @@ internal sealed class Main : Mod
         try
         {
             if (string.IsNullOrEmpty(_uriString)) throw new Exception($"UriString was not set correctly");
-            NeuroSDKCsharp.SdkSetup.Initialize("Stardew Valley",_uriString);
+            NeuroSDKCsharp.SdkSetup.Initialize(GameInstance,"Stardew Valley",_uriString);
         }
         catch (Exception exception)
         {
@@ -88,13 +81,11 @@ internal sealed class Main : Mod
     
     private void UpdateTicking(object? sender, UpdateTickingEventArgs e)
     {
-        WebsocketHandler.Instance!.Update(); // this is used to send websocket messages, This may be removed later if WebsocketHandler is changed to GameComponent as planned
-
         if (Game1.activeClickableMenu is TitleMenu)
         {
             Bot.MainMenuNavigation.SetTitleMenu((TitleMenu)Game1.activeClickableMenu);
 
-            if (!_config.AllowCharacterCreation)
+            if (!CanCreateCharacter)
             {
                 Bot.MainMenuNavigation.GotoLoad();
 
@@ -105,7 +96,7 @@ internal sealed class Main : Mod
                 }
             }
         
-            if (!_hasSentCharacter && _config.AllowCharacterCreation)
+            if (!_hasSentCharacter && CanCreateCharacter)
             {
                 Bot.MainMenuNavigation.GotoCreateNewCharacter();
             

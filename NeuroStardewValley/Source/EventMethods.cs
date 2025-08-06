@@ -1,6 +1,7 @@
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewModdingAPI.Enums;
@@ -39,25 +40,26 @@ public static class EventMethods
 		public static void OnHUDMessageAdded(object? sender, HUDMessageAddedEventArgs e)
 		{
 			string context;
+			string message = Utilities.Utilities.FormatBannerMessage(e.Message);
 			switch (e.WhatType) // these are the ones one the stardew wiki lists in the CommonTasks/UserInterface section
 			{
 				case 1:
-					context = $"You have completed an achievement: {e.Message}";
+					context = $"You have completed an achievement: {message}";
 					break;
 				case 2:
-					context = $"You have a new quest: {e.Message}";
+					context = $"You have a new quest: {message}";
 					break;
 				case 3:
-					context = $"An error has appeared it says: {e.Message}";
+					context = $"An error has appeared it says: {message}";
 					break;
 				case 4:
-					context = $"A banner message about stamina has appeared: {e.Message}";
+					context = $"A banner message about stamina has appeared: {message}";
 					break;
 				case 5:
-					context = $"A banner message about health has appeared: {e.Message}";
+					context = $"A banner message about health has appeared: {message}";
 					break;
 				default:
-					context = $"A banner message has appeared it says: {e.Message}";
+					context = $"A banner message has appeared it says: {message}";
 					break;
 			}
 			Context.Send(context);

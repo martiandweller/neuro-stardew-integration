@@ -10,9 +10,9 @@ using StardewValley;
 using StardewValley.Menus;
 using StardewValley.Objects;
 
-namespace NeuroStardewValley.Source;
+namespace NeuroStardewValley.Source.Actions;
 
-public class MainMenuActions
+public static class MainMenuActions
 {
     public class CreateCharacter : NeuroAction<Dictionary<string, string?>>
     {

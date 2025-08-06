@@ -11,9 +11,9 @@ using StardewValley.Inventories;
 using StardewValley.Objects;
 using StardewValley.Objects.Trinkets;
 
-namespace NeuroStardewValley.Source;
+namespace NeuroStardewValley.Source.Actions;
 
-public class InventoryActions
+ static class InventoryActions
 {
     public class MoveItem : NeuroAction<Item>
     {

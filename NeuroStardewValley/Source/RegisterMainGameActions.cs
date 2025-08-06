@@ -1,6 +1,6 @@
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Debug;
-using StardewBotFramework.Source;
+using NeuroStardewValley.Source.Actions;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewValley;
 using StardewValley.Locations;
@@ -33,20 +33,33 @@ public class RegisterMainGameActions
 			.AddAction(new ToolBarActions.ChangeCurrentToolbar());
 	}
 
-	public static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null)
+	public static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null,GameLocation? location = null)
 	{
 		if (e is not null)
 		{
 			if (e.NewLocation is Farm)
 			{
-				foreach (var item in Main.Bot.PlayerInformation.Inventory)
+				bool madeDestroyAction = false;
+				foreach (var item in Main.Bot.PlayerInformation.Inventory) // use this instead of .Any as can't declare wateringCan in any
 				{
-					if (item is WateringCan wateringCan)
+					switch (item)
 					{
-						if (!wateringCan.isBottomless.Value) window.AddAction(new ToolActions.RefillWateringCan());
-						window.AddAction(new ToolActions.WaterFarmLand());
+						case WateringCan wateringCan:
+						{
+							if (!wateringCan.isBottomless.Value) window.AddAction(new ToolActions.RefillWateringCan());
+							window.AddAction(new ToolActions.WaterFarmLand());
+							break;
+						}
+						case Pickaxe:
+						case Axe:
+						case MeleeWeapon:
+							if (!madeDestroyAction)
+							{
+								madeDestroyAction = true;
+								window.AddAction(new ToolActions.DestroyObject());
+							}
+							break;	
 					}
-					if (item is Pickaxe || item is Axe || item is MeleeWeapon) window.AddAction(new ToolActions.DestroyObject()); // can add action twice will not cause crash just a print
 				}
 			}
 
@@ -60,6 +73,13 @@ public class RegisterMainGameActions
 		}
 	}
 
+	public static void RegisterPostAction(BotWarpedEventArgs? e = null)
+	{
+		Logger.Info($"register actions again.");
+		ActionWindow window = ActionWindow.Create(Main.GameInstance);
+		RegisterActions(window);
+		RegisterToolActions(window,e,Game1.currentLocation);
+	}
 	public static void LoadGameActions()
 	{
 		ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);

@@ -4,9 +4,9 @@ using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using StardewValley;
 
-namespace NeuroStardewValley.Source;
+namespace NeuroStardewValley.Source.Actions;
 
-public class ChatActions
+public static class ChatActions
 {
     public class SendChatMessage : NeuroAction<List<string>>
     {
