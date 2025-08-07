@@ -2,9 +2,13 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Debug;
+using StardewBotFramework.Source;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Buildings;
+using StardewValley.Menus;
+using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Actions;
 
@@ -14,7 +18,7 @@ public static class ShippingBinActions
 	{
 		public override string Name => "go_to_nearest_shipping";
 		protected override string Description => "Walk and open nearest shipping bin";
-		protected override JsonSchema? Schema => new JsonSchema();
+		protected override JsonSchema? Schema => null;
 
 		protected override ExecutionResult Validate(ActionData actionData, out ShippingBin resultData)
 		{
@@ -42,9 +46,18 @@ public static class ShippingBinActions
 		protected override void Execute(ShippingBin? resultData)
 		{
 			if (resultData is null) return;
+			
+			Task.Run(async () => await ExecuteFunctions(resultData));
+		}
 
-			Main.Bot.Pathfinding.Goto(new Goal.GetToTile(resultData.tileX.Value, resultData.tileY.Value), false);
-			// Main.Bot.ShippingBinInteraction.SetUI();
+		private static async Task ExecuteFunctions(ShippingBin resultData)
+		{
+			await Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 0),
+				false);
+			Logger.Info($"simulate mouse button \n \n \n \n \n \n \n \n \n \n \n");
+			Main.Bot.SimulateMouse();
+			Logger.Info($"function mouse state: {Game1.input.GetMouseState().RightButton}");
+			Main.Bot.ShippingBinInteraction.OpenBin(resultData);
 		}
 
 		private static Dictionary<int, Queue<ShippingBin>> ClosestShippingBin(Point place, List<ShippingBin> bins)

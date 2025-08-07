@@ -20,7 +20,7 @@ public static class ChatActions
                 names[kvp.Key] = kvp.Value.Name;
             }
 
-            return new[] { "Test1", "Test2" };
+            // return new[] { "Test1", "Test2" };
             return names;
         }
         

@@ -3,12 +3,13 @@ using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.Locations;
 using StardewValley.Tools;
 
 namespace NeuroStardewValley.Source;
 
-public class RegisterMainGameActions
+public static class RegisterMainGameActions
 {
 	public static void RegisterActions(ActionWindow window,bool checkCanMove = false)
 	{
@@ -73,13 +74,31 @@ public class RegisterMainGameActions
 		}
 	}
 
+	public static void RegisterLocationActions(ActionWindow window,GameLocation location)
+	{
+		switch (location)
+		{
+			case Farm farm:
+				if (farm.buildings.Any(building => building.GetType() == typeof(ShippingBin)))
+				{
+					window.AddAction(new ShippingBinActions.GoToNearestShippingBin())
+						.AddAction(new ShippingBinActions.SellItems());
+				}
+
+				break;
+		}
+	}
+
 	public static void RegisterPostAction(BotWarpedEventArgs? e = null)
 	{
 		Logger.Info($"register actions again.");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		RegisterActions(window);
 		RegisterToolActions(window,e,Game1.currentLocation);
+		RegisterLocationActions(window,Game1.currentLocation);
+		window.Register();
 	}
+	
 	public static void LoadGameActions()
 	{
 		ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);

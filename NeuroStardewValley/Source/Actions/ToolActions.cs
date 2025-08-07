@@ -22,8 +22,12 @@ public static class ToolActions
 
 		protected override void Execute()
 		{
-			Task.Run(() => Main.Bot.Tool.RefillWateringCan());
+			Task.Run(async () => await ExecuteFunctions());
 			
+		}
+		private static async Task ExecuteFunctions()
+		{
+			await Main.Bot.Tool.RefillWateringCan();
 			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
@@ -82,7 +86,12 @@ public static class ToolActions
 
 		protected override void Execute(Point resultData)
 		{
-			Main.Bot.Tool.RemoveObject(resultData);
+			Task.Run(async () => await ExecuteFunctions(resultData));
+		}
+		private static async Task ExecuteFunctions(Point point)
+		{
+			await Main.Bot.Tool.RemoveObject(point);
+			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
 
@@ -140,8 +149,15 @@ public static class ToolActions
 
 		protected override void Execute(List<int>? resultData) //TODO: action window is closing and unregistering actions before action is run
 		{
-			// ModEntry.Bot.Tool.WaterAllPatches();
-			// await ModEntry.Bot.Tool.WaterSelectPatches(resultData[0],resultData[1],resultData[2],resultData[3]);
+			if (resultData is null) return;
+			
+			Task.Run(async () => await ExecuteFunctions(resultData));
+		}
+		
+		private static async Task ExecuteFunctions(List<int> resultData)
+		{
+			await Main.Bot.Tool.WaterSelectPatches(resultData[0],resultData[1],resultData[2],resultData[3]);
+			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using StardewBotFramework.Source;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -112,4 +113,5 @@ internal sealed class Main : Mod
             }
         }
     }
+
 }

@@ -84,6 +84,7 @@ public static class EventMethods
 			window.SetForce(0, "", "");
 			RegisterMainGameActions.RegisterActions(window);
 			RegisterMainGameActions.RegisterToolActions(window,e);
+			RegisterMainGameActions.RegisterLocationActions(window,Game1.currentLocation);
         
 			window.Register();
 		}

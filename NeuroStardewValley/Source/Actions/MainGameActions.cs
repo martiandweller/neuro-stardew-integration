@@ -74,11 +74,17 @@ public static class MainGameActions
             return ExecutionResult.Success();
         }
 
-        protected override async void Execute(Goal? goal)
+        protected override void Execute(Goal? goal)
         {
             if (goal is null) return; // probably find
 
+            Task.Run(async () => await ExecuteFunctions(goal));
+        }
+
+        private async Task ExecuteFunctions(Goal goal)
+        {
             await Main.Bot.Pathfinding.Goto(goal, false, _destructive);
+            RegisterMainGameActions.RegisterPostAction();
         }
     }
 
@@ -164,11 +170,17 @@ public static class MainGameActions
             return ExecutionResult.Success();
         }
 
-        protected override async void Execute(Goal? goal)
+        protected override void Execute(Goal? goal)
         {
             if (goal is null) return; // probably fine
 
+            Task.Run(async () => await ExecuteFunctions(goal));
+        }
+        
+        private async Task ExecuteFunctions(Goal goal)
+        {
             await Main.Bot.Pathfinding.Goto(goal, false, _destructive);
+            RegisterMainGameActions.RegisterPostAction();
         }
 
         private List<Point> GetExits()
