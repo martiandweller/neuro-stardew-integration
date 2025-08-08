@@ -34,11 +34,11 @@ internal sealed class Main : Mod
     public static Dictionary<string, string> DefaultCharacterOptions = new();
 
     private static bool _hasSentCharacter;
-
+    
     public override void Entry(IModHelper helper)
     {
         Bot = new StardewClient(helper, ModManifest,Monitor, helper.Multiplayer);
-        
+
         _config = Helper.ReadConfig<ModConfig>();
         _uriString = _config.WebsocketUri;
         CanCreateCharacter = _config.AllowCharacterCreation;

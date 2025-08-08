@@ -214,7 +214,7 @@ namespace NeuroStardewValley.Source.Actions;
         public override string Name => "change_equipped";
         protected override string Description => "This allows you to change equipped clothing and items";
 
-        protected override JsonSchema? Schema => new JsonSchema()
+        protected override JsonSchema? Schema => new()
         {
             Type = JsonSchemaType.Object,
             Required = new List<string> { "slot", "action" },
@@ -299,7 +299,7 @@ namespace NeuroStardewValley.Source.Actions;
     {
         public override string Name => "open_inventory";
         protected override string Description => "Open your inventory and allow altering the placement of items, this will also stop time.";
-        protected override JsonSchema? Schema => null;
+        protected override JsonSchema? Schema => new();
         protected override ExecutionResult Validate(ActionData actionData)
         {
             return ExecutionResult.Success();
@@ -319,7 +319,7 @@ namespace NeuroStardewValley.Source.Actions;
     {
         public override string Name => "close_inventory";
         protected override string Description => "Close your inventory and go back to playing the game, this will make time tick again.";
-        protected override JsonSchema? Schema => null;
+        protected override JsonSchema? Schema => new();
         protected override ExecutionResult Validate(ActionData actionData)
         {
             return ExecutionResult.Success();

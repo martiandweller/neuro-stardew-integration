@@ -6,7 +6,7 @@ namespace NeuroStardewValley.Source.Actions;
 
 public static class ToolBarActions
 {
-	public class ChangeSelectedToolbarSlot : NeuroAction<int>
+	public class ChangeSelectedToolbarSlot : NeuroActionS<int>
 	{
 		public override string Name => "change_toolbar_slot";
 		protected override string Description => "Change currently selected toolbar slot, the slots available are between 0,11, you can select a slot does not mean it has an item in it.";
@@ -20,7 +20,7 @@ public static class ToolBarActions
 			}
 		};
         
-		protected override ExecutionResult Validate(ActionData actionData, out int resultData)
+		protected override ExecutionResult Validate(ActionData actionData, out int? resultData)
 		{
 			string? slotStr = actionData.Data?.Value<string>("slot");
 
@@ -42,13 +42,14 @@ public static class ToolBarActions
 			return ExecutionResult.Success($"Changing to slot: {slot}");
 		}
 
-		protected override void Execute(int resultData)
+		protected override void Execute(int? resultData)
 		{
-			Main.Bot.Inventory.SelectSlot(resultData);
+			if (resultData is null) return;
+			Main.Bot.Inventory.SelectSlot((int)resultData);
 		}
 	}
 
-	public class ChangeCurrentToolbar : NeuroAction<int>
+	public class ChangeCurrentToolbar : NeuroActionS<int>
 	{
 		private static int ToolBarAmount => Main.Bot.Inventory.Inventory.Count / 12;
 		public override string Name => "change_toolbar_row";
@@ -63,7 +64,7 @@ public static class ToolBarActions
 			}
 		};
         
-		protected override ExecutionResult Validate(ActionData actionData, out int resultData)
+		protected override ExecutionResult Validate(ActionData actionData, out int? resultData)
 		{
 			string? rowStr = actionData.Data?.Value<string>("row");
 
@@ -85,9 +86,10 @@ public static class ToolBarActions
 			return ExecutionResult.Success($"Changing to row: {row}");
 		}
 
-		protected override void Execute(int resultData)
+		protected override void Execute(int? resultData)
 		{
-			Main.Bot.Inventory.SelectInventoryRowForToolbar(true,resultData);
+			if (resultData is null) return;
+			Main.Bot.Inventory.SelectInventoryRowForToolbar(true,(int)resultData);
 		}
 	}
 }

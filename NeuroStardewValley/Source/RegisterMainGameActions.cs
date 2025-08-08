@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
@@ -81,8 +82,7 @@ public static class RegisterMainGameActions
 			case Farm farm:
 				if (farm.buildings.Any(building => building.GetType() == typeof(ShippingBin)))
 				{
-					window.AddAction(new ShippingBinActions.GoToNearestShippingBin())
-						.AddAction(new ShippingBinActions.SellItems());
+					window.AddAction(new ShippingBinActions.GoToNearestShippingBin());
 				}
 
 				break;
@@ -92,6 +92,8 @@ public static class RegisterMainGameActions
 	public static void RegisterPostAction(BotWarpedEventArgs? e = null)
 	{
 		Logger.Info($"register actions again.");
+		StackTrace st = new StackTrace();
+		Logger.Info($"stacktrace: {st}");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		RegisterActions(window);
 		RegisterToolActions(window,e,Game1.currentLocation);

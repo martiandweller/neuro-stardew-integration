@@ -2,23 +2,30 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
-using NeuroStardewValley.Debug;
-using StardewBotFramework.Source;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Menus;
-using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Actions;
 
 public static class ShippingBinActions
 {
+	private static void RegisterBinActions()
+	{
+		ActionWindow window = ActionWindow.Create(Main.GameInstance);
+		window.AddAction(new ExitBin())
+			.AddAction(new SellItems())
+			.SetForce(0,"You have opened the nearest shipping bin, you can use this to sell items. This should be your main source of making money","")
+			.Register();
+	}
+	
 	public class GoToNearestShippingBin : NeuroAction<ShippingBin>
 	{
+		private static ShippingBin Bin;
 		public override string Name => "go_to_nearest_shipping";
 		protected override string Description => "Walk and open nearest shipping bin";
-		protected override JsonSchema? Schema => null;
+		protected override JsonSchema? Schema => new();
 
 		protected override ExecutionResult Validate(ActionData actionData, out ShippingBin resultData)
 		{
@@ -54,10 +61,13 @@ public static class ShippingBinActions
 		{
 			await Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 0),
 				false);
-			Logger.Info($"simulate mouse button \n \n \n \n \n \n \n \n \n \n \n");
-			Main.Bot.SimulateMouse();
-			Logger.Info($"function mouse state: {Game1.input.GetMouseState().RightButton}");
-			Main.Bot.ShippingBinInteraction.OpenBin(resultData);
+			// Logger.Info($"simulate mouse button \n \n \n \n \n \n \n \n \n \n \n");
+			// Main.Bot.SimulateMouse(); //TODO: this doesn't work rewrite it at some point
+			// Logger.Info($"function mouse state: {Game1.input.GetMouseState().RightButton}");
+			// Main.Bot.ShippingBinInteraction.OpenBin(resultData);
+			Bin = resultData;
+			HandleShippingBinUI();
+			RegisterBinActions();
 		}
 
 		private static Dictionary<int, Queue<ShippingBin>> ClosestShippingBin(Point place, List<ShippingBin> bins)
@@ -80,6 +90,48 @@ public static class ShippingBinActions
 
 			return points;
 		}
+
+		private static void HandleShippingBinUI()
+		{
+			ItemGrabMenu itemGrabMenu = new ItemGrabMenu(null, true, false, Utility.highlightShippableObjects, ShipItemReplica, "", null, true, true, false, true, false, 0, null, -1, Bin);
+			itemGrabMenu.initializeUpperRightCloseButton();
+			itemGrabMenu.setBackgroundTransparency(false);
+			itemGrabMenu.setDestroyItemOnClick(true);
+			itemGrabMenu.initializeShippingBin();
+			Game1.activeClickableMenu = itemGrabMenu;
+			Game1.playSound("shwip");
+			if (Game1.player.FacingDirection == 1)
+			{
+				Game1.player.Halt();
+			}
+			Game1.player.showCarrying();
+			Farm farm = (Farm)Game1.currentLocation;
+			if (farm.getShippingBin(Game1.player).Count == 0)
+			{
+				// Bin.showShipment(null);
+				return;
+			}
+			Bin.showShipment(farm.getShippingBin(Game1.player)[farm.getShippingBin(Game1.player).Count - 1]);
+		}
+		private static void ShipItemReplica(Item i,Farmer farmer)
+		{
+			Farm? farm = Game1.currentLocation as Farm;
+			farmer = Game1.player;
+			if (i != null)
+			{
+				Game1.player.removeItemFromInventory(i);
+				Farm obj = farm;
+				obj?.getShippingBin(Game1.player).Add(i);
+				
+				Bin.showShipment(i, false);
+				farm.lastItemShipped = i;
+				if (Game1.player.ActiveItem == null)
+				{
+					Game1.player.showNotCarrying();
+					Game1.player.Halt();
+				}
+			}
+		}
 	}
 
 	public class SellItems : NeuroAction<List<int>>
@@ -93,13 +145,17 @@ public static class ShippingBinActions
 			Required = new List<string> { "item_index" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["item_index"] = QJS.Type(JsonSchemaType.Array)
+				["item_index"] = new JsonSchema
+				{
+					Type = JsonSchemaType.Array,
+					Items = new JsonSchema { Type = JsonSchemaType.Integer },
+				}
 			}
 		};
 
 		protected override ExecutionResult Validate(ActionData actionData, out List<int>? resultData)
 		{
-			Array array = actionData.Data.Value<Array>("item_index");
+			Array? array = actionData.Data?.Value<Array>("item_index");
 
 			resultData = new();
 			if (array is null)
@@ -109,13 +165,13 @@ public static class ShippingBinActions
 			
 			foreach (var item in array)
 			{
-				if (item is not int)
+				if (item is not int i)
 				{
 					resultData = new List<int>();
 					return ExecutionResult.Failure("You have provided a value that is not an integer");
 				}
 				
-				resultData.Add((int)item);
+				resultData.Add(i);
 			}
 			
 			List<Item> items = new();
@@ -137,6 +193,22 @@ public static class ShippingBinActions
 				items.Add(Main.Bot.Inventory.Inventory[index]);	
 			}
 			Main.Bot.ShippingBinInteraction.ShipMultipleItems(items.ToArray());
+			RegisterBinActions();
+		}
+	}
+
+	public class ExitBin : NeuroAction
+	{
+		public override string Name => "exit_bin";
+		protected override string Description => "Close the bin and go back to the game";
+		protected override JsonSchema? Schema => new();
+		protected override ExecutionResult Validate(ActionData actionData)
+		{
+			return ExecutionResult.Success();
+		}
+		protected override void Execute()
+		{
+			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
 }

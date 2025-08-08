@@ -3,6 +3,7 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
+using StardewBotFramework.Source.Modules.Pathfinding.Algorithms;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using Object = StardewValley.Object;
@@ -155,14 +156,22 @@ public static class MainGameActions
             {
                 Logger.Error($"Values are invalid due to either being larger than map size or less than 0");
                 goal = null;
-                return ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map");
+                return ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map. If you were provided this position by the game, it is an issue with the mod.");
             }
 
             Main.Bot.Pathfinding.BuildCollisionMap();
+            AlgorithmBase.IPathing pathing = new AStar.Pathing();
             if (Main.Bot.Pathfinding.IsBlocked(exitPoint.X, exitPoint.Y) && (bool)!destructive)
             {
                 goal = null;
-                return ExecutionResult.Failure("You gave a position that is blocked.");
+                return ExecutionResult.Failure("You gave a position that is blocked. Maybe try something else!");
+            }
+
+            if (pathing.FindPath(new PathNode(Game1.player.TilePoint.X, Game1.player.TilePoint.Y, null),
+                    new Goal.GoalPosition(exitPoint.X, exitPoint.Y), Game1.currentLocation, 10000,_destructive).Result.Count == 0)
+            {
+                goal = null;
+                return ExecutionResult.Failure("You cannot make it to this exit, you should try something else.");
             }
 
             goal = new Goal.GoalPosition(exitPoint.X,exitPoint.Y);
@@ -180,7 +189,7 @@ public static class MainGameActions
         private async Task ExecuteFunctions(Goal goal)
         {
             await Main.Bot.Pathfinding.Goto(goal, false, _destructive);
-            RegisterMainGameActions.RegisterPostAction();
+            // TODO: add check for if character does not make it in a select amount of time to prevent softlock. 
         }
 
         private List<Point> GetExits()
