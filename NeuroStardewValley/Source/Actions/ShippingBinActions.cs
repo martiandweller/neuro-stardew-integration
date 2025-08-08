@@ -61,10 +61,6 @@ public static class ShippingBinActions
 		{
 			await Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 0),
 				false);
-			// Logger.Info($"simulate mouse button \n \n \n \n \n \n \n \n \n \n \n");
-			// Main.Bot.SimulateMouse(); //TODO: this doesn't work rewrite it at some point
-			// Logger.Info($"function mouse state: {Game1.input.GetMouseState().RightButton}");
-			// Main.Bot.ShippingBinInteraction.OpenBin(resultData);
 			Bin = resultData;
 			HandleShippingBinUI();
 			RegisterBinActions();
