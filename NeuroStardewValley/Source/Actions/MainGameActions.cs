@@ -331,10 +331,8 @@ public static class MainGameActions
 
             if (_pathfind)
             {
-                await Main.Bot.Pathfinding.Goto(new Goal.GoalPosition(_tile.X, _tile.Y), false,
-                    false); // get direction of final this to point
+                await Main.Bot.Pathfinding.Goto(new Goal.GoalPosition(_tile.X, _tile.Y), false); // get direction of final this to point
                 int direction = _directions.ToList().IndexOf(_direction);
-                ;
                 Main.Bot.Tool.UseTool(direction);
             }
             else
@@ -343,9 +341,11 @@ public static class MainGameActions
                 Logger.Info($"direction int: {direction}");
                 Main.Bot.Tool.UseTool(direction);
             }
+
+            RegisterMainGameActions.RegisterPostAction();
         }
 
-        private IEnumerable<string> GetAvailableItems()
+        private static IEnumerable<string> GetAvailableItems()
         {
             foreach (var item in Main.Bot.PlayerInformation.Inventory)
             {

@@ -54,7 +54,7 @@ public static class ChatActions
             if (action == "No reply")
             {
                 resultData[0] = "";
-                return ExecutionResult.Success();
+                return ExecutionResult.Success("Nothing was sent in chat.");
             }
 
             if (!Action.Contains(action))
@@ -71,15 +71,19 @@ public static class ChatActions
             {
                 return ExecutionResult.Failure($"{playerName} was not valid");
             }
-            resultData.Add(action);;
-            resultData.Add(message);;
+            resultData.Add(action);
+            resultData.Add(message);
             resultData.Add(playerName);
 
-            return ExecutionResult.Success();
+            var successString = $"You have sent {message} in {action} chat";
+            if (action == "Private") successString += $" to {playerName}";
+            return ExecutionResult.Success(successString);
         }
 
         protected override void Execute(List<string>? resultData)
         {
+            if (resultData is null) return;
+            
             if (resultData[0] == "Private")
             {
                 Main.Bot.Chat.SendPrivateMessage(resultData[2],resultData[1]);

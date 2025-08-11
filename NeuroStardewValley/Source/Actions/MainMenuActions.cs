@@ -1,14 +1,10 @@
-using System.Text;
-using Microsoft.Xna.Framework.Input;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
-using StardewBotFramework.Source;
-using StardewValley;
+using StardewValley.GameData.Pets;
 using StardewValley.Menus;
-using StardewValley.Objects;
 
 namespace NeuroStardewValley.Source.Actions;
 
@@ -61,7 +57,12 @@ public static class MainMenuActions
             }
             foreach (var kvp in EnabledCharacterOptions)
             {
-                data[kvp.Key] = actionData.Data?.Value<string>(kvp.Key);   
+                data[kvp.Key] = actionData.Data?.Value<string>(kvp.Key);
+                if (data[kvp.Key] != "animal_breed") continue;
+                if (!Main.Bot.CharacterCreation.ChangePet(data["animal_preference"]!, data["animal_breed"]!))
+                {
+                    return ExecutionResult.Failure("That is not a valid animal");
+                }
             }
             
             return ExecutionResult.Success();
@@ -79,14 +80,52 @@ public static class MainMenuActions
             SetCharacter(data,true);
         }
 
-        private static List<string> _catBreedStrings = new()
+        private static readonly List<string> CatBreedStrings = new()
         {
             "It is an orange tabby cat.", "It is a gray British shorthair cat.", "It is a yellow tabby cat.", "It is a white Persian cat.", "It is a black Bombay cat."
         };
-        private static List<string> _dogBreedStrings = new()
+        private static readonly List<string> DogBreedStrings = new()
         {
             "It is an a yellow Labrador Retriever.", "It is an orange Vizsla.", "It is a beige Poodle.", "It is a gray Schnauzer.", "It is a brown Doberman Pinscher."
         };
+
+        private static string[] GetValidPetNames()
+        {
+            IDictionary<string, PetData> petData = Main.Bot.CharacterCreation.GetPetData();
+
+            IEnumerable<KeyValuePair<string, PetData>> petNames =
+                petData.Where(kvp => kvp.Value.Breeds.Any(breed => breed.CanBeChosenAtStart));
+            string[] names = Array.Empty<string>();
+            foreach (var kvp in petNames)
+            {
+                names = names.Append(kvp.Key).ToArray();
+            }
+
+            return names;
+        }
+
+        private static string[] GetModdedPetBreeds()
+        {
+            IDictionary<string, PetData> petData = Main.Bot.CharacterCreation.GetPetData();
+            
+            IEnumerable<KeyValuePair<string, PetData>> petNames =
+                petData.Where(kvp => kvp.Value.Breeds.Any(breed => breed.CanBeChosenAtStart));
+            string[] index = Array.Empty<string>();
+            foreach (var kvp in petNames)
+            {
+                for (int i = 0; i < kvp.Value.Breeds.Count; i++)
+                {
+                    index = kvp.Key switch
+                    {
+                        "Dog" => index.Append(DogBreedStrings[i]).ToArray(),
+                        "Cat" => index.Append(CatBreedStrings[i]).ToArray(),
+                        _ => index.Append($"{kvp.Key}: {i}").ToArray()
+                    };
+                }
+            }
+
+            return index;
+        }
         
         private static List<string> RequiredOptions()
         {
@@ -163,9 +202,8 @@ public static class MainMenuActions
                             properties.Add(kvp.Key,QJS.Type(JsonSchemaType.String));
                             break;
                         case "animal_preference": // 2 animal types 0-3 options for each
-                            properties.Add(kvp.Key + "_animal_type",QJS.Enum(new []{"Cat","Dog"}));
-                            properties.Add(kvp.Key + "_dog_breed",QJS.Enum(_dogBreedStrings));// find better way to do this
-                            properties.Add(kvp.Key + "_cat_breed",QJS.Enum(_catBreedStrings));
+                            properties.Add(kvp.Key + "",QJS.Enum(GetValidPetNames()));
+                            properties.Add(kvp.Key + "",QJS.Enum(GetModdedPetBreeds()));// find better way to do this
                             break;
                         case "eye_hue":
                             properties.Add("eye_hue",QJS.Type(JsonSchemaType.Integer));
@@ -255,51 +293,51 @@ public static class MainMenuActions
                         Main.Bot.CharacterCreation.ChangeGender(choice["gender"] == "male");
                         break;
                     case "skin":
-                        Main.Bot.CharacterCreation.ChangeSkinColour(int.Parse(choice["skin"]));
+                        Main.Bot.CharacterCreation.ChangeSkinColour(int.Parse(choice["skin"]!));
                         break;
                     case "hair":
-                        Main.Bot.CharacterCreation.ChangeHair(int.Parse(choice["hair"]));
+                        Main.Bot.CharacterCreation.ChangeHair(int.Parse(choice["hair"]!));
                         break;
                     case "shirt":
-                        Main.Bot.CharacterCreation.ChangeShirt(int.Parse(choice["shirt"]));
+                        Main.Bot.CharacterCreation.ChangeShirt(int.Parse(choice["shirt"]!));
                         break;
                     case "pants":
-                        Main.Bot.CharacterCreation.ChangePants(int.Parse(choice["pants"]));
+                        Main.Bot.CharacterCreation.ChangePants(int.Parse(choice["pants"]!));
                         break;
                     case "accessories":
-                        Main.Bot.CharacterCreation.ChangeAccessory(int.Parse(choice["accessories"]));
+                        Main.Bot.CharacterCreation.ChangeAccessory(int.Parse(choice["accessories"]!));
                         break;
                     case "name":
-                        Main.Bot.CharacterCreation.SetName(choice["name"]);
+                        Main.Bot.CharacterCreation.SetName(choice["name"]!);
                         break;
                     case "farm_name":
-                        Main.Bot.CharacterCreation.SetFarmName(choice["farm_name"]);
+                        Main.Bot.CharacterCreation.SetFarmName(choice["farm_name"]!);
                         break;
                     case "favourite_thing":
-                        Main.Bot.CharacterCreation.SetFavThing(choice["favourite_thing"]);
+                        Main.Bot.CharacterCreation.SetFavThing(choice["favourite_thing"]!);
                         break;
                     case "animal_preference":
-                        Logger.Info($"animal: {choice["animal_preference"]} int: {_catBreedStrings.IndexOf(choice["animal_breed"]).ToString()}  string: {choice["animal_breed"]}");
-                        if (_dogBreedStrings.IndexOf(choice["animal_breed"]) == -1)
+                        Logger.Info($"animal: {choice["animal_preference"]} int: {CatBreedStrings.IndexOf(choice["animal_breed"]!).ToString()}  string: {choice["animal_breed"]}");
+                        if (DogBreedStrings.IndexOf(choice["animal_breed"]!) == -1)
                         {
-                            Main.Bot.CharacterCreation.ChangePet(choice["animal_preference"], _catBreedStrings.IndexOf(choice["animal_breed"]).ToString());
+                            Main.Bot.CharacterCreation.ChangePet(choice["animal_preference"]!, CatBreedStrings.IndexOf(choice["animal_breed"]!).ToString());
                         }
                         else
                         {
-                            Main.Bot.CharacterCreation.ChangePet(choice["animal_preference"], _dogBreedStrings.IndexOf(choice["animal_breed"]).ToString());
+                            Main.Bot.CharacterCreation.ChangePet(choice["animal_preference"]!, DogBreedStrings.IndexOf(choice["animal_breed"]!).ToString());
                         }
                         break;
                     case "eye_hue":
-                        Main.Bot.CharacterCreation.ChangeColour(0,int.Parse(choice["eye_hue"]),int.Parse(choice["eye_saturation"]),int.Parse(choice["eye_brightness"]));
+                        Main.Bot.CharacterCreation.ChangeColour(0,int.Parse(choice["eye_hue"]!),int.Parse(choice["eye_saturation"]!),int.Parse(choice["eye_brightness"]!));
                         break;
                     case "hair_hue":
-                        Main.Bot.CharacterCreation.ChangeColour(1,int.Parse(choice["hair_hue"]),int.Parse(choice["hair_saturation"]),int.Parse(choice["hair_brightness"]));
+                        Main.Bot.CharacterCreation.ChangeColour(1,int.Parse(choice["hair_hue"]!),int.Parse(choice["hair_saturation"]!),int.Parse(choice["hair_brightness"]!));
                         break;
                     case "pants_hue":
-                        Main.Bot.CharacterCreation.ChangeColour(2,int.Parse(choice["pants_hue"]),int.Parse(choice["pants_saturation"]),int.Parse(choice["pants_brightness"]));
+                        Main.Bot.CharacterCreation.ChangeColour(2,int.Parse(choice["pants_hue"]!),int.Parse(choice["pants_saturation"]!),int.Parse(choice["pants_brightness"]!));
                         break;
                     case "farm_type":
-                        Main.Bot.CharacterCreation.ChangeFarmTypes(int.Parse(choice["farm_type"]));
+                        Main.Bot.CharacterCreation.ChangeFarmTypes(int.Parse(choice["farm_type"]!));
                         break;
                 }    
             }
