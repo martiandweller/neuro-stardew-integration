@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Source.RegisterActions;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Buildings;

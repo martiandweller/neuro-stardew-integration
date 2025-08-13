@@ -8,6 +8,7 @@ using NeuroStardewValley.Source;
 using NeuroStardewValley.Source.Actions;
 using StardewValley;
 using StardewValley.Menus;
+using Context = NeuroSDKCsharp.Messages.Outgoing.Context;
 using Logger = NeuroStardewValley.Debug.Logger;
 
 namespace NeuroStardewValley;
@@ -20,7 +21,7 @@ internal sealed class Main : Mod
     /// </summary>
     public static Game GameInstance => GameRunner.instance;
     
-    public static StardewClient Bot;
+    public static StardewClient Bot = null!;
 
     private ModConfig? _config;
     private static string? _uriString;

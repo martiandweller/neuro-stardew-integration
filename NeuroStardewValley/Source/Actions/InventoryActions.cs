@@ -2,6 +2,7 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.RegisterActions;
 using Newtonsoft.Json.Linq;
 using StardewModdingAPI;
 using StardewModdingAPI.Framework.ModLoading.Rewriters.StardewValley_1_6;

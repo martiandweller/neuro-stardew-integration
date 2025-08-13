@@ -3,6 +3,8 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.RegisterActions;
+using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Algorithms;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
@@ -55,21 +57,12 @@ public static class MainGameActions
                 return ExecutionResult.Failure("Invalid or missing x/y position values.");
             }
 
-            if (int.Parse(xStr) > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || int.Parse(xStr) < 0 ||
-                int.Parse(yStr) > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || int.Parse(yStr) < 0)
-            {
-                Logger.Error($"Values are invalid due to either being larger than map size or less than 0");
-                goal = null;
-                return ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map");
-            }
-
-            Main.Bot.Pathfinding.BuildCollisionMap();
-            if (Main.Bot.Pathfinding.IsBlocked(x, y) && (bool)!destructive)
+            if (!TileUtilities.IsValidTile(new Point(x, y), out var reason, _destructive))
             {
                 goal = null;
-                return ExecutionResult.Failure("You gave a position that is blocked.");
+                return ExecutionResult.Failure(reason);
             }
-
+            
             goal = new Goal.GoalPosition(int.Parse(xStr), int.Parse(yStr));
             _destructive = (bool)destructive;
             return ExecutionResult.Success();

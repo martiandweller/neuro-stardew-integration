@@ -2,6 +2,7 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
+using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewModdingAPI.Enums;
@@ -95,19 +96,25 @@ public static class EventMethods
 			if (e.OldMenu is DialogueBox)
 			{
 				Logger.Info($"Removing dialogue box");
-				//TODO: remove dialogue actions or set up gameplay actions
+				Main.Bot.Dialogue.CurrentDialogue = null;
+				//TODO: remove dialogue actions or set up gameplay actions or shop actions
 			}
-			if (e.NewMenu is DialogueBox) // if advance does not set up dialogue box twice
+
+			switch (e.NewMenu)
 			{
-				Logger.Info($"add new menu dialogue box");
-            
-				//TODO: make dialogue actions
+				case DialogueBox dialogueBox:
+					Logger.Info($"add new menu dialogue box");
+					
+					Main.Bot.Dialogue.CurrentDialogueBox = dialogueBox;
+					RegisterDialogueActions.RegisterActions();
+					break;
 			}
 		}
 		
 		public static void OnDayStarted(object? sender, BotDayStartedEventArgs e)
 		{
 			string time = Utilities.Utilities.FormatTimeString();
+			SendQuestContext.SendContext();
 			if (Game1.player.passedOut)
 			{
 				// add items lost or whatever was lost
@@ -121,18 +128,68 @@ public static class EventMethods
 			}
 		}
 		
-		public static void OnDayEnded(object? sender, BotDayEndedEventArgs e)
+		public static void OnDayEnded(object? sender, BotDayEndedEventArgs e) // TODO: check this code works 
 		{
 			// TODO: register UI actions for end of day (or just automate this and only send context)
-			if (_skillsChangedThisDay.Count > 0)
+			foreach (var skills in _skillsChangedThisDay)
 			{
-				string skillContext = "Skills that have been changed this day: ";
-				foreach (var kvp in _skillsChangedThisDay)
+				if (skills.Value is 5 or 10)
 				{
-					skillContext += $"\n {kvp.Key.ToString()}: new level: {kvp.Value}";
+					string skillContext = "Skills that have been changed this day: ";
+					foreach (var kvp in _skillsChangedThisDay)
+					{
+						skillContext += $"\n {kvp.Key.ToString()}: new level: {kvp.Value}";
+					}
+					LevelUpMenu? menu = Game1.activeClickableMenu as LevelUpMenu;
+					if (menu is null) return;
+					Main.Bot.EndDaySkillMenu.SetMenu(menu);
+					while (!menu.isActive)
+					{
+					}
+					if (menu is { isActive: true} && menu.leftProfession.visible || menu.rightProfession.visible)
+					{
+						ActionWindow window = ActionWindow.Create(Main.GameInstance);
+						window.AddAction(new EndDayActions.PickProfession());
+						window.SetForce(0, "You have ended the day and have to select a profession for one of your skills", skillContext);
+					}
+
+					while (!menu.hasUpdatedProfessions || menu.isActive)
+					{
+					}
 				}
-				Context.Send(skillContext);
+				else
+				{
+					string skillContext = "Skills that have been changed this day: ";
+					foreach (var kvp in _skillsChangedThisDay)
+					{
+						skillContext += $"\n {kvp.Key.ToString()}: new level: {kvp.Value}";
+					}
+					Context.Send(skillContext);
+					LevelUpMenu? menu = Game1.activeClickableMenu as LevelUpMenu;
+					Main.Bot.EndDaySkillMenu.SetMenu(menu!);
+					Main.Bot.EndDaySkillMenu.SelectOkButton();
+					while (menu!.isActive)
+					{
+					}
+				}
 			}
+
+			_ = Delay(); // wait for it to show all results
+			string shipString = "These are the items you have shipped today,";
+			foreach (var item in Game1.player.displayedShippedItems)
+			{
+				int sell = item.sellToStorePrice();
+				shipString = string.Concat(shipString, $"\n{item.Name}: total sell price: {sell * item.Stack} single sell price: {sell}");
+			}
+			Context.Send(shipString);
+			ShippingMenu? shippingMenu = Game1.activeClickableMenu as ShippingMenu;
+			Main.Bot.EndDayShippingMenu.SetMenu(shippingMenu!);
+			Main.Bot.EndDayShippingMenu.AdvanceToNextDay();
+		}
+
+		static async Task Delay()
+		{
+			await Task.Delay(5000);
 		}
 	}
 

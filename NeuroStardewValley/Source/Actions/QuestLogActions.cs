@@ -1,0 +1,108 @@
+using System.Net.Http.Headers;
+using NeuroSDKCsharp.Actions;
+using NeuroSDKCsharp.Json;
+using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Source.RegisterActions;
+using NeuroStardewValley.Source.Utilities;
+using StardewValley;
+using StardewValley.Menus;
+
+namespace NeuroStardewValley.Source.Actions;
+
+public class QuestLogActions
+{
+	public class OpenLog : NeuroAction
+	{
+		public override string Name => "open_quest_log";
+		protected override string Description => "See all of your current quests and accept their rewards";
+		protected override JsonSchema? Schema => new();
+		protected override ExecutionResult Validate(ActionData actionData)
+		{
+			return ExecutionResult.Success(SendQuestContext.GetString());
+		}
+
+		protected override void Execute()
+		{
+			Game1.activeClickableMenu = new QuestLog();
+			RegisterActions();
+		}
+	}
+	
+	private class GetQuestReward : NeuroAction<int>
+	{
+		public override string Name => "get_reward";
+
+		protected override string Description =>
+			"Get the reward for a quest, this will only work if the quest has been compeleted";
+
+		protected override JsonSchema? Schema => new JsonSchema()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "quest_index" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["quest_index"] = QJS.Enum(Enumerable.Range(0, Game1.player.questLog.Count))
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out int resultData)
+		{
+			int? selectedIndex = actionData.Data?.Value<int>("quest_index");
+
+			if (selectedIndex is null)
+			{
+				resultData = -1;
+				return ExecutionResult.Failure($"You provided a null value as the index");
+			}
+
+			int index = (int)selectedIndex;
+			if (Enumerable.Range(0, Game1.player.questLog.Count).Contains(index))
+			{
+				resultData = -1;
+				return ExecutionResult.Failure($"You have provided an invalid index.");
+			}
+
+			resultData = index;
+			return ExecutionResult.Success($"opening the quest at {index}");
+		}
+
+		protected override void Execute(int resultData)
+		{
+			int pageFlips = resultData / QuestLog.questsPerPage;
+
+			for (int i = 0; i < pageFlips; i++)
+			{
+				Main.Bot.QuestLog.NextRightPage();
+			}
+
+			Main.Bot.QuestLog.OpenQuestIndex(resultData - pageFlips * QuestLog.questsPerPage);
+			Main.Bot.QuestLog.GetReward();
+			Main.Bot.QuestLog.CloseQuest();
+			RegisterActions();
+		}
+	}
+
+	private class CloseLog : NeuroAction
+	{
+		public override string Name => "close_log";
+		protected override string Description => "Close the quest log";
+		protected override JsonSchema? Schema => new();
+		protected override ExecutionResult Validate(ActionData actionData)
+		{
+			return ExecutionResult.Success();
+		}
+
+		protected override void Execute()
+		{
+			Main.Bot.QuestLog.CloseLog();
+			RegisterMainGameActions.RegisterPostAction();
+		}
+	}
+
+	private static void RegisterActions()
+	{
+		ActionWindow window = ActionWindow.Create(Main.GameInstance);
+		window.AddAction(new GetQuestReward()).AddAction(new CloseLog());
+		window.SetForce(0, "You are now in the quest log.", "");
+		window.Register();
+	}
+}

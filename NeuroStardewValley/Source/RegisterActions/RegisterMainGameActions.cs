@@ -8,7 +8,7 @@ using StardewValley.Buildings;
 using StardewValley.Locations;
 using StardewValley.Tools;
 
-namespace NeuroStardewValley.Source;
+namespace NeuroStardewValley.Source.RegisterActions;
 
 public static class RegisterMainGameActions
 {
@@ -30,6 +30,11 @@ public static class RegisterMainGameActions
 			window.AddAction(new MainGameActions.UseItem());	
 		}
 
+		if (Game1.player.questLog.Count > 0)
+		{
+			window.AddAction(new QuestLogActions.OpenLog());
+		}
+
 		window.AddAction(new InventoryActions.OpenInventory())
 			.AddAction(new ToolBarActions.ChangeSelectedToolbarSlot())
 			.AddAction(new ToolBarActions.ChangeCurrentToolbar());
@@ -37,9 +42,10 @@ public static class RegisterMainGameActions
 
 	public static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null,GameLocation? location = null)
 	{
-		if (e is not null)
+		if (e is null) return;
+		switch (e.NewLocation)
 		{
-			if (e.NewLocation is Farm)
+			case Farm:
 			{
 				bool madeDestroyAction = false;
 				foreach (var item in Main.Bot.PlayerInformation.Inventory) // use this instead of .Any as can't declare wateringCan in any
@@ -60,17 +66,20 @@ public static class RegisterMainGameActions
 								madeDestroyAction = true;
 								window.AddAction(new ToolActions.DestroyObject());
 							}
-							break;	
+							break;
 					}
 				}
-			}
 
-			if (e.NewLocation is Mine)
+				break;
+			}
+			case Mine:
 			{
 				if (Main.Bot.PlayerInformation.Inventory.Any(item => item.GetType() == typeof(Pickaxe)))
 				{
 					window.AddAction(new ToolActions.DestroyObject());
 				}
+
+				break;
 			}
 		}
 	}
@@ -92,8 +101,6 @@ public static class RegisterMainGameActions
 	public static void RegisterPostAction(BotWarpedEventArgs? e = null)
 	{
 		Logger.Info($"register actions again.");
-		StackTrace st = new StackTrace();
-		Logger.Info($"stacktrace: {st}");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		RegisterActions(window);
 		RegisterToolActions(window,e,Game1.currentLocation);
@@ -110,7 +117,8 @@ public static class RegisterMainGameActions
 			.AddAction(new MainGameActions.UseItem())
 			.AddAction(new InventoryActions.OpenInventory())
 			.AddAction(new ToolBarActions.ChangeSelectedToolbarSlot())
-			.AddAction(new ToolBarActions.ChangeCurrentToolbar());
+			.AddAction(new ToolBarActions.ChangeCurrentToolbar())
+			.AddAction(new QuestLogActions.OpenLog());
 		actionWindow.Register();
 	}
 }
