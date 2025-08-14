@@ -6,6 +6,8 @@ using StardewBotFramework.Source.Events.EventArgs;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Locations;
+using StardewValley.Menus;
+using StardewValley.Objects;
 using StardewValley.Tools;
 
 namespace NeuroStardewValley.Source.RegisterActions;
@@ -86,6 +88,27 @@ public static class RegisterMainGameActions
 
 	public static void RegisterLocationActions(ActionWindow window,GameLocation location)
 	{
+		bool madeChestAction = false;
+		foreach (var dict in location.Objects)
+		{
+			foreach (var kvp in dict)
+			{
+				switch (kvp.Value)
+				{
+					case Chest:
+						if (Game1.activeClickableMenu is null)
+						{
+							if (!madeChestAction)
+							{
+								window.AddAction(new WorldObjectActions.OpenChest());
+								madeChestAction = true;
+							}
+						}
+						break;
+				}
+			}
+		}
+		
 		switch (location)
 		{
 			case Farm farm:

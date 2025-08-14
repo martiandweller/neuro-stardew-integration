@@ -108,6 +108,9 @@ public static class EventMethods
 					Main.Bot.Dialogue.CurrentDialogueBox = dialogueBox;
 					RegisterDialogueActions.RegisterActions();
 					break;
+				case ShopMenu shopMenu:
+					Main.Bot.Shop.OpenShop(shopMenu); // this should be handled by OpenShopUi
+					break;
 			}
 		}
 		

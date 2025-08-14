@@ -2,7 +2,9 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
+using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Inventories;
 using StardewValley.Objects;
@@ -62,8 +64,23 @@ public static class WorldObjectActions
 		{
 			if (resultData is null) return;
 			
-			// TODO: walk to chest
+			foreach (var dict in Game1.currentLocation.Objects)
+			{
+				foreach (var kvp in dict)
+				{
+					if (kvp.Value == resultData)
+					{
+						Task.Run(async () => await ExecuteFunctions(kvp.Key.ToPoint()));
+					}
+				}
+			}
 			Open(resultData);
+			RegisterChestActions();
+		}
+
+		private static async Task ExecuteFunctions(Point position)
+		{
+			await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(position.X,position.Y),false,false);
 		}
 		
 		private static IInventory Open(Chest chest)
@@ -79,7 +96,7 @@ public static class WorldObjectActions
 		}
 	}
 	
-	public class CloseChest : NeuroAction
+	private class CloseChest : NeuroAction
 	{
 		public override string Name => "close_chest";
 		protected override string Description => "Close the currently opened chest.";
@@ -93,20 +110,17 @@ public static class WorldObjectActions
 		protected override void Execute()
 		{
 			Close();
+			RegisterMainGameActions.RegisterPostAction();
 		}
 		
 		private static void Close()
 		{
 			if (_chest is null) return;
-			Dictionary<Point, Object> objects = Utilities.Utilities.GetObjectsInLocation(_chest);
-
-			if (!objects.ContainsValue(_chest)) return;
-
-			Main.Bot.Chest.OpenChest(_chest);
+			Main.Bot.Chest.CloseChest();
 		}
 	}
 	
-	public class AddItemsToChest : NeuroAction<List<Item>>
+	private class AddItemsToChest : NeuroAction<List<Item>>
 	{
 		public override string Name => "insert_items";
 		protected override string Description => "Insert items in this chest.";
@@ -158,10 +172,11 @@ public static class WorldObjectActions
 			{
 				Main.Bot.Chest.PutItemInChest(_chest,item,Game1.player);
 			}
+			RegisterChestActions();
 		}
 	}
 	
-	public class TakeItemsFromChest : NeuroAction<List<Item>>
+	private class TakeItemsFromChest : NeuroAction<List<Item>>
 	{
 		public override string Name => "take_items";
 		protected override string Description => "Take items from this chest.";
@@ -215,6 +230,16 @@ public static class WorldObjectActions
 			{
 				Main.Bot.Chest.TakeItemFromChest(_chest,item,Game1.player);
 			}
+			RegisterChestActions();
 		}
+	}
+
+	private static void RegisterChestActions()
+	{
+		ActionWindow window = ActionWindow.Create(Main.GameInstance);
+
+		window.AddAction(new CloseChest()).AddAction(new AddItemsToChest()).AddAction(new TakeItemsFromChest());
+		window.SetForce(0,$"You are now in a chest's menu", string.Concat(_chest!.Items.Where(item => !string.IsNullOrEmpty(item.Name)))); // send chest items in state
+		window.Register();
 	}
 }
