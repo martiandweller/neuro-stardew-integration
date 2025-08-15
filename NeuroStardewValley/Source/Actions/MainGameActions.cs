@@ -144,8 +144,8 @@ public static class MainGameActions
                 return ExecutionResult.Failure($"The provided tile is not an exit");
             }
 
-            if (exitPoint.X > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || exitPoint.X < 0 ||
-                exitPoint.Y > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || exitPoint.Y < 0)
+            if (exitPoint.X > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || exitPoint.X < -1 || // some exits are at -1 IDK why I hate it
+                exitPoint.Y > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || exitPoint.Y < -1)
             {
                 Logger.Error($"Values are invalid due to either being larger than map size or less than 0");
                 goal = null;

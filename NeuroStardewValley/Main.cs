@@ -53,6 +53,7 @@ internal sealed class Main : Mod
         helper.Events.GameLoop.GameLaunched += GameLaunched;
         helper.Events.GameLoop.UpdateTicking += UpdateTicking;
         helper.Events.Display.MenuChanged += EventMethods.SingleEvents.CharacterCreatorMenu;
+        helper.Events.Display.Rendered += StardewBotFramework.Debug.DrawFoundTiles.OnRenderPathNode;
         Bot.GameEvents.DayStarted += EventMethods.MainGameLoop.OnDayStarted;
         Bot.GameEvents.DayEnded += EventMethods.MainGameLoop.OnDayEnded;
         Bot.GameEvents.BotWarped += EventMethods.MainGameLoop.OnWarped;

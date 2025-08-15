@@ -49,7 +49,7 @@ public static class WorldObjectActions
 				return ExecutionResult.Failure(reason);
 			}
 			
-			var objects = Utilities.Utilities.GetObjectsInLocation(new Chest());
+			var objects = Utilities.StringUtilities.GetObjectsInLocation(new Chest());
 			if (!objects.TryGetValue(point, out var obj))
 			{
 				resultData = null;
@@ -86,7 +86,7 @@ public static class WorldObjectActions
 		private static IInventory Open(Chest chest)
 		{
 			_chest = chest;
-			Dictionary<Point, Object> objects = Utilities.Utilities.GetObjectsInLocation(_chest);
+			Dictionary<Point, Object> objects = Utilities.StringUtilities.GetObjectsInLocation(_chest);
 
 			if (!objects.ContainsValue(_chest)) return new Inventory();
 

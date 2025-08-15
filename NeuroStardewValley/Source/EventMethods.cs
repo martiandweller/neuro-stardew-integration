@@ -32,7 +32,7 @@ public static class EventMethods
 		}
 		public static void GameLoopOnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 		{
-			string time = Utilities.Utilities.FormatTimeString();
+			string time = Utilities.StringUtilities.FormatTimeString();
 			Context.Send($"Your save has loaded and you are now in the game. You are in your farm-house, " +
 			             $"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.");
 			RegisterMainGameActions.LoadGameActions();
@@ -41,7 +41,7 @@ public static class EventMethods
 		public static void OnHUDMessageAdded(object? sender, HUDMessageAddedEventArgs e)
 		{
 			string context;
-			string message = Utilities.Utilities.FormatBannerMessage(e.Message);
+			string message = Utilities.StringUtilities.FormatBannerMessage(e.Message);
 			switch (e.WhatType) // these are the ones one the stardew wiki lists in the CommonTasks/UserInterface section
 			{
 				case 1:
@@ -110,13 +110,18 @@ public static class EventMethods
 					break;
 				case ShopMenu shopMenu:
 					Main.Bot.Shop.OpenShop(shopMenu); // this should be handled by OpenShopUi
+					RegisterStoreActions.RegisterDefaultShop();
+					break;
+				case CarpenterMenu carpenterMenu:
+					Main.Bot.FarmBuilding.SetCarpenterUI(carpenterMenu);
+					RegisterStoreActions.RegisterCarpenterActions();
 					break;
 			}
 		}
 		
 		public static void OnDayStarted(object? sender, BotDayStartedEventArgs e)
 		{
-			string time = Utilities.Utilities.FormatTimeString();
+			string time = Utilities.StringUtilities.FormatTimeString();
 			SendQuestContext.SendContext();
 			if (Game1.player.passedOut)
 			{
@@ -204,7 +209,7 @@ public static class EventMethods
 			{
 				 return;
 			}
-			string text = Utilities.Utilities.Format24HourString();
+			string text = Utilities.StringUtilities.Format24HourString();
 			Context.Send($"The current time is {text}, This is sent in the 24 hour notion.",true);
 		}
 		
