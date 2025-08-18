@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
@@ -6,7 +5,6 @@ using StardewBotFramework.Source.Events.EventArgs;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Locations;
-using StardewValley.Menus;
 using StardewValley.Objects;
 using StardewValley.Tools;
 
@@ -121,20 +119,25 @@ public static class RegisterMainGameActions
 		}
 	}
 
-	public static void RegisterPostAction(BotWarpedEventArgs? e = null)
+	public static void RegisterPostAction(BotWarpedEventArgs? e = null,int afterSeconds = 0,string query = "",string state = "",bool? ephemeral = null)
 	{
 		Logger.Info($"register actions again.");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		RegisterActions(window);
 		RegisterToolActions(window,e,Game1.currentLocation);
 		RegisterLocationActions(window,Game1.currentLocation);
+		if (afterSeconds != 0 || query == "" || state == "" || ephemeral != null)
+		{
+			Logger.Info($"ephemeral: {ephemeral is not null && ephemeral.Value}  {ephemeral}");
+			window.SetForce(afterSeconds, query, state, ephemeral is not null && ephemeral.Value);
+		}
 		window.Register();
 	}
 	
-	public static void LoadGameActions()
+	public static void LoadGameActions(string query = "",string state = "",bool ephemeral = false)
 	{
 		ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
-		actionWindow.SetForce(0,"","");
+		actionWindow.SetForce(0,query,state,ephemeral);
 		actionWindow.AddAction(new MainGameActions.Pathfinding())
 			.AddAction(new MainGameActions.PathFindToExit())
 			.AddAction(new MainGameActions.UseItem())

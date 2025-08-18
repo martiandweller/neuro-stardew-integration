@@ -3,10 +3,12 @@ using Microsoft.Xna.Framework.Input;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.GameData.Buildings;
 using StardewValley.Menus;
+using Rectangle = xTile.Dimensions.Rectangle;
 
 namespace NeuroStardewValley.Source.Actions;
 
@@ -49,12 +51,13 @@ public static class CarpenterActions
 					resultData = Main.Bot.FarmBuilding._carpenterMenu.Blueprints[i];
 				}
 			}
-			return ExecutionResult.Success($"You have selected");
+			return ExecutionResult.Success($"You have selected {resultData.DisplayName}");
 		}
 
 		protected override void Execute(CarpenterMenu.BlueprintEntry? resultData)
 		{
 			Main.Bot.FarmBuilding.ChangeBuilding(resultData!);
+			RegisterStoreActions.RegisterCarpenterActions();
 		}
 
 		private static IEnumerable<string> GetSchema()
@@ -65,7 +68,6 @@ public static class CarpenterActions
 			{
 				nameList.Add(blueprint.DisplayName);
 			}
-			IEnumerable<string> enumerable = nameList;
 
 			return nameList;
 		}
@@ -73,7 +75,7 @@ public static class CarpenterActions
 	
 	public class CreateBuilding : NeuroAction
 	{
-		public override string Name => "build_building";
+		public override string Name => "create_building";
 		protected override string Description => "This will move you to creating the building";
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
@@ -93,6 +95,7 @@ public static class CarpenterActions
 		protected override void Execute()
 		{
 			Main.Bot.FarmBuilding.InteractWithButton(Main.Bot.FarmBuilding._carpenterMenu!.okButton);
+			PlaceBuildingActions.RegisterPlaceBuilding();
 		}
 	}
 
@@ -178,8 +181,9 @@ public static class CarpenterActions
 		protected override void Execute(BuildingSkinMenu.SkinEntry? resultData)
 		{
 			Main.Bot.FarmBuilding.InteractWithButton(Main.Bot.FarmBuilding._carpenterMenu!.appearanceButton);
-			Main.Bot.FarmBuilding.SetBuildingUI((Game1.activeClickableMenu as BuildingSkinMenu)!);
+			// Main.Bot.FarmBuilding.SetBuildingUI((Game1.activeClickableMenu as BuildingSkinMenu)!);
 			Main.Bot.FarmBuilding.ChangeSkin(resultData!);
+			RegisterStoreActions.RegisterCarpenterActions();
 		}
 
 		private static List<string> GetSchema()
@@ -227,6 +231,7 @@ public static class PlaceBuildingActions
 
 			Game1.oldMouseState = new MouseState((x * Game1.tileSize) - Game1.viewport.X,(y * Game1.tileSize) - Game1.viewport.Y, 0, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
 			
+			Game1.viewport = new Rectangle(x * Game1.tileSize, y * Game1.tileSize, 1920, 1080);
 			bool canBuild = Main.Bot.FarmBuilding._carpenterMenu!.tryToBuild();
 			if (!canBuild)
 			{
@@ -242,5 +247,13 @@ public static class PlaceBuildingActions
 		{
 			Main.Bot.FarmBuilding.CreateBuilding(new Point(resultData.Key,resultData.Value));
 		}
+	}
+
+	public static void RegisterPlaceBuilding()
+	{
+		ActionWindow window = ActionWindow.Create(Main.GameInstance);
+		window.AddAction(new PlaceBuilding());
+		window.SetForce(0, "", "");
+		window.Register();
 	}
 }

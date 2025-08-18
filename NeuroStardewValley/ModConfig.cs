@@ -2,6 +2,7 @@ namespace NeuroStardewValley;
 
 public class ModConfig
 {
+    public bool Debug { get; set; } // this allows for many debug features to be used, many triggerable through hotkeys.
     public string WebsocketUri { get; set; }
     public bool AllowCharacterCreation { get; set; } // Allow Neuro to create her own character
     public int SaveSlot { get; set; } // save slot to use
@@ -11,6 +12,7 @@ public class ModConfig
 
     public ModConfig()
     {
+        Debug = true; // change to false for proper releases
         WebsocketUri = "ws://localhost:8000/ws/";
         AllowCharacterCreation = false;
         SaveSlot = 0;

@@ -32,16 +32,14 @@ public static class EventMethods
 		}
 		public static void GameLoopOnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 		{
-			string time = Utilities.StringUtilities.FormatTimeString();
-			Context.Send($"Your save has loaded and you are now in the game. You are in your farm-house, " +
-			             $"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.");
-			RegisterMainGameActions.LoadGameActions();
+			string time = StringUtilities.FormatTimeString();
+			RegisterMainGameActions.LoadGameActions("Your save has loaded and you are in the game. You have started in your farm-house.",$"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.");
 		}
 		
 		public static void OnHUDMessageAdded(object? sender, HUDMessageAddedEventArgs e)
 		{
 			string context;
-			string message = Utilities.StringUtilities.FormatBannerMessage(e.Message);
+			string message = StringUtilities.FormatBannerMessage(e.Message);
 			switch (e.WhatType) // these are the ones one the stardew wiki lists in the CommonTasks/UserInterface section
 			{
 				case 1:
@@ -70,7 +68,6 @@ public static class EventMethods
 	{
 		public static void OnWarped(object? sender, BotWarpedEventArgs e)
 		{
-			ActionWindow window = ActionWindow.Create(Main.GameInstance);
 			string tilesString = "";
 			foreach (var tile in WarpUtilities.GetTilesInLocation(e.NewLocation))
 			{
@@ -82,12 +79,7 @@ public static class EventMethods
 			string warpsString = WarpUtilities.GetWarpTilesString(warps);
         
 			Context.Send(warpsString,true);
-			window.SetForce(0, "", "");
-			RegisterMainGameActions.RegisterActions(window);
-			RegisterMainGameActions.RegisterToolActions(window,e);
-			RegisterMainGameActions.RegisterLocationActions(window,Game1.currentLocation);
-        
-			window.Register();
+			RegisterMainGameActions.RegisterPostAction(e,0,"Test Query","Test State",true);
 		}
 
 		public static void OnMenuChanged(object? sender, BotMenuChangedEventArgs e)
@@ -116,6 +108,12 @@ public static class EventMethods
 					Main.Bot.FarmBuilding.SetCarpenterUI(carpenterMenu);
 					RegisterStoreActions.RegisterCarpenterActions();
 					break;
+			}
+			
+			if (e is { NewMenu: null } and {OldMenu:not TitleMenu}) // ugly but it gets rid of warning and double send at start of game
+			{
+				Logger.Info($"old menu: {e.OldMenu.GetType()}");
+				RegisterMainGameActions.RegisterPostAction();
 			}
 		}
 		

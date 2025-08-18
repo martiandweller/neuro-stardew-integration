@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using StardewBotFramework.Source;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -8,7 +7,6 @@ using NeuroStardewValley.Source;
 using NeuroStardewValley.Source.Actions;
 using StardewValley;
 using StardewValley.Menus;
-using Context = NeuroSDKCsharp.Messages.Outgoing.Context;
 using Logger = NeuroStardewValley.Debug.Logger;
 
 namespace NeuroStardewValley;
@@ -66,6 +64,19 @@ internal sealed class Main : Mod
         Bot.GameEvents.DayStarted += EventMethods.LessImportantLoop.OnDayStartedSkills;
         Bot.GameEvents.UiTimeChanged += EventMethods.LessImportantLoop.OnUiTimeChanged;
         Bot.GameEvents.HUDMessageAdded += EventMethods.SingleEvents.OnHUDMessageAdded;
+        
+        if (_config.Debug)
+        {
+            helper.Events.Input.ButtonPressed += InputOnButtonPressed;
+        }
+    }
+
+    private void InputOnButtonPressed(object? sender, ButtonPressedEventArgs e)
+    {
+        if (e.Button == SButton.B)
+        {
+            Game1.activeClickableMenu = new CarpenterMenu("Robin");
+        }
     }
 
     private void GameLaunched(object? sender, GameLaunchedEventArgs e)

@@ -1,6 +1,9 @@
 using NeuroSDKCsharp.Actions;
+using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Utilities;
+using StardewValley;
+using StardewValley.GameData.Buildings;
 using StardewValley.Menus;
 
 namespace NeuroStardewValley.Source.RegisterActions;
@@ -27,11 +30,46 @@ public static class RegisterStoreActions
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
+		if (Main.Bot.FarmBuilding._carpenterMenu is null)
+		{
+			Logger.Error($"_carpenter menu is null");
+			return;
+		}
+		
 		window.AddAction(new CarpenterActions.CreateBuilding()).AddAction(new CarpenterActions.DemolishBuilding())
-			.AddAction(new CarpenterActions.UpgradeBuilding()).AddAction(new CarpenterActions.ChangeBuildingBlueprint())
-			.AddAction(new CarpenterActions.ChangeBuildingSkin());
+			.AddAction(new CarpenterActions.UpgradeBuilding()).AddAction(new CarpenterActions.ChangeBuildingBlueprint());
+		
+		if (Main.Bot.FarmBuilding.Building.CanBeReskinned())
+		{
+			if (Main.Bot.FarmBuilding._buildingSkinMenu is null || Main.Bot.FarmBuilding._carpenterMenu.currentBuilding != Main.Bot.FarmBuilding._buildingSkinMenu.Building)
+			{
+				Logger.Warning($"SETTING BUILDING UI");
+				Main.Bot.FarmBuilding.SetBuildingUI(new BuildingSkinMenu(Main.Bot.FarmBuilding.Building, true));
+			}
+			window.AddAction(new CarpenterActions.ChangeBuildingSkin());	
+		}
 
-		window.SetForce(0, $"You are now in the carpenter menu", "");
+		string state = "These are the possible buildings that you can either build, upgrade or demolish: ";
+		foreach (var entry in Main.Bot.FarmBuilding._carpenterMenu!.Blueprints)
+		{
+			state += $"\n{entry.DisplayName} time to build: {entry.BuildDays} days  cost to build: {entry.BuildCost}g";
+			if (entry.BuildMaterials is null) continue;
+			state += $" materials to build: ";
+			for (int i = 0; i < entry.BuildMaterials.Count; i++)
+			{
+				BuildingMaterial material = entry.BuildMaterials[i];
+				Item item = ItemRegistry.Create(material.Id);
+				state += $" {item.Name} amount: {material.Amount}";
+				if (i >= entry.BuildMaterials.Count - 1)
+				{
+					state += $".";
+					continue;
+				}
+
+				state += $",";
+			}
+		}
+		window.SetForce(0, $"You are now in the carpenter menu", state);
 		
 		window.Register();
 	}
