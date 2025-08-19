@@ -145,10 +145,10 @@ public static class ToolActions
 			}
 
 			resultData = new () {leftX,topY,rightX,bottomY};
-			return ExecutionResult.Success($"You are now watering the farm-land"); // TODO: the action result will get sent twice one successful other false as action could not be unregistered
+			return ExecutionResult.Success($"You are now watering the farm-land");
 		}
 
-		protected override void Execute(List<int>? resultData) //TODO: action window is closing and unregistering actions before action is run
+		protected override void Execute(List<int>? resultData)
 		{
 			if (resultData is null) return;
 			

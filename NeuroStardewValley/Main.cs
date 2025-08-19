@@ -77,6 +77,16 @@ internal sealed class Main : Mod
         {
             Game1.activeClickableMenu = new CarpenterMenu("Robin");
         }
+
+        if (e.Button == SButton.U)
+        {
+            Logger.Info($"tile: {Game1.currentCursorTile}");
+        }
+
+        if (e.Button == SButton.I)
+        {
+            Logger.Info($"pixel tile: {(Game1.currentCursorTile.X * Game1.tileSize)}  {(Game1.currentCursorTile.Y * Game1.tileSize)}");
+        }
     }
 
     private void GameLaunched(object? sender, GameLaunchedEventArgs e)

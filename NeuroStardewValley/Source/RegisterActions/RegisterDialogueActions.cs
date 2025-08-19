@@ -1,6 +1,7 @@
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
+using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Menus;
 
@@ -30,7 +31,12 @@ public static class RegisterDialogueActions
 				if (dialogueBox.characterDialogue is not null)
 				{
 					Main.Bot.Dialogue.SetCurrentDialogue(dialogueBox.characterDialogue);
-					stateString = $"{dialogueBox.characterDialogue.speaker.Name} is talking to you, they said: {dialogueBox.characterDialogue.getCurrentDialogue()} \n They look {dialogueBox.characterDialogue.CurrentEmotion}";
+					stateString = $"{dialogueBox.characterDialogue.speaker.Name} is talking to you, they said: {dialogueBox.characterDialogue.getCurrentDialogue()}";
+					if (DialogueUtils.ReplaceEmotionSymbols(dialogueBox.characterDialogue.CurrentEmotion) != "")
+					{
+						stateString +=
+							$"\n They look {DialogueUtils.ReplaceEmotionSymbols(dialogueBox.characterDialogue.CurrentEmotion)}";
+					}
 				}
 				else
 				{

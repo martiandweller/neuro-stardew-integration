@@ -36,8 +36,13 @@ public static class RegisterStoreActions
 			return;
 		}
 		
-		window.AddAction(new CarpenterActions.CreateBuilding()).AddAction(new CarpenterActions.DemolishBuilding())
-			.AddAction(new CarpenterActions.UpgradeBuilding()).AddAction(new CarpenterActions.ChangeBuildingBlueprint());
+		window.AddAction(new CarpenterActions.DemolishBuilding())
+		.AddAction(new CarpenterActions.CreateBuilding()).AddAction(new CarpenterActions.ChangeBuildingBlueprint());
+
+		if (Main.Bot.FarmBuilding._carpenterMenu.Blueprint.IsUpgrade)
+		{
+			window.AddAction(new CarpenterActions.UpgradeBuilding());
+		}
 		
 		if (Main.Bot.FarmBuilding.Building.CanBeReskinned())
 		{
@@ -70,6 +75,18 @@ public static class RegisterStoreActions
 			}
 		}
 		window.SetForce(0, $"You are now in the carpenter menu", state);
+		
+		window.Register();
+	}
+
+	public static void RegisterBlacksmithActions()
+	{
+		ActionWindow window = ActionWindow.Create(Main.GameInstance);
+
+		window.AddAction(new BlacksmithActions.OpenGeode()).AddAction(new BlacksmithActions.CloseMenu());
+
+		window.SetForce(0, $"You are in the blacksmiths, you can select a geode to open here.",
+			$"You should either select a geode to open or close the menu.");
 		
 		window.Register();
 	}

@@ -108,6 +108,10 @@ public static class EventMethods
 					Main.Bot.FarmBuilding.SetCarpenterUI(carpenterMenu);
 					RegisterStoreActions.RegisterCarpenterActions();
 					break;
+				case GeodeMenu geodeMenu:
+					Main.Bot.Blacksmith.OpenGeodeMenu(geodeMenu);
+					RegisterStoreActions.RegisterBlacksmithActions();
+					break;
 			}
 			
 			if (e is { NewMenu: null } and {OldMenu:not TitleMenu}) // ugly but it gets rid of warning and double send at start of game
