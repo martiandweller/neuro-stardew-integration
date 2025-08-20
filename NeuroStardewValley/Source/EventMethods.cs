@@ -112,9 +112,13 @@ public static class EventMethods
 					Main.Bot.Blacksmith.OpenGeodeMenu(geodeMenu);
 					RegisterStoreActions.RegisterBlacksmithActions();
 					break;
+				case LevelUpMenu levelUpMenu:
+					Main.Bot.EndDaySkillMenu.SetMenu(levelUpMenu);
+					RegisterLevelUpMenu.GetSkillContext(_skillsChangedThisDay);
+					break;
 			}
 			
-			if (e is { NewMenu: null } and {OldMenu:not TitleMenu}) // ugly but it gets rid of warning and double send at start of game
+			if (e is { NewMenu: null } and {OldMenu:not TitleMenu and not LevelUpMenu}) // ugly but it gets rid of warning and double send at start of game
 			{
 				Logger.Info($"old menu: {e.OldMenu.GetType()}");
 				RegisterMainGameActions.RegisterPostAction();
@@ -123,7 +127,7 @@ public static class EventMethods
 		
 		public static void OnDayStarted(object? sender, BotDayStartedEventArgs e)
 		{
-			string time = Utilities.StringUtilities.FormatTimeString();
+			string time = StringUtilities.FormatTimeString();
 			SendQuestContext.SendContext();
 			if (Game1.player.passedOut)
 			{
@@ -140,50 +144,8 @@ public static class EventMethods
 		
 		public static void OnDayEnded(object? sender, BotDayEndedEventArgs e) // TODO: check this code works 
 		{
-			// TODO: register UI actions for end of day (or just automate this and only send context)
-			foreach (var skills in _skillsChangedThisDay)
-			{
-				if (skills.Value is 5 or 10)
-				{
-					string skillContext = "Skills that have been changed this day: ";
-					foreach (var kvp in _skillsChangedThisDay)
-					{
-						skillContext += $"\n {kvp.Key.ToString()}: new level: {kvp.Value}";
-					}
-					LevelUpMenu? menu = Game1.activeClickableMenu as LevelUpMenu;
-					if (menu is null) return;
-					Main.Bot.EndDaySkillMenu.SetMenu(menu);
-					while (!menu.isActive)
-					{
-					}
-					if (menu is { isActive: true} && menu.leftProfession.visible || menu.rightProfession.visible)
-					{
-						ActionWindow window = ActionWindow.Create(Main.GameInstance);
-						window.AddAction(new EndDayActions.PickProfession());
-						window.SetForce(0, "You have ended the day and have to select a profession for one of your skills", skillContext);
-					}
-
-					while (!menu.hasUpdatedProfessions || menu.isActive)
-					{
-					}
-				}
-				else
-				{
-					string skillContext = "Skills that have been changed this day: ";
-					foreach (var kvp in _skillsChangedThisDay)
-					{
-						skillContext += $"\n {kvp.Key.ToString()}: new level: {kvp.Value}";
-					}
-					Context.Send(skillContext);
-					LevelUpMenu? menu = Game1.activeClickableMenu as LevelUpMenu;
-					Main.Bot.EndDaySkillMenu.SetMenu(menu!);
-					Main.Bot.EndDaySkillMenu.SelectOkButton();
-					while (menu!.isActive)
-					{
-					}
-				}
-			}
-
+			// TODO: Add something to test this I pray it works but it hasn't been tested
+			
 			_ = Delay(); // wait for it to show all results
 			string shipString = "These are the items you have shipped today,";
 			foreach (var item in Game1.player.displayedShippedItems)
@@ -192,9 +154,9 @@ public static class EventMethods
 				shipString = string.Concat(shipString, $"\n{item.Name}: total sell price: {sell * item.Stack} single sell price: {sell}");
 			}
 			Context.Send(shipString);
-			ShippingMenu? shippingMenu = Game1.activeClickableMenu as ShippingMenu;
-			Main.Bot.EndDayShippingMenu.SetMenu(shippingMenu!);
-			Main.Bot.EndDayShippingMenu.AdvanceToNextDay();
+			// ShippingMenu? shippingMenu = Game1.activeClickableMenu as ShippingMenu;
+			// Main.Bot.EndDayShippingMenu.SetMenu(shippingMenu!);
+			// Main.Bot.EndDayShippingMenu.AdvanceToNextDay();
 		}
 
 		static async Task Delay()
@@ -211,7 +173,7 @@ public static class EventMethods
 			{
 				 return;
 			}
-			string text = Utilities.StringUtilities.Format24HourString();
+			string text = StringUtilities.Format24HourString();
 			Context.Send($"The current time is {text}, This is sent in the 24 hour notion.",true);
 		}
 		

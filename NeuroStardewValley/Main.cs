@@ -87,6 +87,11 @@ internal sealed class Main : Mod
         {
             Logger.Info($"pixel tile: {(Game1.currentCursorTile.X * Game1.tileSize)}  {(Game1.currentCursorTile.Y * Game1.tileSize)}");
         }
+
+        if (e.Button == SButton.G)
+        {
+            Game1.player.setSkillLevel("Farming", 10);
+        }
     }
 
     private void GameLaunched(object? sender, GameLaunchedEventArgs e)

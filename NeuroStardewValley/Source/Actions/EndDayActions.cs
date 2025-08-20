@@ -32,7 +32,7 @@ public class EndDayActions
 		protected override JsonSchema? Schema => new JsonSchema()
 		{
 			Type = JsonSchemaType.Object,
-			Required = new List<string> { "item_index" },
+			Required = new List<string> { "profession" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
 				["profession"] = QJS.Enum(Options()),
