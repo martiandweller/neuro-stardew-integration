@@ -15,7 +15,7 @@ namespace NeuroStardewValley.Source;
 
 public static class EventMethods
 {
-	private static Dictionary<SkillType, int> _skillsChangedThisDay = new();
+	private static readonly Dictionary<SkillType, int> SkillsChangedThisDay = new();
 
 	public static class SingleEvents
 	{
@@ -89,6 +89,10 @@ public static class EventMethods
 			{
 				Logger.Info($"Removing dialogue box");
 				Main.Bot.Dialogue.CurrentDialogue = null;
+				if (Game1.player.isInBed.Value)
+				{
+					return; // we don't need to send any actions at this point
+				}
 				//TODO: remove dialogue actions or set up gameplay actions or shop actions
 			}
 
@@ -114,7 +118,11 @@ public static class EventMethods
 					break;
 				case LevelUpMenu levelUpMenu:
 					Main.Bot.EndDaySkillMenu.SetMenu(levelUpMenu);
-					RegisterLevelUpMenu.GetSkillContext(_skillsChangedThisDay);
+					RegisterLevelUpMenu.GetSkillContext(SkillsChangedThisDay);
+					break;
+				case ShippingMenu shippingMenu:
+					Main.Bot.EndDayShippingMenu.SetMenu(shippingMenu);
+					ShippingMenuContext();
 					break;
 			}
 			
@@ -142,31 +150,24 @@ public static class EventMethods
 			}
 		}
 		
-		public static void OnDayEnded(object? sender, BotDayEndedEventArgs e) // TODO: check this code works 
+		public static void OnDayEnded(object? sender, BotDayEndedEventArgs e)
 		{
-			// TODO: Add something to test this I pray it works but it hasn't been tested
-			
-			_ = Delay(); // wait for it to show all results
-			string shipString = "These are the items you have shipped today,";
-			foreach (var item in Game1.player.displayedShippedItems)
+			if (!Game1.player.passedOut)
 			{
-				int sell = item.sellToStorePrice();
-				shipString = string.Concat(shipString, $"\n{item.Name}: total sell price: {sell * item.Stack} single sell price: {sell}");
+				Context.Send($"You have gone to bed and the day has ended. Good night.");
+				return;
 			}
-			Context.Send(shipString);
-			// ShippingMenu? shippingMenu = Game1.activeClickableMenu as ShippingMenu;
-			// Main.Bot.EndDayShippingMenu.SetMenu(shippingMenu!);
-			// Main.Bot.EndDayShippingMenu.AdvanceToNextDay();
-		}
-
-		static async Task Delay()
-		{
-			await Task.Delay(5000);
+			Context.Send($"You have passed out and the day has ended. Maybe you should go back home earlier tomorrow.");
 		}
 	}
 
 	public static class LessImportantLoop
 	{
+		public static void OnBotDeath(object? sender, BotOnDeathEventArgs e)
+		{
+			Context.Send($"Oh No you died! It was at {e.DeathLocation.Name} {e.DeathPoint}. You lost: {e.ItemLostAmount}");
+		}
+		
 		public static void OnUiTimeChanged(object? sender, TimeEventArgs e)
 		{
 			if (Game1.timeOfDay % 100 != 0)
@@ -205,12 +206,27 @@ public static class EventMethods
 		
 		public static void OnBotSkillChanged(object? sender, BotSkillLevelChangedEventArgs e)
 		{
-			_skillsChangedThisDay.Add(e.ChangedSkill,e.NewLevel);
+			SkillsChangedThisDay.Add(e.ChangedSkill,e.NewLevel);
 		}
     
 		public static void OnDayStartedSkills(object? sender, BotDayStartedEventArgs e)
 		{
-			_skillsChangedThisDay.Clear();
+			SkillsChangedThisDay.Clear();
 		}
+	}
+
+	private static void ShippingMenuContext()
+	{
+		if (Game1.player.displayedShippedItems.Count == 0) return;
+
+		Task.Run(async () => await Task.Delay(Game1.player.displayedShippedItems.Count * 500)); // wait for it to show all results, we multiply as Task.Delay is in milliseconds
+		string shipString = "These are the items you have shipped today,";
+		foreach (var item in Game1.player.displayedShippedItems)
+		{
+			int sell = item.sellToStorePrice();
+			shipString = string.Concat(shipString, $"\n{item.Name}: total sell price: {sell * item.Stack} single sell price: {sell}");
+		}
+		Context.Send(shipString);
+		Main.Bot.EndDayShippingMenu.AdvanceToNextDay();
 	}
 }

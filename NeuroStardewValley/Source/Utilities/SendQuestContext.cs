@@ -9,7 +9,7 @@ public class SendQuestContext
 	public static string GetString()
 	{
 		string questString = "These are the current quests that are active.";
-		foreach (var quest in Game1.player.questLog)
+		foreach (var quest in Main.Bot.QuestLog.Quests)
 		{
 			// if (!quest.accepted.Value) continue;
 			questString = string.Concat(questString, $"\nTitle: {quest.questTitle}. Description: {quest.questDescription}. Objective: {quest.currentObjective}");

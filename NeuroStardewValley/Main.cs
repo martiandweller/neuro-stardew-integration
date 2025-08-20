@@ -5,6 +5,7 @@ using StardewModdingAPI.Events;
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Source;
 using NeuroStardewValley.Source.Actions;
+using StardewBotFramework.Source.Events.EventArgs;
 using StardewValley;
 using StardewValley.Menus;
 using Logger = NeuroStardewValley.Debug.Logger;
@@ -64,6 +65,7 @@ internal sealed class Main : Mod
         Bot.GameEvents.DayStarted += EventMethods.LessImportantLoop.OnDayStartedSkills;
         Bot.GameEvents.UiTimeChanged += EventMethods.LessImportantLoop.OnUiTimeChanged;
         Bot.GameEvents.HUDMessageAdded += EventMethods.SingleEvents.OnHUDMessageAdded;
+        Bot.GameEvents.OnBotDeath += EventMethods.LessImportantLoop.OnBotDeath;
         
         if (_config.Debug)
         {
