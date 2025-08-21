@@ -22,7 +22,6 @@ public static class TileUtilities
 				reason = "You gave a position that is blocked.";
 				return false;
 			}
-	
 		}
 		reason = "";
 		return true;

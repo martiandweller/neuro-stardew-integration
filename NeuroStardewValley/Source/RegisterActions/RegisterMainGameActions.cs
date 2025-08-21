@@ -1,6 +1,7 @@
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
+using NeuroStardewValley.Source.Actions.ObjectActions;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewValley;
 using StardewValley.Buildings;
@@ -22,12 +23,12 @@ public static class RegisterMainGameActions
 		
 		if (Game1.currentLocation.furniture.Count > 0)
 		{
-			window.AddAction(new MainGameActions.InteractWithFurniture());
+			window.AddAction(new WorldObjectActions.InteractWithFurniture());
 		}
 
 		if (Game1.player.CurrentItem is not null)
 		{
-			window.AddAction(new MainGameActions.UseItem());	
+			window.AddAction(new ToolActions.UseItem());	
 		}
 
 		if (Game1.player.questLog.Count > 0)
@@ -98,7 +99,7 @@ public static class RegisterMainGameActions
 						{
 							if (!madeChestAction)
 							{
-								window.AddAction(new WorldObjectActions.OpenChest());
+								window.AddAction(new ChestActions.OpenChest());
 								madeChestAction = true;
 							}
 						}
@@ -140,7 +141,7 @@ public static class RegisterMainGameActions
 		actionWindow.SetForce(0,query,state,ephemeral);
 		actionWindow.AddAction(new MainGameActions.Pathfinding())
 			.AddAction(new MainGameActions.PathFindToExit())
-			.AddAction(new MainGameActions.UseItem())
+			.AddAction(new ToolActions.UseItem())
 			.AddAction(new InventoryActions.OpenInventory())
 			.AddAction(new ToolBarActions.ChangeSelectedToolbarSlot())
 			.AddAction(new ToolBarActions.ChangeCurrentToolbar())

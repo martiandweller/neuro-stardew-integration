@@ -3,11 +3,7 @@ using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
-using Newtonsoft.Json.Linq;
-using StardewModdingAPI;
-using StardewModdingAPI.Framework.ModLoading.Rewriters.StardewValley_1_6;
 using StardewValley;
-using StardewValley.Enchantments;
 using StardewValley.Inventories;
 using StardewValley.Objects;
 using StardewValley.Objects.Trinkets;
@@ -16,14 +12,13 @@ namespace NeuroStardewValley.Source.Actions;
 
  static class InventoryActions
 {
-    public class MoveItem : NeuroAction<Item>
+    private class MoveItem : NeuroAction<Item>
     {
-        private int _position = 0;
-        
+        private int _position;
         public override string Name => "move_item";
         protected override string Description => $"Move an item in inventory, you have {Main.Bot.Inventory.MaxInventory} places in your inventory";
 
-        protected override JsonSchema? Schema => new ()
+        protected override JsonSchema Schema => new ()
         {
             Type = JsonSchemaType.Object,
             Required = new List<string> { "item", "position" },
@@ -66,10 +61,7 @@ namespace NeuroStardewValley.Source.Actions;
         protected override void Execute(Item? resultData)
         {
             Main.Bot.Inventory.MoveItem(resultData!, _position);
-
-            // stop issue with unexpected action result
-            NeuroActionHandler.UnregisterActions(this);
-            NeuroActionHandler.RegisterActions(this);
+            RegisterInventoryActions();
         }
 
         private IEnumerable<string> GetItemNames(Inventory inventory)
@@ -79,7 +71,6 @@ namespace NeuroStardewValley.Source.Actions;
             {
                 if (inventory[i] is null)
                 {
-                    items.Add($"Position: {i} has no item in it");
                     continue;
                 }
                 items.Add($"Item Name: {inventory[i].Name}, Item Amount: {inventory[i].stack}, Item Position: {i}");
@@ -110,7 +101,7 @@ namespace NeuroStardewValley.Source.Actions;
             return item;
         }
     }
-    public class InteractWithTrinkets : NeuroAction<Dictionary<string,string>>
+    private class InteractWithTrinkets : NeuroAction<Dictionary<string,string>>
     {
         private string[] TrinketAction()
         {
@@ -134,7 +125,7 @@ namespace NeuroStardewValley.Source.Actions;
 
         protected override string Description =>
             "This will allow you to interact with trinkets, you can either remove or equip trinkets";
-        protected override JsonSchema? Schema => new ()
+        protected override JsonSchema Schema => new ()
         {
             Type = JsonSchemaType.Object,
             Required = new List<string> { "slot", "action" },
@@ -188,6 +179,7 @@ namespace NeuroStardewValley.Source.Actions;
 
         protected override void Execute(Dictionary<string,string>? resultData)
         {
+            if (resultData is null) return;
             if (resultData["Action"] == "Equip")
             {
                 Trinket? trinket = Game1.player.trinketItems[int.Parse(resultData["Inventory"])];
@@ -198,9 +190,10 @@ namespace NeuroStardewValley.Source.Actions;
                 Trinket? trinket = Game1.player.trinketItems[int.Parse(resultData["TrinketSlot"])];
                 Main.Bot.Inventory.RemoveTrinket(trinket);
             }
+            RegisterInventoryActions();
         }
     }
-    public class ChangeClothing : NeuroAction<Dictionary<string,string>>
+    private class ChangeClothing : NeuroAction<Dictionary<string,string>>
     {
         private string[] Actions()
         {
@@ -215,7 +208,7 @@ namespace NeuroStardewValley.Source.Actions;
         public override string Name => "change_equipped";
         protected override string Description => "This allows you to change equipped clothing and items";
 
-        protected override JsonSchema? Schema => new()
+        protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
             Required = new List<string> { "slot", "action" },
@@ -232,7 +225,7 @@ namespace NeuroStardewValley.Source.Actions;
             string action = actionData.Data?.Value<string>("action")!;
             string inventory = actionData.Data?.Value<string>("inventory_slot")!;
 
-            if (slot is null || action is null || inventory is null && action == "equip")
+            if (action == "equip")
             {
                 resultData = new();
                 return ExecutionResult.Failure("should not be null");
@@ -256,16 +249,23 @@ namespace NeuroStardewValley.Source.Actions;
                 return ExecutionResult.Failure("inventory was not set correctly");
             }
             
+            
             Logger.Info($"slot keys: {slot}   action keys: {action}   inventory keys: {inventory}");
-            resultData = new();
-            resultData.Add("slot",slot);
-            resultData.Add("action",action);
-            resultData.Add("inventory_slot",inventory);
+            resultData = new()
+            {
+                { "slot", slot },
+                { "action", action }
+            };
+            if (inventory is not null)
+            {
+                resultData.Add("inventory_slot",inventory);
+            }
             return ExecutionResult.Success();
         }
 
         protected override void Execute(Dictionary<string,string>? resultData)
         {
+            if (resultData is null) return;
             switch (resultData["slot"])
             {
                 case "hat":
@@ -293,14 +293,14 @@ namespace NeuroStardewValley.Source.Actions;
                     else Main.Bot.Inventory.ChangeBoots((Boots)Game1.player.Items[int.Parse(resultData["inventory_slot"])]);
                     break;
             }
-            
+            RegisterInventoryActions();
         }
     }
     public class OpenInventory : NeuroAction
     {
         public override string Name => "open_inventory";
         protected override string Description => "Open your inventory and allow altering the placement of items, this will also stop time.";
-        protected override JsonSchema? Schema => new();
+        protected override JsonSchema Schema => new();
         protected override ExecutionResult Validate(ActionData actionData)
         {
             return ExecutionResult.Success();
@@ -309,18 +309,14 @@ namespace NeuroStardewValley.Source.Actions;
         protected override void Execute()
         {
             Main.Bot.PlayerInformation.OpenInventory();
-
-            ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
-            RegisterInventoryActions(actionWindow);
-            actionWindow.SetForce(0, "", "You have opened your inventory.");
-            actionWindow.Register();
+            RegisterInventoryActions();
         }
     }
     public class ExitInventory : NeuroAction
     {
         public override string Name => "close_inventory";
         protected override string Description => "Close your inventory and go back to playing the game, this will make time tick again.";
-        protected override JsonSchema? Schema => new();
+        protected override JsonSchema Schema => new();
         protected override ExecutionResult Validate(ActionData actionData)
         {
             return ExecutionResult.Success();
@@ -330,16 +326,54 @@ namespace NeuroStardewValley.Source.Actions;
         {
             Main.Bot.PlayerInformation.ExitMenu();
 
-            ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
-            RegisterMainGameActions.RegisterActions(actionWindow);
-            RegisterMainGameActions.RegisterToolActions(actionWindow);
-            actionWindow.SetForce(0, "", "You have opened your inventory.");
-            actionWindow.Register();
+            RegisterMainGameActions.RegisterPostAction();
         }
     }
     
-    private static void RegisterInventoryActions(ActionWindow actionWindow)
+    private static void RegisterInventoryActions()
     {
-        actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing()).AddAction(new ExitInventory());
+        ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
+        actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())
+            .AddAction(new ExitInventory()).AddAction(new MoveItem());
+        List<string> nameList = PrepareItemStringList(Game1.player.Items).Select(item => $"\nindex: {Game1.player.Items.IndexOf(item)}: {item.Name} amount: {item.Stack}").ToList();
+        List<string> itemList = PrepareItemStringList(Main.Bot.Inventory.GetEquippedClothing()).ToList();
+        List<string> trinkets = Main.Bot.Inventory.GetCurrentEquippedTrinkets(Game1.player)
+            .Where(trinket => trinket is not null).Select(trinket => trinket.Name).ToList();
+        string state = $"These are the items in your inventory: {string.Concat(nameList)}." +
+                       $"\nThese are the items clothes you have equipped {string.Concat(itemList)}.";
+        if (trinkets.Count > 0)
+        {
+            state += $"\nThis is the trinket you have equipped currently: {string.Concat(trinkets)}";
+        }
+        actionWindow.SetForce(0, "You are in your inventory.",
+            state);
+        actionWindow.Register();
+    }
+
+    private static IEnumerable<string> PrepareItemStringList(Dictionary<string,Item> getEquippedClothing)
+    {
+        Inventory inventory = new Inventory();
+        inventory.AddRange(getEquippedClothing.Values);
+        IEnumerable<Item> items = PrepareItemStringList(inventory);
+        List<string> itemString = new(); 
+        using var enumerator = items.GetEnumerator();
+        while (enumerator.MoveNext())
+        {
+            foreach (var kvp in getEquippedClothing)
+            {
+                if (kvp.Value == enumerator.Current)
+                {
+                    itemString.Add($"\n{kvp.Key}: {enumerator.Current.Name}");
+                }
+            }
+        }
+
+        return itemString;
+    }
+
+    private static IEnumerable<Item> PrepareItemStringList(Inventory items)
+    {
+        IEnumerable<Item> list = items.Where(item => item is not null).Where(item => !string.IsNullOrEmpty(item.Name));
+        return list;
     }
 }

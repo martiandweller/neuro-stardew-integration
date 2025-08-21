@@ -82,9 +82,23 @@ public static class RegisterStoreActions
 	public static void RegisterBlacksmithActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
+		List<Item> items = new();
+		foreach (var item in Main.Bot.Inventory.Inventory)
+		{
+			if (!Utility.IsGeode(item))
+			{
+				continue;
+			}
+			
+			items.Add(item);
+		}
+		if (items.Count > 0)
+		{
+			window.AddAction(new BlacksmithActions.OpenGeode());
+		}
 
-		window.AddAction(new BlacksmithActions.OpenGeode()).AddAction(new BlacksmithActions.CloseMenu());
-
+		window.AddAction(new BlacksmithActions.CloseMenu());
+		
 		window.SetForce(0, $"You are in the blacksmiths, you can select a geode to open here.",
 			$"You should either select a geode to open or close the menu.");
 		

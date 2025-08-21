@@ -2,8 +2,10 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using StardewBotFramework.Source;
+using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewBotFramework.Source.ObjectDestruction;
 using StardewValley;
 
@@ -11,6 +13,144 @@ namespace NeuroStardewValley.Source.Actions;
 
 public static class ToolActions
 {
+	
+    public class UseItem : NeuroAction<Item?>
+    {
+        private static bool _pathfind;
+        private static string _direction = "";
+        private static Point _tile = new();
+
+        private readonly IEnumerable<string> _directions = new[] { "north", "east", "south", "west" };
+
+        public override string Name => "use_item";
+
+        protected override string Description => "This will use the currently selected item in a specified direction.";
+
+        protected override JsonSchema Schema => new()
+        {
+            Type = JsonSchemaType.Object,
+            Required = new List<string> { "item", "direction" },
+            Properties = new Dictionary<string, JsonSchema>
+            {
+                ["item"] = QJS.Enum(GetAvailableItems()),
+                ["direction"] = QJS.Enum(_directions),
+                ["tile_x"] = QJS.Type(JsonSchemaType.Integer),
+                ["tile_y"] = QJS.Type(JsonSchemaType.Integer)
+            }
+        };
+
+        protected override ExecutionResult Validate(ActionData actionData, out Item? selectedItem)
+        {
+            string? item = actionData.Data?.Value<string>("item");
+            string? direction = actionData.Data?.Value<string>("direction");
+            string? xStr = actionData.Data?.Value<string>("tile_x");
+            string? yStr = actionData.Data?.Value<string>("tile_y");
+
+            Logger.Info($"item: {item}   direction: {direction}   xStr: {xStr}    yStr: {yStr}");
+            Console.WriteLine($"item: {item}   direction: {direction}   xStr: {xStr}    yStr: {yStr}");
+
+            if (item is null)
+            {
+                selectedItem = null;
+                return ExecutionResult.Failure($"You have not provided the item to use");
+            }
+
+            string[] items = GetAvailableItems().ToArray();
+            if (!items.Contains(item)) ExecutionResult.Failure($"{item} is not a valid item");
+
+            if (direction is not null && xStr is not null && yStr is not null)
+            {
+                _direction = direction!;
+                _pathfind = true;
+            }
+            else if (direction is not null && xStr is null && yStr is null)
+            {
+                _direction = direction;
+                _pathfind = false;
+            }
+            else
+            {
+                ExecutionResult.Failure($"This combination of arguments is not allowed");
+            }
+
+            selectedItem = null;
+            foreach (var tool in Main.Bot.Inventory.GetInventory())
+            {
+                if (tool is null) continue;
+
+                if (tool.Name == item)
+                {
+                    selectedItem = tool;
+                    break;
+                }
+
+                selectedItem = null;
+            }
+
+            if (selectedItem is null)
+            {
+                return ExecutionResult.Failure($"the item you tried to use could not be found in your inventory");
+            }
+
+            return ExecutionResult.Success();
+        }
+
+        protected override async void Execute(Item? selectedItem)
+        {
+            for (int i = 0; i < Main.Bot.Inventory.GetInventory().Count; i++)
+            {
+                if (Main.Bot.Inventory.GetInventory()[i] is null)
+                {
+                    Logger.Info($"item at {i} is null");
+                    continue;
+                }
+
+                Logger.Info($"{Main.Bot.Inventory.GetInventory()[i].Name} is at {i}");
+            }
+
+            int index = Main.Bot.Inventory.GetInventory().ToList().IndexOf(selectedItem);
+
+            if (index > 11) // first line
+            {
+                Main.Bot.Inventory.SelectInventoryRowForToolbar(true);
+                if (index > 23) // second line
+                {
+                    Main.Bot.Inventory.SelectInventoryRowForToolbar(true);
+                }
+            }
+
+            int itemIndex = Main.Bot.Inventory.GetInventory().IndexOf(selectedItem);
+            Main.Bot.Inventory.SelectSlot(itemIndex);
+
+            if (_pathfind)
+            {
+                await Main.Bot.Pathfinding.Goto(new Goal.GoalPosition(_tile.X, _tile.Y), false); // get direction of final this to point
+                int direction = _directions.ToList().IndexOf(_direction);
+                Main.Bot.Tool.UseTool(direction);
+            }
+            else
+            {
+                int direction = _directions.ToList().IndexOf(_direction);
+                Logger.Info($"direction int: {direction}");
+                Main.Bot.Tool.UseTool(direction);
+            }
+
+            RegisterMainGameActions.RegisterPostAction();
+        }
+
+        private static IEnumerable<string> GetAvailableItems()
+        {
+            foreach (var item in Main.Bot.PlayerInformation.Inventory)
+            {
+                if (item is Tool)
+                {
+                    yield return item.Name;
+                }
+            }
+        }
+    }
+    
+	
 	public class RefillWateringCan : NeuroAction
 	{
 		public override string Name => "refill_watering_can";

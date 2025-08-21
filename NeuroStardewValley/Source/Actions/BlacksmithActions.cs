@@ -2,7 +2,11 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.RegisterActions;
+using StardewBotFramework.Source;
 using StardewValley;
+using StardewValley.Menus;
 
 namespace NeuroStardewValley.Source.Actions;
 
@@ -38,15 +42,32 @@ public static class BlacksmithActions
 				return ExecutionResult.Failure($"{index} is not a geode");
 			}
 
+			if (Game1.player._money < 25)
+			{
+				return ExecutionResult.Failure($"You cannot afford to open a geode, you need 25g to open a geode.");
+			}
+			
+			if (Game1.player.freeSpotsInInventory() == 0 && Main.Bot.Inventory.Inventory[index].Stack > 1)
+			{
+				return ExecutionResult.Failure($"You do not have enough free space in your inventory, so you cannot open this geode. You should try to free some space.");
+			}
+
 			resultData = index;
 			return ExecutionResult.Success();
 		}
 
 		protected override void Execute(int resultData)
 		{
-			Item? geodeTreasure = Main.Bot.Blacksmith.OpenGeode(resultData);
-			if (geodeTreasure is null) return;
-			Context.Send($"You got a {geodeTreasure.Name} from the geode!");
+			Main.Bot.Blacksmith.OpenGeode(resultData);
+			Task.Run(async () => await SendTreasureContext()); // geode item takes time to be added to menu
+		}
+
+		private static async Task SendTreasureContext()
+		{
+			await Task.Delay(3000); // magic number but it looks good so I don't card
+			GeodeMenu? menu = Game1.activeClickableMenu as GeodeMenu;
+			Context.Send($"You got a {menu?.geodeTreasure.Name} from the geode!");
+			RegisterStoreActions.RegisterBlacksmithActions();
 		}
 
 		private static string[] GetSchema()

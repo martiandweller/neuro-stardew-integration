@@ -75,7 +75,7 @@ public static class MainMenuActions
                 Main.Bot.CharacterCreation.StartGame();
                 return;
             }
-            if (data == new Dictionary<string, string>()) return;
+            if (data == new Dictionary<string, string>() || data is null) return;
             
             SetCharacter(data,true);
         }

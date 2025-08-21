@@ -8,7 +8,7 @@ using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Menus;
 
-namespace NeuroStardewValley.Source.Actions;
+namespace NeuroStardewValley.Source.Actions.ObjectActions;
 
 public static class ShippingBinActions
 {

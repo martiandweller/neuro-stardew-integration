@@ -3,9 +3,8 @@ using StardewBotFramework.Source;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using NeuroSDKCsharp.Actions;
-using NeuroStardewValley.Source;
 using NeuroStardewValley.Source.Actions;
-using StardewBotFramework.Source.Events.EventArgs;
+using NeuroStardewValley.Source.EventClasses;
 using StardewValley;
 using StardewValley.Menus;
 using Logger = NeuroStardewValley.Debug.Logger;
@@ -44,28 +43,29 @@ internal sealed class Main : Mod
         CanCreateCharacter = _config.AllowCharacterCreation;
         _configSaveSlot = _config.SaveSlot;
         
-        EnabledCharacterOptions = this._config.CharacterCreationOptions;
-        DefaultCharacterOptions = this._config.CharacterCreationDefault;
+        EnabledCharacterOptions = _config.CharacterCreationOptions;
+        DefaultCharacterOptions = _config.CharacterCreationDefault;
         
         Logger.SetMonitor(Monitor);
         
         helper.Events.GameLoop.GameLaunched += GameLaunched;
         helper.Events.GameLoop.UpdateTicking += UpdateTicking;
-        helper.Events.Display.MenuChanged += EventMethods.SingleEvents.CharacterCreatorMenu;
+        helper.Events.Display.MenuChanged += OneTimeEvents.CharacterCreatorMenu;
         helper.Events.Display.Rendered += StardewBotFramework.Debug.DrawFoundTiles.OnRenderPathNode;
-        Bot.GameEvents.DayStarted += EventMethods.MainGameLoop.OnDayStarted;
-        Bot.GameEvents.DayEnded += EventMethods.MainGameLoop.OnDayEnded;
-        Bot.GameEvents.BotWarped += EventMethods.MainGameLoop.OnWarped;
-        Bot.GameEvents.MenuChanged += EventMethods.MainGameLoop.OnMenuChanged;
+        Bot.GameEvents.DayStarted += MainGameLoopEvents.OnDayStarted;
+        Bot.GameEvents.DayEnded += MainGameLoopEvents.OnDayEnded;
+        Bot.GameEvents.BotWarped += MainGameLoopEvents.OnWarped;
+        Bot.GameEvents.MenuChanged += MainGameLoopEvents.OnMenuChanged;
+        
+        helper.Events.GameLoop.SaveLoaded += OneTimeEvents.GameLoopOnSaveLoaded;
 
-        helper.Events.GameLoop.SaveLoaded += EventMethods.SingleEvents.GameLoopOnSaveLoaded;
-
-        Bot.GameEvents.ChatMessageReceived += EventMethods.LessImportantLoop.OnChatMessage;
-        Bot.GameEvents.BotSkillChanged += EventMethods.LessImportantLoop.OnBotSkillChanged;
-        Bot.GameEvents.DayStarted += EventMethods.LessImportantLoop.OnDayStartedSkills;
-        Bot.GameEvents.UiTimeChanged += EventMethods.LessImportantLoop.OnUiTimeChanged;
-        Bot.GameEvents.HUDMessageAdded += EventMethods.SingleEvents.OnHUDMessageAdded;
-        Bot.GameEvents.OnBotDeath += EventMethods.LessImportantLoop.OnBotDeath;
+        Bot.GameEvents.ChatMessageReceived += LessImportantEvents.OnChatMessage;
+        Bot.GameEvents.BotSkillChanged += LessImportantEvents.OnBotSkillChanged;
+        Bot.GameEvents.DayStarted += LessImportantEvents.OnDayStartedSkills;
+        Bot.GameEvents.UiTimeChanged += LessImportantEvents.OnUiTimeChanged;
+        Bot.GameEvents.HUDMessageAdded += OneTimeEvents.OnHUDMessageAdded;
+        Bot.GameEvents.OnBotDeath += LessImportantEvents.OnBotDeath;
+        Bot.GameEvents.BotInventoryChanged += LessImportantEvents.InventoryChanged;
         
         if (_config.Debug)
         {
@@ -136,7 +136,7 @@ internal sealed class Main : Mod
                     _hasSentCharacter = true;
                     Bot.CharacterCreation.SetCreator((CharacterCustomization)TitleMenu.subMenu);
                     ActionWindow window = ActionWindow.Create(GameInstance)
-                        .SetForce(2, "", "")
+                        .SetForce(2, "You should create your character, you will not be able to change this later.", "You are now in the character creator menu.")
                         .AddAction(new MainMenuActions.CreateCharacter());
                     window.Register();
                 }

@@ -10,9 +10,9 @@ using StardewValley.Inventories;
 using StardewValley.Objects;
 using Object = StardewValley.Object;
 
-namespace NeuroStardewValley.Source.Actions;
+namespace NeuroStardewValley.Source.Actions.ObjectActions;
 
-public static class WorldObjectActions
+public static class ChestActions
 {
 	private static Chest? _chest;
 
@@ -24,39 +24,39 @@ public static class WorldObjectActions
 		protected override JsonSchema? Schema => new JsonSchema()
 		{
 			Type = JsonSchemaType.Object,
-			Required = new List<string> { "chest_tile_x", "chest_tile_y" },
+			Required = new List<string> { "chest_position" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["chest_tile_x"] = QJS.Type(JsonSchemaType.Integer),
-				["chest_tile_y"] = QJS.Type(JsonSchemaType.Integer)
+				["chest_position"] = QJS.Enum(GetChestsLocations(out var list))
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out Chest? resultData)
 		{
-			int? x = actionData.Data?.Value<int>("x_position");
-			int? y = actionData.Data?.Value<int>("y_position");
+			string? providedPos = actionData.Data?.Value<string>("chest_position");
 
-			if (x is null  || y is null)
+			if (providedPos is null)
 			{
 				resultData = null;
-				return ExecutionResult.Failure($"either x or y were not set correctly.");
+				return ExecutionResult.Failure($"chest_position was null");
 			}
 
-			Point point = new Point((int)x, (int)y);
-			if (!TileUtilities.IsValidTile(point, out var reason, false))
+			int index = GetChestsLocations(out var list).IndexOf(providedPos);
+			Chest chest = list[index];
+			// Point point = new Point((int)providedPos, (int)y);
+			if (!TileUtilities.IsValidTile(chest.TileLocation.ToPoint(), out var reason, false,false))
 			{
 				resultData = null;
 				return ExecutionResult.Failure(reason);
 			}
 			
-			var objects = Utilities.StringUtilities.GetObjectsInLocation(new Chest());
-			if (!objects.TryGetValue(point, out var obj))
+			var objects = StringUtilities.GetObjectsInLocation(new Chest());
+			if (!objects.TryGetValue(chest.TileLocation.ToPoint(), out var obj))
 			{
 				resultData = null;
 				return ExecutionResult.Failure($"There is not a chest at the provided location");
 			}
 
-			resultData = (Chest)obj;
+			resultData = chest;
 			return ExecutionResult.Success();
 		}
 
@@ -70,17 +70,18 @@ public static class WorldObjectActions
 				{
 					if (kvp.Value == resultData)
 					{
-						Task.Run(async () => await ExecuteFunctions(kvp.Key.ToPoint()));
+						Task.Run(async () => await ExecuteFunctions(kvp.Key.ToPoint(),resultData));
 					}
 				}
 			}
-			Open(resultData);
-			RegisterChestActions();
+			
 		}
 
-		private static async Task ExecuteFunctions(Point position)
+		private static async Task ExecuteFunctions(Point position,Chest chest)
 		{
 			await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(position.X,position.Y),false,false);
+			Open(chest);
+			RegisterChestActions();
 		}
 		
 		private static IInventory Open(Chest chest)
@@ -93,6 +94,25 @@ public static class WorldObjectActions
 			Main.Bot.Chest.OpenChest(_chest);
 
 			return Main.Bot.Chest.GetItems(_chest);
+		}
+
+		private static List<string> GetChestsLocations(out List<Chest> chests)
+		{
+			List<string> chestPoints = new();
+			chests = new();
+			foreach (var dict in Game1.currentLocation.Objects)
+			{
+				foreach (var kvp in dict)
+				{
+					if (kvp.Value is Chest chest)
+					{
+						chests.Add(chest);
+						chestPoints.Add(kvp.Key.ToPoint().ToString());
+					}
+				}
+			}
+
+			return chestPoints;
 		}
 	}
 	
@@ -233,13 +253,15 @@ public static class WorldObjectActions
 			RegisterChestActions();
 		}
 	}
-
+	
 	private static void RegisterChestActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
 		window.AddAction(new CloseChest()).AddAction(new AddItemsToChest()).AddAction(new TakeItemsFromChest());
-		window.SetForce(0,$"You are now in a chest's menu", string.Concat(_chest!.Items.Where(item => !string.IsNullOrEmpty(item.Name)))); // send chest items in state
+		List<string> nameList = _chest!.Items.Where(item => !string.IsNullOrEmpty(item.Name))
+			.Select(item => $"\nindex: {_chest.Items.IndexOf(item)}: {item.Name} amount: {item.Stack}").ToList();
+		window.SetForce(0,$"You are now interacting with a chest", $"These are the items in this chest: {string.Concat(nameList)}");
 		window.Register();
 	}
 }
