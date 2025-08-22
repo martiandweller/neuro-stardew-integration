@@ -10,7 +10,7 @@ using StardewValley.Menus;
 
 namespace NeuroStardewValley.Source.Actions;
 
-public class EndDayActions
+public static class EndDayActions
 {
 	public class PickProfession : NeuroAction<bool>
 	{

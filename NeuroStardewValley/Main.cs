@@ -4,7 +4,7 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Source.Actions;
-using NeuroStardewValley.Source.EventClasses;
+using NeuroStardewValley.Source.EventMethods;
 using StardewValley;
 using StardewValley.Menus;
 using Logger = NeuroStardewValley.Debug.Logger;

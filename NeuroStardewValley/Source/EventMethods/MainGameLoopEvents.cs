@@ -8,7 +8,7 @@ using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Menus;
 
-namespace NeuroStardewValley.Source.EventClasses;
+namespace NeuroStardewValley.Source.EventMethods;
 
 public class MainGameLoopEvents
 {
@@ -35,7 +35,8 @@ public class MainGameLoopEvents
 		
 		Context.Send(warpsString, true);
 		Context.Send(characterContext,true);
-		RegisterMainGameActions.RegisterPostAction(e, 0, "Test Query", $"These are the tiles that have an object on them around you: {tilesString}", false);
+		RegisterMainGameActions.RegisterPostAction(e, 0, $"You are at {e.NewLocation.Name}", 
+			$"These are the tiles that have an object on them around you: {tilesString}", false);
 	}
 
 	public static void OnMenuChanged(object? sender, BotMenuChangedEventArgs e)
@@ -80,7 +81,6 @@ public class MainGameLoopEvents
 				break;
 			case ShippingMenu shippingMenu:
 				Main.Bot.EndDayShippingMenu.SetMenu(shippingMenu);
-				ShippingMenuContext();
 				break;
 		}
 		
@@ -93,23 +93,13 @@ public class MainGameLoopEvents
 
 	public static void OnDayStarted(object? sender, BotDayStartedEventArgs e)
 	{
-		string time = StringUtilities.FormatTimeString();
-		SendQuestContext.SendContext();
-		if (Game1.player.passedOut)
-		{
-			// add items lost or whatever was lost
-			Context.Send($"A new day has started. You are in your farm-house after you were knocked out, " +
-			             $"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.");
-		}
-		else
-		{
-			Context.Send($"A new day has started. You are in your farm-house, " +
-			             $"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.");
-		}
+		Context.Send(NewDayContext());
 	}
 
 	public static void OnDayEnded(object? sender, BotDayEndedEventArgs e)
 	{
+		Task.Run(async () => await ShippingMenuContext()); // we cannot send in MenuChanged as it is reset by then.
+
 		if (!Game1.player.passedOut)
 		{
 			Context.Send($"You have gone to bed and the day has ended. Good night.");
@@ -119,22 +109,49 @@ public class MainGameLoopEvents
 		Context.Send($"You have passed out and the day has ended. Maybe you should go back home earlier tomorrow.");
 	}
 	
-	private static void ShippingMenuContext()
+	private static async Task ShippingMenuContext()
 	{
-		if (Game1.player.displayedShippedItems.Count == 0) return;
+		List<Item> soldItems = new();
+		using var enumerator = Game1.getAllFarmers().GetEnumerator();
+		while (enumerator.MoveNext())
+		{
+			if (enumerator.Current is null) continue;
+			soldItems.AddRange(Game1.getFarm().getShippingBin(enumerator.Current));
+		}
+		if (soldItems.Count == 0) return;
 
-		Task.Run(async () =>
-			await Task.Delay(Game1.player.displayedShippedItems.Count *
-			                 500)); // wait for it to show all results, we multiply as Task.Delay is in milliseconds
-		string shipString = "These are the items you have shipped today,";
-		foreach (var item in Game1.player.displayedShippedItems)
+		string shipString = "These are the items you have shipped today:";
+		foreach (var item in soldItems)
 		{
 			int sell = item.sellToStorePrice();
-			shipString = string.Concat(shipString,
-				$"\n{item.Name}: total sell price: {sell * item.Stack} single sell price: {sell}");
+			shipString = string.Concat(shipString, $"\n{item.Name}: total sell price: {sell * item.Stack} single sell price: {sell}");
 		}
-
+		await Task.Delay(soldItems.Count * 750);
 		Context.Send(shipString);
 		Main.Bot.EndDayShippingMenu.AdvanceToNextDay();
+	}
+
+	public static string NewDayContext()
+	{
+		string time = StringUtilities.FormatTimeString();
+		QuestContext.SendContext();
+		Main.Bot.Time.GetTodayFestivalData(out Dictionary<string, string> _, out GameLocation _,
+			out int startTime, out var endTime);
+		string contextString = $"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.";
+		if (Main.Bot.Time.IsFestival())
+		{
+			contextString = $"{contextString} There is a festival today! It is located at {Game1.whereIsTodaysFest}, it will start at {startTime} and end at {endTime}," +
+			                $" but you should try to go there as soon as possible so you can fully experience it.";
+		}
+		if (Game1.player.passedOut)
+		{
+			contextString = $" A new day has started. You are in your farm-house after you were knocked out, {contextString}";
+		}
+		else
+		{
+			contextString = $" A new day has started. You are in your farm-house, {contextString}";
+		}
+
+		return contextString;
 	}
 }

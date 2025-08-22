@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
@@ -21,13 +22,13 @@ public static class ChestActions
 		public override string Name => "open_chest";
 		protected override string Description => "Open a chest that is in the current location";
 
-		protected override JsonSchema? Schema => new JsonSchema()
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "chest_position" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["chest_position"] = QJS.Enum(GetChestsLocations(out var list))
+				["chest_position"] = QJS.Enum(GetChestsLocations(out var _))
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out Chest? resultData)
@@ -50,7 +51,7 @@ public static class ChestActions
 			}
 			
 			var objects = StringUtilities.GetObjectsInLocation(new Chest());
-			if (!objects.TryGetValue(chest.TileLocation.ToPoint(), out var obj))
+			if (!objects.TryGetValue(chest.TileLocation.ToPoint(), out var _))
 			{
 				resultData = null;
 				return ExecutionResult.Failure($"There is not a chest at the provided location");
@@ -79,7 +80,7 @@ public static class ChestActions
 
 		private static async Task ExecuteFunctions(Point position,Chest chest)
 		{
-			await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(position.X,position.Y),false,false);
+			await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(position.X,position.Y),false);
 			Open(chest);
 			RegisterChestActions();
 		}
@@ -87,7 +88,7 @@ public static class ChestActions
 		private static IInventory Open(Chest chest)
 		{
 			_chest = chest;
-			Dictionary<Point, Object> objects = Utilities.StringUtilities.GetObjectsInLocation(_chest);
+			Dictionary<Point, Object> objects = StringUtilities.GetObjectsInLocation(_chest);
 
 			if (!objects.ContainsValue(_chest)) return new Inventory();
 
@@ -120,7 +121,7 @@ public static class ChestActions
 	{
 		public override string Name => "close_chest";
 		protected override string Description => "Close the currently opened chest.";
-		protected override JsonSchema? Schema => new ();
+		protected override JsonSchema Schema => new ();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
 			if (_chest is null) return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
@@ -144,13 +145,13 @@ public static class ChestActions
 	{
 		public override string Name => "insert_items";
 		protected override string Description => "Insert items in this chest.";
-		protected override JsonSchema? Schema => new ()
+		protected override JsonSchema Schema => new ()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "item_index" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["item_index"] = new JsonSchema
+				["item_index"] = new()
 				{
 					Type = JsonSchemaType.Array,
 					Items = new JsonSchema { Type = JsonSchemaType.Integer },
@@ -200,13 +201,13 @@ public static class ChestActions
 	{
 		public override string Name => "take_items";
 		protected override string Description => "Take items from this chest.";
-		protected override JsonSchema? Schema => new ()
+		protected override JsonSchema Schema => new ()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "item_index" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["item_index"] = new JsonSchema
+				["item_index"] = new()
 				{
 					Type = JsonSchemaType.Array,
 					Items = new JsonSchema { Type = JsonSchemaType.Integer },
@@ -256,12 +257,19 @@ public static class ChestActions
 	
 	private static void RegisterChestActions()
 	{
+		Logger.Info($"registering chest actions");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
+		Logger.Info($"adding actions");
 		window.AddAction(new CloseChest()).AddAction(new AddItemsToChest()).AddAction(new TakeItemsFromChest());
-		List<string> nameList = _chest!.Items.Where(item => !string.IsNullOrEmpty(item.Name))
-			.Select(item => $"\nindex: {_chest.Items.IndexOf(item)}: {item.Name} amount: {item.Stack}").ToList();
-		window.SetForce(0,$"You are now interacting with a chest", $"These are the items in this chest: {string.Concat(nameList)}");
+		Logger.Info($"after adding action");
+		string nameList = InventoryContext.GetInventoryString(_chest!.Items, true);
+		Logger.Info($"set force");
+		window.SetForce(0,$"You are now interacting with a chest",
+			$"These are the items in this chest: {nameList}.\n This is your inventory: " +
+			$"{InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory,true)}",true);
+		Logger.Info($"registering");
 		window.Register();
+		Logger.Info($"after register");
 	}
 }

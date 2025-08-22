@@ -26,6 +26,11 @@ public static class RegisterMainGameActions
 			window.AddAction(new WorldObjectActions.InteractWithFurniture());
 		}
 
+		if (Game1.currentLocation.buildings.Count > 0)
+		{
+			window.AddAction(new BuildingActions.InteractWithBuilding());
+		}
+
 		if (Game1.player.CurrentItem is not null)
 		{
 			window.AddAction(new ToolActions.UseItem());	
@@ -139,13 +144,9 @@ public static class RegisterMainGameActions
 	{
 		ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
 		actionWindow.SetForce(0,query,state,ephemeral);
-		actionWindow.AddAction(new MainGameActions.Pathfinding())
-			.AddAction(new MainGameActions.PathFindToExit())
-			.AddAction(new ToolActions.UseItem())
-			.AddAction(new InventoryActions.OpenInventory())
-			.AddAction(new ToolBarActions.ChangeSelectedToolbarSlot())
-			.AddAction(new ToolBarActions.ChangeCurrentToolbar())
-			.AddAction(new QuestLogActions.OpenLog());
+		RegisterActions(actionWindow);
+		RegisterToolActions(actionWindow,null,Game1.currentLocation);
+		RegisterLocationActions(actionWindow,Game1.currentLocation);
 		actionWindow.Register();
 	}
 }

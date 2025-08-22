@@ -3,6 +3,7 @@ using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
+using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Inventories;
 using StardewValley.Objects;
@@ -335,18 +336,19 @@ namespace NeuroStardewValley.Source.Actions;
         ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
         actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())
             .AddAction(new ExitInventory()).AddAction(new MoveItem());
-        List<string> nameList = PrepareItemStringList(Game1.player.Items).Select(item => $"\nindex: {Game1.player.Items.IndexOf(item)}: {item.Name} amount: {item.Stack}").ToList();
+
+        string nameList = InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true);
         List<string> itemList = PrepareItemStringList(Main.Bot.Inventory.GetEquippedClothing()).ToList();
         List<string> trinkets = Main.Bot.Inventory.GetCurrentEquippedTrinkets(Game1.player)
             .Where(trinket => trinket is not null).Select(trinket => trinket.Name).ToList();
-        string state = $"These are the items in your inventory: {string.Concat(nameList)}." +
+        
+        string state = $"These are the items in your inventory: {nameList}." +
                        $"\nThese are the items clothes you have equipped {string.Concat(itemList)}.";
         if (trinkets.Count > 0)
         {
             state += $"\nThis is the trinket you have equipped currently: {string.Concat(trinkets)}";
         }
-        actionWindow.SetForce(0, "You are in your inventory.",
-            state);
+        actionWindow.SetForce(0, "You are in your inventory.", state);
         actionWindow.Register();
     }
 

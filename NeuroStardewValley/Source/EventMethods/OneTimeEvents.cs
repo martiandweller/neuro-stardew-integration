@@ -5,10 +5,9 @@ using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewModdingAPI.Events;
-using StardewModdingAPI.Utilities;
 using StardewValley.Menus;
 
-namespace NeuroStardewValley.Source.EventClasses;
+namespace NeuroStardewValley.Source.EventMethods;
 
 public class OneTimeEvents
 {
@@ -25,18 +24,14 @@ public class OneTimeEvents
 
 	public static void GameLoopOnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 	{
-		string time = StringUtilities.FormatTimeString();
-		RegisterMainGameActions.LoadGameActions(
-			"Your save has loaded and you are in the game. You have started in your farm-house.",
-			$"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.");
+		RegisterMainGameActions.LoadGameActions("Your save has loaded and you are in the game.",MainGameLoopEvents.NewDayContext());
 	}
 
 	public static void OnHUDMessageAdded(object? sender, HUDMessageAddedEventArgs e)
 	{
 		string context;
 		string message = StringUtilities.FormatBannerMessage(e.Message);
-		switch
-			(e.WhatType) // these are the ones listed on the stardew wiki lists in the CommonTasks/UserInterface section
+		switch (e.WhatType) // these are the types listed on the stardew wiki lists in the CommonTasks/UserInterface section
 		{
 			case 1:
 				context = $"You have completed an achievement: {message}";

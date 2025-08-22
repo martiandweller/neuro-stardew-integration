@@ -5,7 +5,7 @@ using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewValley;
 
-namespace NeuroStardewValley.Source.EventClasses;
+namespace NeuroStardewValley.Source.EventMethods;
 
 public class LessImportantEvents
 {

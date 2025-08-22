@@ -1,6 +1,6 @@
-using System.Net.Http.Headers;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
+using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
@@ -9,16 +9,16 @@ using StardewValley.Menus;
 
 namespace NeuroStardewValley.Source.Actions;
 
-public class QuestLogActions
+public static class QuestLogActions
 {
 	public class OpenLog : NeuroAction
 	{
 		public override string Name => "open_quest_log";
 		protected override string Description => "See all of your current quests and accept their rewards";
-		protected override JsonSchema? Schema => new();
+		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
-			return ExecutionResult.Success(SendQuestContext.GetString());
+			return ExecutionResult.Success();
 		}
 
 		protected override void Execute()
@@ -33,9 +33,9 @@ public class QuestLogActions
 		public override string Name => "get_reward";
 
 		protected override string Description =>
-			"Get the reward for a quest, this will only work if the quest has been compeleted";
+			"Get the reward for a quest, this will only work if the quest has been completed and has a reward.";
 
-		protected override JsonSchema? Schema => new JsonSchema()
+		protected override JsonSchema Schema => new JsonSchema()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "quest_index" },
@@ -55,10 +55,16 @@ public class QuestLogActions
 			}
 
 			int index = (int)selectedIndex;
-			if (Enumerable.Range(0, Game1.player.questLog.Count).Contains(index))
+			if (!Enumerable.Range(0, Game1.player.questLog.Count).Contains(index))
 			{
 				resultData = -1;
 				return ExecutionResult.Failure($"You have provided an invalid index.");
+			}
+
+			if (!Main.Bot.QuestLog.Quests[index].completed.Value || !Main.Bot.QuestLog.Quests[index].HasReward())
+			{
+				resultData = -1;
+				return ExecutionResult.Failure($"This quest does not have a reward or you have not completed it.");
 			}
 
 			resultData = index;
@@ -85,7 +91,7 @@ public class QuestLogActions
 	{
 		public override string Name => "close_log";
 		protected override string Description => "Close the quest log";
-		protected override JsonSchema? Schema => new();
+		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
 			return ExecutionResult.Success();
@@ -98,11 +104,52 @@ public class QuestLogActions
 		}
 	}
 
+	private class SaveContext : NeuroAction<int>
+	{
+		public override string Name => "save_in_context";
+		protected override string Description => "You should call this if you want to save a specific quest in your context. You should do this you want to complete a quest.";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "quest_index" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["quest_index"] = QJS.Enum(Enumerable.Range(0, Game1.player.questLog.Count))
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out int resultData)
+		{
+			int? selectedIndex = actionData.Data?.Value<int>("quest_index");
+
+			if (selectedIndex is null)
+			{
+				resultData = -1;
+				return ExecutionResult.Failure($"You provided a null value as the index");
+			}
+
+			int index = (int)selectedIndex;
+			if (!Enumerable.Range(0, Game1.player.questLog.Count).Contains(index))
+			{
+				resultData = -1;
+				return ExecutionResult.Failure($"You have provided an invalid index.");
+			}
+
+			resultData = index;
+			return ExecutionResult.Success();
+		}
+
+		protected override void Execute(int resultData)
+		{
+			Context.Send(QuestContext.GetSingleQuest(Main.Bot.QuestLog.Quests[resultData]),true);
+			RegisterActions();
+		}
+	}
+
 	private static void RegisterActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
-		window.AddAction(new GetQuestReward()).AddAction(new CloseLog());
-		window.SetForce(0, "You are now in the quest log.", "");
+		window.AddAction(new GetQuestReward()).AddAction(new CloseLog()).AddAction(new SaveContext());
+		window.SetForce(0, "You are now in the quest log.", QuestContext.GetQuestsStrings(),true);
 		window.Register();
 	}
 }
