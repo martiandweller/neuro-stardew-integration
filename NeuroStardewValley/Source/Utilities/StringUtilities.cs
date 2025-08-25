@@ -78,7 +78,38 @@ public class StringUtilities
 	{
 		string formattedMessage = "";
 
-		formattedMessage = message.Replace("\n", " ");
+		formattedMessage = message.Replace("\n", "");
+
+		return formattedMessage;
+	}
+
+	public static string FormatDailyQuest(string description)
+	{
+		string formattedMessage = "";
+
+		formattedMessage = description;
+		char lastChar = '#';
+		int spaceRepeat = 0;
+		foreach (var c in formattedMessage) // we do this to remove the large gaps in text
+		{
+			if (c == lastChar && c == ' ')
+			{
+				spaceRepeat++;
+			}
+
+			lastChar = c;
+		}
+
+		string str = "";
+		for (int i = 0; i < spaceRepeat; i++)
+		{
+			str += " ";
+		}
+
+		if (str != "")
+		{
+			formattedMessage = formattedMessage.Replace(str, "");
+		}
 
 		return formattedMessage;
 	}

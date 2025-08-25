@@ -1,5 +1,6 @@
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
@@ -7,6 +8,7 @@ using StardewModdingAPI.Enums;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Menus;
+using StardewValley.Objects;
 
 namespace NeuroStardewValley.Source.EventMethods;
 
@@ -81,6 +83,27 @@ public class MainGameLoopEvents
 				break;
 			case ShippingMenu shippingMenu:
 				Main.Bot.EndDayShippingMenu.SetMenu(shippingMenu);
+				break;
+			case ItemGrabMenu itemGrabMenu:
+				if (itemGrabMenu.context is Chest) return; // The OpenChest action handles this.
+				Main.Bot.ItemGrabMenu.SetUI(itemGrabMenu);
+				ItemGrabActions.RegisterActions(itemGrabMenu);
+				break;
+			case Billboard billboard:
+				Main.Bot.BillBoard.SetMenu(billboard);
+				if (billboard.acceptQuestButton.visible)
+				{
+					BillBoardInteraction.RegisterQuestActions();
+				}
+				else
+				{
+					Context.Send($"These are the event that are happening this month, {BillBoardInteraction.GetCalendarContext()}\n There are: {billboard.calendarDays.Count} days in this month.");
+					Task.Run(async () => // delay for 5 seconds then exit menu
+					{
+						await Task.Delay(5000);
+						Main.Bot.BillBoard.ExitMenu();
+					});
+				}
 				break;
 		}
 		

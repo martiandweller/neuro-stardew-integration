@@ -260,16 +260,11 @@ public static class ChestActions
 		Logger.Info($"registering chest actions");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
-		Logger.Info($"adding actions");
 		window.AddAction(new CloseChest()).AddAction(new AddItemsToChest()).AddAction(new TakeItemsFromChest());
-		Logger.Info($"after adding action");
 		string nameList = InventoryContext.GetInventoryString(_chest!.Items, true);
-		Logger.Info($"set force");
-		window.SetForce(0,$"You are now interacting with a chest",
+		window.SetForce(0,$"You are now interacting with a chest", 
 			$"These are the items in this chest: {nameList}.\n This is your inventory: " +
 			$"{InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory,true)}",true);
-		Logger.Info($"registering");
 		window.Register();
-		Logger.Info($"after register");
 	}
 }

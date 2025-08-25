@@ -40,10 +40,15 @@ public static class BuildingActions
 			{
 				return ExecutionResult.Failure($"Building you gave is not valid.");
 			}
-
+			
 			int index = GetLocationsBuildings().Select(buildingData => TokenParser.ParseText(buildingData.GetData().Name)).ToList().IndexOf(buildingString);
 			Building building = GetLocationsBuildings()[index];
 
+			if (GetBuildingsActionTiles(new List<Building> { building })[building].Count == 0)
+			{
+				return ExecutionResult.Failure($"You cannot select this building, as it has no action tiles.");
+			}
+				
 			resultData = building;
 			return ExecutionResult.Success(buildingString);
 		}
