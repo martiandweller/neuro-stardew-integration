@@ -1,6 +1,7 @@
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
+using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
@@ -104,6 +105,24 @@ public class MainGameLoopEvents
 						Main.Bot.BillBoard.ExitMenu();
 					});
 				}
+				break;
+			case LetterViewerMenu letterViewerMenu:
+				Main.Bot.LetterViewer.SetMenu(letterViewerMenu);
+				if (Main.Bot.LetterViewer.HasQuest is not null && Main.Bot.LetterViewer.HasQuest.Value ||
+				    Main.Bot.LetterViewer.itemsToGrab is not null && Main.Bot.LetterViewer.itemsToGrab.Value)
+				{
+					LetterActions.RegisterActions();
+				}
+				else
+				{
+					Context.Send(LetterContext.GetLetterContext());
+					Task.Run(async () =>
+					{
+						await Task.Delay(10000); // maybe make it change page so viewers can read
+						Main.Bot.LetterViewer.ExitMenu();
+					});
+				}
+
 				break;
 		}
 		

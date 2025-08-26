@@ -4,6 +4,7 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Source.Actions;
+using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.EventMethods;
 using StardewValley;
 using StardewValley.Menus;
@@ -93,6 +94,14 @@ internal sealed class Main : Mod
         if (e.Button == SButton.G)
         {
             Game1.player.setSkillLevel("Farming", 10);
+        }
+
+        if (e.Button == SButton.Y)
+        {
+            foreach (var building in Game1.getFarm().buildings)
+            {
+                Logger.Info($"building: {building.humanDoor.Value}");
+            }
         }
     }
 

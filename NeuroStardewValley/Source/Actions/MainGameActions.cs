@@ -81,7 +81,7 @@ public static class MainGameActions
         }
     }
 
-    public class PathFindToExit : NeuroAction<Goal?> // TODO: remove and resend when location changes
+    public class PathFindToExit : NeuroAction<Goal?>
     {
         private bool _destructive;
         private GameLocation sentLocation;

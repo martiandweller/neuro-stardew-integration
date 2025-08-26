@@ -4,7 +4,7 @@ using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley.Menus;
 
-namespace NeuroStardewValley.Source.Actions;
+namespace NeuroStardewValley.Source.Actions.Menus;
 
 public static class BillBoardInteraction
 {

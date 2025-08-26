@@ -1,6 +1,7 @@
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
+using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.GameData.Buildings;

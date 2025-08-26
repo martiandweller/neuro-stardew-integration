@@ -6,7 +6,7 @@ using NeuroStardewValley.Debug;
 using StardewValley.GameData.Pets;
 using StardewValley.Menus;
 
-namespace NeuroStardewValley.Source.Actions;
+namespace NeuroStardewValley.Source.Actions.Menus;
 
 public static class MainMenuActions
 {

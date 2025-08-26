@@ -14,7 +14,7 @@ using StardewValley.Tools;
 using Logger = NeuroStardewValley.Debug.Logger;
 using Rectangle = xTile.Dimensions.Rectangle;
 
-namespace NeuroStardewValley.Source.Actions;
+namespace NeuroStardewValley.Source.Actions.Menus;
 
 public static class CarpenterActions
 {

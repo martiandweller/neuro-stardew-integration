@@ -1,6 +1,7 @@
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
+using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.Actions.ObjectActions;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewValley;

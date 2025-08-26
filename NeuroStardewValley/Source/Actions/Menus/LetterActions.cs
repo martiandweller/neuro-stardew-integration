@@ -1,0 +1,105 @@
+using NeuroSDKCsharp.Actions;
+using NeuroSDKCsharp.Json;
+using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Source.Utilities;
+using StardewValley;
+
+namespace NeuroStardewValley.Source.Actions.Menus;
+
+public static class LetterActions
+{
+	private class AcceptQuest : NeuroAction
+	{
+		public override string Name => "accept_quest";
+		protected override string Description => "Accept the quest or special order in this quest.";
+		protected override JsonSchema Schema => new();
+		protected override ExecutionResult Validate(ActionData actionData)
+		{
+			return ExecutionResult.Success();
+		}
+
+		protected override void Execute()
+		{
+			Main.Bot.LetterViewer.AcceptQuest();
+			Main.Bot.LetterViewer.ExitMenu();
+		}
+	}
+
+	private class TakeItems : NeuroAction<Item>
+	{
+		public override string Name => "take_item";
+		protected override string Description => "Take the items in this letter.";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "item" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["item"] = QJS.Enum(GetSchema())
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out Item? resultData)
+		{
+			string? action = actionData.Data?.Value<string>("item");
+
+			resultData = null;
+			if (action is null) return ExecutionResult.Failure($"The item you provided was null");
+			
+			if (GetSchema().IndexOf(action) == -1) return ExecutionResult.Failure($"The item you provided does not exist");
+			
+			resultData = Main.Bot.LetterViewer.Items[GetSchema().IndexOf(action)].item;
+			return ExecutionResult.Success();
+		}
+
+		protected override void Execute(Item? resultData)
+		{
+			if (resultData is null) return;
+			Main.Bot.LetterViewer.GrabItem(resultData);
+			RegisterActions();
+		}
+
+		private static List<string> GetSchema()
+		{
+			List<string> schema = new();
+			foreach (var cc in Main.Bot.LetterViewer.Items)
+			{
+				schema.Add($"item name: {cc.item.Name} name: {cc.name}");
+			}
+
+			return schema;
+		}
+	}
+
+	private class CloseMenu : NeuroAction
+	{
+		public override string Name => "exit_letter";
+		protected override string Description => "Exit this letter";
+		protected override JsonSchema Schema => new();
+		protected override ExecutionResult Validate(ActionData actionData)
+		{
+			return ExecutionResult.Success();
+		}
+
+		protected override void Execute()
+		{
+			Main.Bot.LetterViewer.ExitMenu();
+		}
+	}
+
+	public static void RegisterActions()
+	{
+		ActionWindow window = ActionWindow.Create(Main.GameInstance);
+		if (Main.Bot.LetterViewer.Items.Count > 0)
+		{
+			window.AddAction(new TakeItems());
+		}
+
+		if (Main.Bot.LetterViewer.HasQuest is not null && Main.Bot.LetterViewer.HasQuest.Value)
+		{
+			window.AddAction(new AcceptQuest());
+		}
+		window.AddAction(new CloseMenu());
+		window.SetForce(0, $"You have opened a letter, it has either a quest or special order in it.", $"{LetterContext.GetLetterContext()}");
+		window.Register();
+	}
+}

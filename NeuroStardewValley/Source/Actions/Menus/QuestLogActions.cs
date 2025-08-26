@@ -7,7 +7,7 @@ using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Menus;
 
-namespace NeuroStardewValley.Source.Actions;
+namespace NeuroStardewValley.Source.Actions.Menus;
 
 public static class QuestLogActions
 {

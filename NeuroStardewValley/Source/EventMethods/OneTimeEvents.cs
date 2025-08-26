@@ -1,6 +1,7 @@
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Source.Actions;
+using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
