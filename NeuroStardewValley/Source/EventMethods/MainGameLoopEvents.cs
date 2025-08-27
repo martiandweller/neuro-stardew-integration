@@ -13,7 +13,7 @@ using StardewValley.Objects;
 
 namespace NeuroStardewValley.Source.EventMethods;
 
-public class MainGameLoopEvents
+public static class MainGameLoopEvents
 {
 	public static readonly Dictionary<SkillType, int> SkillsChangedThisDay = new();
 
@@ -53,12 +53,8 @@ public class MainGameLoopEvents
 			{
 				return; // we don't need to send any actions at this point
 			}
-
-			//TODO: remove dialogue actions or set up gameplay actions or shop actions
 		}
-
-		Logger.Info($"Menu has been changed to: {e.NewMenu}");
-
+		
 		switch (e.NewMenu)
 		{
 			case DialogueBox dialogueBox:
@@ -115,10 +111,19 @@ public class MainGameLoopEvents
 				}
 				else
 				{
-					Context.Send(LetterContext.GetLetterContext());
 					Task.Run(async () =>
 					{
-						await Task.Delay(10000); // maybe make it change page so viewers can read
+						for (int i = 0; i < Main.Bot.LetterViewer.GetMessage().Count; i++)
+						{
+							string message = LetterContext.GetStringContext(Main.Bot.LetterViewer.GetMessage()[i],
+								i == Main.Bot.LetterViewer.GetMessage().Count - 1); // only send on last page
+							Context.Send(message);
+							await Task.Delay(7500);
+							if (i != Main.Bot.LetterViewer.GetMessage().Count - 1)
+							{
+								Main.Bot.LetterViewer.NextPage();
+							}
+						}
 						Main.Bot.LetterViewer.ExitMenu();
 					});
 				}

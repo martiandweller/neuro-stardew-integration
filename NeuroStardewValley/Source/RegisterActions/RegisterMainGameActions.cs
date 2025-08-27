@@ -4,6 +4,7 @@ using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.Actions.ObjectActions;
 using StardewBotFramework.Source.Events.EventArgs;
+using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Locations;
@@ -14,17 +15,18 @@ namespace NeuroStardewValley.Source.RegisterActions;
 
 public static class RegisterMainGameActions
 {
-	public static void RegisterActions(ActionWindow window,bool checkCanMove = false)
+	public static void RegisterActions(ActionWindow window,bool checkCanMove = true)
 	{
-		if (checkCanMove && !Game1.player.CanMove) {}
-		else
+		if (!Context.IsPlayerFree) return;
+
+		if (Context.CanPlayerMove)
 		{
 			window.AddAction(new MainGameActions.Pathfinding()).AddAction(new MainGameActions.PathFindToExit());
 		}
 		
-		if (Game1.currentLocation.furniture.Count > 0)
+		if (Game1.currentLocation.furniture.Count > 0 || Game1.currentLocation.Objects.Length > 0)
 		{
-			window.AddAction(new WorldObjectActions.InteractWithFurniture());
+			window.AddAction(new WorldObjectActions.InteractWithObject());
 		}
 
 		if (Game1.currentLocation.buildings.Count > 0)
@@ -49,8 +51,20 @@ public static class RegisterMainGameActions
 
 	public static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null,GameLocation? location = null)
 	{
-		if (e is null) return;
-		switch (e.NewLocation)
+		GameLocation newLocation;
+		if (e is not null)
+		{
+			newLocation = e.NewLocation;
+		}
+		else if (location is not null)
+		{
+			newLocation = location;
+		}
+		else
+		{
+			return;
+		}
+		switch (newLocation)
 		{
 			case Farm:
 			{
@@ -130,7 +144,7 @@ public static class RegisterMainGameActions
 	{
 		Logger.Info($"register actions again.");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
-		RegisterActions(window);
+		RegisterActions(window,false);
 		RegisterToolActions(window,e,Game1.currentLocation);
 		RegisterLocationActions(window,Game1.currentLocation);
 		if (afterSeconds != 0 || query == "" || state == "" || ephemeral != null)
@@ -145,7 +159,7 @@ public static class RegisterMainGameActions
 	{
 		ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
 		actionWindow.SetForce(0,query,state,ephemeral);
-		RegisterActions(actionWindow);
+		RegisterActions(actionWindow,false);
 		RegisterToolActions(actionWindow,null,Game1.currentLocation);
 		RegisterLocationActions(actionWindow,Game1.currentLocation);
 		actionWindow.Register();

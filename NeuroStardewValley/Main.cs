@@ -103,6 +103,11 @@ internal sealed class Main : Mod
                 Logger.Info($"building: {building.humanDoor.Value}");
             }
         }
+
+        if (e.Button == SButton.G)
+        {
+            Game1.player.Position = Game1.currentCursorTile * 64;
+        }
     }
 
     private void GameLaunched(object? sender, GameLaunchedEventArgs e)

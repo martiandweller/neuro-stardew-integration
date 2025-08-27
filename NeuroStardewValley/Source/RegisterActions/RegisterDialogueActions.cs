@@ -19,15 +19,16 @@ public static class RegisterDialogueActions
 			Logger.Info($"dialoguebox response length: {dialogueBox.responses.Length}    getCurrentDialogue: {string.Concat(dialogueBox.dialogues)}");
 			if (dialogueBox.responses.Length > 0)
 			{
+				window.AddAction(new DialogueActions.DialogueResponse());				
 				stateString = $"The possible responses are \n";
 				for (int i = 0; i < dialogueBox.responses.Length; i++)
 				{
 					stateString += $"{i}: {dialogueBox.responses[i].responseText} \n";	
 				}
-				window.AddAction(new DialogueActions.DialogueResponse());				
 			}
 			else
 			{
+				window.AddAction(new DialogueActions.AdvanceDialogue());
 				if (dialogueBox.characterDialogue is not null)
 				{
 					Main.Bot.Dialogue.SetCurrentDialogue(dialogueBox.characterDialogue);
@@ -42,12 +43,14 @@ public static class RegisterDialogueActions
 				{
 					stateString = $"The current dialogue is {dialogueBox.getCurrentString()}";
 				}
-				window.AddAction(new DialogueActions.AdvanceDialogue());
 			}
 			
 			window.SetForce(2, "", stateString);
 			window.Register();
 		}
-		Logger.Error($"Current active clickable menu is not a DialogueBox");
+		else
+		{
+			Logger.Error($"Current active clickable menu is not a DialogueBox");
+		}
 	}
 }

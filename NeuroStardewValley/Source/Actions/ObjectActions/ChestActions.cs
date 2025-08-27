@@ -28,7 +28,7 @@ public static class ChestActions
 			Required = new List<string> { "chest_position" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["chest_position"] = QJS.Enum(GetChestsLocations(out var _))
+				["chest_position"] = QJS.Enum(GetChestsLocations(out _))
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out Chest? resultData)

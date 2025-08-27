@@ -4,13 +4,12 @@ using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source.RegisterActions;
-using StardewBotFramework.Debug;
+using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.GameData.Buildings;
 using StardewValley.TokenizableStrings;
-using Logger = NeuroStardewValley.Debug.Logger;
 
 namespace NeuroStardewValley.Source.Actions.ObjectActions;
 
@@ -139,7 +138,7 @@ public static class BuildingActions
 			{
 				Point pos = result.Key.Tile;
 				await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(pos.X, pos.Y), false);
-				if (!Utility.tileWithinRadiusOfPlayer(pos.X, pos.Y, 1, Game1.player)) // in case pathfinding can't get to tile
+				if (!RangeCheck.InRange(pos)) // in case pathfinding can't get to tile
 				{
 					Context.Send($"The pathfinding had an issue, leading to you not being able to go to the tile. You should try something else.");
 					RegisterMainGameActions.RegisterPostAction();
@@ -219,7 +218,7 @@ public static class BuildingActions
 			// This shouldn't happen as we only send if indoors exists, but I don't trust my code.
 			if (_building.GetIndoors() is null) return ExecutionResult.Failure($"You cannot enter this building as it does not have an interior");
 
-			if (!Utility.tileWithinRadiusOfPlayer(Pos.X, Pos.Y,1, Game1.player) && !pathfind.Value)
+			if (!RangeCheck.InRange(Pos) && !pathfind.Value)
 			{
 				return ExecutionResult.Failure($"The door is not in radius of you"); // maybe make it so work toward it? maybe add it to schema?
 			}

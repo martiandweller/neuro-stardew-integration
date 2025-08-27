@@ -2,19 +2,14 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
-using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
-using StardewBotFramework.Source.Modules.Pathfinding.Base;
-using StardewValley;
-using StardewValley.Inventories;
-using StardewValley.Objects;
 using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Actions.ObjectActions;
 
 public static class WorldObjectActions
 {
-	public class InteractWithFurniture : NeuroAction<Object>
+	public class InteractWithObject : NeuroAction<Object>
 	{
 		public override string Name => "interact_object";
 
@@ -36,17 +31,20 @@ public static class WorldObjectActions
 			int? objectTileX = actionData.Data?.Value<int>("object_tile_x");
 			int? objectTileY = actionData.Data?.Value<int>("object_tile_y");
             
+			resultData = null;
 			if (objectTileX is null || objectTileY is null)
 			{
-				resultData = null;
 				return ExecutionResult.Failure($"You have provided a null value.");
 			}
 			if (Main.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY) is null)
 			{
-				resultData = null;
 				return ExecutionResult.Failure($"There is no object at the provided tile.");
 			}
 
+			if (!RangeCheck.InRange(new Point(objectTileX.Value, objectTileY.Value)))
+			{
+				return ExecutionResult.Failure($"This object is not within range of you.");
+			}
 			resultData = Main.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY);
 			return ExecutionResult.Success();
 		}
