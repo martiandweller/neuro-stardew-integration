@@ -1,6 +1,7 @@
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Source.Actions;
+using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewValley;
@@ -114,5 +115,19 @@ public class LessImportantEvents
 		}
 
 		Context.Send(contextString, true);
+	}
+
+	private static bool ranCaughtFish;
+	public static void CaughtFish(object? sender, EventArgs e)
+	{
+		Task.Run(async () =>
+		{
+			if (ranCaughtFish) return;
+			ranCaughtFish = true;
+			await Task.Delay(1500);
+			Main.Bot.FishingBar.CloseRewardMenu();
+			ranCaughtFish = false;
+			RegisterMainGameActions.RegisterPostAction();
+		});
 	}
 }

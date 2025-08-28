@@ -88,6 +88,12 @@ public static class RegisterMainGameActions
 								window.AddAction(new ToolActions.DestroyObject());
 							}
 							break;
+						case FishingRod:
+							if (Game1.currentLocation.canFishHere())
+							{
+								window.AddAction(new ToolActions.Fishing());
+							}
+							break;
 					}
 				}
 

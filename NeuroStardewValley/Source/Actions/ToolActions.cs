@@ -4,10 +4,12 @@ using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
+using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewBotFramework.Source.ObjectDestruction;
 using StardewValley;
+using StardewValley.Tools;
 
 namespace NeuroStardewValley.Source.Actions;
 
@@ -299,6 +301,72 @@ public static class ToolActions
 		{
 			await Main.Bot.Tool.WaterSelectPatches(resultData[0],resultData[1],resultData[2],resultData[3]);
 			RegisterMainGameActions.RegisterPostAction();
+		}
+	}
+
+	public class Fishing : NeuroAction<KeyValuePair<Point,int>>
+	{
+		public override string Name => "use_fishing_rod";
+		protected override string Description => "Fish at the provided tile, the tile given must be a water tile. Power should be between 1 and 100 if the value provided does not adhere to that the value will be clamped.";
+
+		protected override JsonSchema? Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "tile_x", "tile_y" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["tile_x"] = QJS.Type(JsonSchemaType.Integer),
+				["tile_y"] = QJS.Type(JsonSchemaType.Integer),
+				["power"] = QJS.Type(JsonSchemaType.Integer)
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<Point, int> resultData)
+		{
+			int? selectedX = actionData.Data?.Value<int>("tile_x");
+			int? selectedY = actionData.Data?.Value<int>("tile_y");
+			int? selectedPower = actionData.Data?.Value<int>("power");
+
+			resultData = new();
+			if (selectedX is null || selectedY is null)
+			{
+				return ExecutionResult.Failure($"You must provide a x and y value.");
+			}
+			int x = selectedX.Value;
+			int y = selectedY.Value;
+			int power = 100;
+			Logger.Info($"power: {selectedPower}");
+			if (selectedPower is not null && selectedPower != 0) 
+			{
+				power = selectedPower.Value;
+			}
+
+			if (power > 100 || power < 1)
+			{
+				power = Math.Clamp(power, 1, 100);
+			}
+
+			if (!Game1.currentLocation.isTileFishable(x, y))
+			{
+				return ExecutionResult.Failure($"You cannot fish at the provided tile.");
+			}
+
+			// if (!TileUtilities.IsValidTile(new Point(x, y), out var reason))
+			// {
+			// 	return ExecutionResult.Failure(reason);
+			// }
+
+			resultData = new KeyValuePair<Point, int>(new Point(x, y), power);
+			return ExecutionResult.Success($"You are now going to be fishing at: {x},{y} with the power: {power}");
+		}
+
+		protected override void Execute(KeyValuePair<Point, int> resultData)
+		{
+			//TODO: find closest non water tile closest to provided tile as that should be a water tile
+			//Task.Run(async () => await Main.Bot.Pathfinding.Goto(new Goal.GoalPosition(resultData.Key.X, resultData.Key.Y), false));
+			if (!Main.Bot.FishingBar.Fish(resultData.Value))
+			{
+				RegisterMainGameActions.RegisterPostAction();
+			}
 		}
 	}
 }

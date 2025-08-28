@@ -108,7 +108,6 @@ public class ShopActions
 						return ExecutionResult.Failure(
 							$"You cannot buy this item or the amount of this item, as you do not have enough money for this.");
 					}
-					break;
 				case 2:
 					if (sellItem.salePrice() * amount > Game1.player.QiGems)
 					{

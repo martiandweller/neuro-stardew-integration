@@ -34,21 +34,21 @@ internal sealed class Main : Mod
     public static Dictionary<string, string> DefaultCharacterOptions = new();
 
     private static bool _hasSentCharacter;
-    
+
     public override void Entry(IModHelper helper)
     {
-        Bot = new StardewClient(helper, ModManifest,Monitor, helper.Multiplayer);
+        Bot = new StardewClient(helper, ModManifest, Monitor, helper.Multiplayer);
 
         _config = Helper.ReadConfig<ModConfig>();
         _uriString = _config.WebsocketUri;
         CanCreateCharacter = _config.AllowCharacterCreation;
         _configSaveSlot = _config.SaveSlot;
-        
+
         EnabledCharacterOptions = _config.CharacterCreationOptions;
         DefaultCharacterOptions = _config.CharacterCreationDefault;
-        
+
         Logger.SetMonitor(Monitor);
-        
+
         helper.Events.GameLoop.GameLaunched += GameLaunched;
         helper.Events.GameLoop.UpdateTicking += UpdateTicking;
         helper.Events.Display.MenuChanged += OneTimeEvents.CharacterCreatorMenu;
@@ -57,7 +57,7 @@ internal sealed class Main : Mod
         Bot.GameEvents.DayEnded += MainGameLoopEvents.OnDayEnded;
         Bot.GameEvents.BotWarped += MainGameLoopEvents.OnWarped;
         Bot.GameEvents.MenuChanged += MainGameLoopEvents.OnMenuChanged;
-        
+
         helper.Events.GameLoop.SaveLoaded += OneTimeEvents.GameLoopOnSaveLoaded;
 
         Bot.GameEvents.ChatMessageReceived += LessImportantEvents.OnChatMessage;
@@ -67,7 +67,8 @@ internal sealed class Main : Mod
         Bot.GameEvents.HUDMessageAdded += OneTimeEvents.OnHUDMessageAdded;
         Bot.GameEvents.OnBotDeath += LessImportantEvents.OnBotDeath;
         Bot.GameEvents.BotInventoryChanged += LessImportantEvents.InventoryChanged;
-        
+        Bot.GameEvents.CaughtFish += LessImportantEvents.CaughtFish;
+
         if (_config.Debug)
         {
             helper.Events.Input.ButtonPressed += InputOnButtonPressed;
@@ -107,6 +108,11 @@ internal sealed class Main : Mod
         if (e.Button == SButton.G)
         {
             Game1.player.Position = Game1.currentCursorTile * 64;
+        }
+
+        if (e.Button == SButton.X)
+        {
+            Bot.FishingBar.Fish(100);
         }
     }
 

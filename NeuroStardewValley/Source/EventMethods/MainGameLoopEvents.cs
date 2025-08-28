@@ -54,6 +54,11 @@ public static class MainGameLoopEvents
 				return; // we don't need to send any actions at this point
 			}
 		}
+
+		if (e.OldMenu is BobberBar) // handled by caughtFish event
+		{
+			return;
+		}
 		
 		switch (e.NewMenu)
 		{
