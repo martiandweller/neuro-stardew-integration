@@ -146,7 +146,7 @@ public class ShopActions
 	{
 		public override string Name => "close_shop";
 		protected override string Description => "Close the currently open shop menu.";
-		protected override JsonSchema? Schema => new JsonSchema();
+		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
 			return ExecutionResult.Success($"Exiting shop");

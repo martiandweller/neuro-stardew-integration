@@ -1,3 +1,4 @@
+using System.Reflection.Metadata;
 using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Debug;
@@ -14,6 +15,7 @@ public class WarpUtilities
     {
         List<string> tileList = new();
         List<Building> sentBuildings = new();
+        WaterTiles.WaterTileData[,] waterTileData = location.waterTiles.waterTiles;
 
         int maxX = location.Map.DisplayWidth / Game1.tileSize;
         int maxY = location.Map.DisplayHeight / Game1.tileSize; 
@@ -25,12 +27,17 @@ public class WarpUtilities
             for (int y = 0; y < maxY; y++)
             {
                 Rectangle rect = new Rectangle(x * Game1.tileSize + 1, y * Game1.tileSize + 1, 62, 62);
+                if (waterTileData[x, y].isWater)
+                {
+                    tileList.Add($"Tile: {new Point(x, y)}, is water.");
+                    continue;
+                }
                 if (!Game1.currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, false, Game1.player))
                     continue;
 
-                if (GetTileType(location, new Point(x, y)) is not null)
+                object? obj = GetTileType(location, new Point(x, y));
+                if (obj is not null)
                 {
-                    object obj = GetTileType(location, new Point(x, y))!;
                     switch (obj)
                     {
                         case Object objectValue:
@@ -57,6 +64,12 @@ public class WarpUtilities
                 }
                 else
                 {
+                    if (waterTileData[x, y].isWater)
+                    {
+                        tileList.Add($"Tile: {new Point(x, y)}, is water.");
+                        continue;
+                    }
+                    
                     tileList.Add($"Tile: {new Point(x, y)}, This is a border of the map.");
                 }
             }

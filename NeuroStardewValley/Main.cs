@@ -3,7 +3,6 @@ using StardewBotFramework.Source;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using NeuroSDKCsharp.Actions;
-using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.EventMethods;
 using StardewValley;
@@ -34,7 +33,7 @@ internal sealed class Main : Mod
     public static Dictionary<string, string> DefaultCharacterOptions = new();
 
     private static bool _hasSentCharacter;
-
+    
     public override void Entry(IModHelper helper)
     {
         Bot = new StardewClient(helper, ModManifest, Monitor, helper.Multiplayer);
@@ -57,6 +56,7 @@ internal sealed class Main : Mod
         Bot.GameEvents.DayEnded += MainGameLoopEvents.OnDayEnded;
         Bot.GameEvents.BotWarped += MainGameLoopEvents.OnWarped;
         Bot.GameEvents.MenuChanged += MainGameLoopEvents.OnMenuChanged;
+        Bot.GameEvents.BotLocationNpcChanged += MainGameLoopEvents.LocationNpcChanged;
 
         helper.Events.GameLoop.SaveLoaded += OneTimeEvents.GameLoopOnSaveLoaded;
 
@@ -68,6 +68,11 @@ internal sealed class Main : Mod
         Bot.GameEvents.OnBotDeath += LessImportantEvents.OnBotDeath;
         Bot.GameEvents.BotInventoryChanged += LessImportantEvents.InventoryChanged;
         Bot.GameEvents.CaughtFish += LessImportantEvents.CaughtFish;
+
+        Bot.GameEvents.BotObjectChanged += WorldEvents.WorldObjectChanged;
+        Bot.GameEvents.BotTerrainFeatureChanged += WorldEvents.TerrainFeatureChanged;
+        Bot.GameEvents.BotLargeTerrainFeatureChanged += WorldEvents.LargeTerrainFeatureChanged;
+        Bot.GameEvents.BotLocationFurnitureChanged += WorldEvents.LocationFurnitureChanged;
 
         if (_config.Debug)
         {

@@ -134,7 +134,7 @@ public class StringUtilities
 
 	public static string FormatItemString(string itemString)
 	{
-		itemString = itemString.Replace("n", " ");
+		itemString = itemString.Replace("\n", " ");
 		return itemString;
 	}
 }

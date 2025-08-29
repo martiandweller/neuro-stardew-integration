@@ -304,35 +304,30 @@ public static class ToolActions
 		}
 	}
 
-	public class Fishing : NeuroAction<KeyValuePair<Point,int>>
+	public class Fishing : NeuroAction<int>
 	{
 		public override string Name => "use_fishing_rod";
-		protected override string Description => "Fish at the provided tile, the tile given must be a water tile. Power should be between 1 and 100 if the value provided does not adhere to that the value will be clamped.";
+		protected override string Description => "Power should be between 1 and 100 if the value provided does not adhere to that the value will be clamped." +
+		                                         " You must be looking towards water tiles to fish or it will not work.";
 
-		protected override JsonSchema? Schema => new()
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
-			Required = new List<string> { "tile_x", "tile_y" },
+			Required = new List<string> { "power" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["tile_x"] = QJS.Type(JsonSchemaType.Integer),
-				["tile_y"] = QJS.Type(JsonSchemaType.Integer),
 				["power"] = QJS.Type(JsonSchemaType.Integer)
 			}
 		};
-		protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<Point, int> resultData)
+		protected override ExecutionResult Validate(ActionData actionData, out int resultData)
 		{
-			int? selectedX = actionData.Data?.Value<int>("tile_x");
-			int? selectedY = actionData.Data?.Value<int>("tile_y");
 			int? selectedPower = actionData.Data?.Value<int>("power");
 
-			resultData = new();
-			if (selectedX is null || selectedY is null)
+			resultData = -1;
+			if (!Game1.player.Items.Any(item => item is FishingRod))
 			{
-				return ExecutionResult.Failure($"You must provide a x and y value.");
+				return ExecutionResult.Failure($"You do not have a fishing rod in your inventory, you can buy one from the beach.");
 			}
-			int x = selectedX.Value;
-			int y = selectedY.Value;
 			int power = 100;
 			Logger.Info($"power: {selectedPower}");
 			if (selectedPower is not null && selectedPower != 0) 
@@ -345,28 +340,52 @@ public static class ToolActions
 				power = Math.Clamp(power, 1, 100);
 			}
 
-			if (!Game1.currentLocation.isTileFishable(x, y))
+			int x = Game1.player.TilePoint.X;
+			int y = Game1.player.TilePoint.Y;
+			Point startValue;
+			switch (Game1.player.FacingDirection)
+			{
+				case 0:
+					startValue = new Point(x,y + 3);
+					break;
+				case 1:
+					startValue = new Point(x - 3,y);
+					break;
+				case 2:
+					startValue = new Point(x,y - 3);
+					break;
+				case 4:
+					startValue = new Point(x + 3,y);
+					break;
+				default:
+					startValue = new Point(x,y);
+					break;
+			}
+			if (!Game1.currentLocation.isTileFishable(startValue.X,startValue.Y))
 			{
 				return ExecutionResult.Failure($"You cannot fish at the provided tile.");
 			}
 
-			// if (!TileUtilities.IsValidTile(new Point(x, y), out var reason))
-			// {
-			// 	return ExecutionResult.Failure(reason);
-			// }
-
-			resultData = new KeyValuePair<Point, int>(new Point(x, y), power);
-			return ExecutionResult.Success($"You are now going to be fishing at: {x},{y} with the power: {power}");
+			resultData = power;
+			return ExecutionResult.Success($"You are now going to be fishing with the power: {power}");
 		}
 
-		protected override void Execute(KeyValuePair<Point, int> resultData)
+		protected override void Execute(int resultData)
 		{
-			//TODO: find closest non water tile closest to provided tile as that should be a water tile
-			//Task.Run(async () => await Main.Bot.Pathfinding.Goto(new Goal.GoalPosition(resultData.Key.X, resultData.Key.Y), false));
-			if (!Main.Bot.FishingBar.Fish(resultData.Value))
+			Task.Run(async () =>
 			{
-				RegisterMainGameActions.RegisterPostAction();
-			}
+				if (!Main.Bot.FishingBar.Fish(resultData))
+				{
+					RegisterMainGameActions.RegisterPostAction();
+				}
+
+				await Task.Delay(1500);
+				if (Game1.player.CurrentTool is FishingRod rod && (rod.isCasting || rod.isFishing || rod.isNibbling || rod.isReeling) )
+				{
+					return;
+				}
+				RegisterMainGameActions.RegisterPostAction(); // could not fish due to small pond
+			});
 		}
 	}
 }

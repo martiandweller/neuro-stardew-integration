@@ -19,10 +19,11 @@ public static class RegisterMainGameActions
 	{
 		if (!Context.IsPlayerFree) return;
 
-		if (Context.CanPlayerMove)
-		{
-			window.AddAction(new MainGameActions.Pathfinding()).AddAction(new MainGameActions.PathFindToExit());
-		}
+		window.AddAction(new MainGameActions.Pathfinding()).AddAction(new MainGameActions.PathFindToExit());
+
+		// if (Context.CanPlayerMove)
+		// {
+		// }
 		
 		if (Game1.currentLocation.furniture.Count > 0 || Game1.currentLocation.Objects.Length > 0)
 		{

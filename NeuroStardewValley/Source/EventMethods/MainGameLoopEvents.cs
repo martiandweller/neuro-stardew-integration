@@ -5,6 +5,7 @@ using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
+using StardewBotFramework.Source.Events.World_Events;
 using StardewModdingAPI.Enums;
 using StardewModdingAPI.Utilities;
 using StardewValley;
@@ -19,11 +20,7 @@ public static class MainGameLoopEvents
 
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
 	{
-		string tilesString = "";
-		foreach (var tile in WarpUtilities.GetTilesInLocation(e.NewLocation))
-		{
-			tilesString += "\n" + tile;
-		}
+		
 		Context.Send($"You have moved to {e.NewLocation.Name} from {e.OldLocation.Name}.",true);
     
 		string warps = WarpUtilities.GetWarpTiles(e.NewLocation);
@@ -34,6 +31,12 @@ public static class MainGameLoopEvents
 		foreach (var kvp in locationCharacters)
 		{
 			characterContext += $"{kvp.Value.Name} is at {kvp.Key} in this location";
+		}
+		
+		string tilesString = "";
+		foreach (var tile in WarpUtilities.GetTilesInLocation(e.NewLocation))
+		{
+			tilesString += "\n" + tile;
 		}
 		
 		Context.Send(warpsString, true);
@@ -159,6 +162,19 @@ public static class MainGameLoopEvents
 		}
 
 		Context.Send($"You have passed out and the day has ended. Maybe you should go back home earlier tomorrow.");
+	}
+		
+	public static void LocationNpcChanged(object? sender, BotCharacterListChangedEventArgs e)
+	{
+		foreach (var npc in e.Added)
+		{
+			Context.Send($"{npc.Name} has entered this location, they are at {npc.TilePoint}.",true);
+		}
+
+		foreach (var npc in e.Removed)
+		{
+			Context.Send($"{npc.Name} has exited this location.",true);
+		}
 	}
 	
 	private static async Task ShippingMenuContext()

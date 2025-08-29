@@ -1,5 +1,6 @@
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Messages.Outgoing;
+using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.RegisterActions;
@@ -32,6 +33,11 @@ public class OneTimeEvents
 	{
 		string context;
 		string message = StringUtilities.FormatBannerMessage(e.Message);
+		if (e is {MessageSubjectItem: not null}) // remove banners that say they add items (may have other effects no other way though)
+		{
+			Logger.Info($"e was null");
+			return;	
+		}
 		switch (e.WhatType) // these are the types listed on the stardew wiki lists in the CommonTasks/UserInterface section
 		{
 			case 1:

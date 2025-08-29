@@ -331,6 +331,46 @@ namespace NeuroStardewValley.Source.Actions;
         }
     }
     
+    #region Attach
+
+    public class AttachItem : NeuroAction<KeyValuePair<Item, Item>>
+    {
+        public override string Name => "attach_item";
+
+        protected override string Description =>
+            "Attach an item to another, this is most commonly used with bait and fishing rods.";
+        protected override JsonSchema Schema => new()
+        {
+            Type = JsonSchemaType.Object,
+            Required = new List<string> { "item", "attached_item" },
+            Properties = new Dictionary<string, JsonSchema>
+            {
+                ["item"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory)),
+                ["attached_item"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory))
+            }
+        };
+        protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<Item, Item> resultData)
+        {
+            int? item = actionData.Data?.Value<int>("item");
+            int? attachToItem = actionData.Data?.Value<int>("attached_item");
+
+            resultData = new();
+            if (item is null || attachToItem is null)
+            {
+                return ExecutionResult.Failure($"You have not selected both items.");
+            }
+            
+            return ExecutionResult.Success();
+        }
+
+        protected override void Execute(KeyValuePair<Item, Item> resultData)
+        {
+            throw new NotImplementedException();
+        }
+    }
+    
+    #endregion
+    
     private static void RegisterInventoryActions()
     {
         ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);

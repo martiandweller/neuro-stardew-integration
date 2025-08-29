@@ -17,10 +17,24 @@ public static class RegisterStoreActions
 
 		window.AddAction(new ShopActions.CloseShop()).AddAction(new ShopActions.BuyItem());
 
-		string itemString = "These are the items in the shop and their sale prices:\n";
-		foreach (var item in Main.Bot.Shop.ListAllItems()!)
+		string itemString = "These are the items in the shop and their sale prices:";
+		List<ISalable>? items = Main.Bot.Shop.ListAllItems();
+		if (items is null)
 		{
-			itemString += $"{item.Name}: {StringUtilities.FormatItemString(item.getDescription())}, cost: {item.salePrice()}\n";
+			Game1.activeClickableMenu = null;
+			RegisterMainGameActions.RegisterPostAction();
+			return;
+		}
+		for (int i = 0; i < items.Count - 1; i++)
+		{
+			ISalable itemISalable = items[i];
+			itemString += $"\n{i}: {itemISalable.Name}, description: {StringUtilities.FormatItemString(itemISalable.getDescription())} cost: {itemISalable.salePrice()}";
+			Item item = ItemRegistry.Create(itemISalable.QualifiedItemId);
+			if (item is Tool)
+			{
+				Item upgradeItem = ItemRegistry.Create(Main.Bot.Shop.StockInformation[itemISalable].TradeItem);
+				itemString += $" items needed for upgrade: {upgradeItem.Name} {Main.Bot.Shop.StockInformation[itemISalable].TradeItemCount}";
+			}
 		}
 		window.SetForce(0, "You are in a shop", itemString);
 		
