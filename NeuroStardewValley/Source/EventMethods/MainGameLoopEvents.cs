@@ -9,6 +9,7 @@ using StardewBotFramework.Source.Events.World_Events;
 using StardewModdingAPI.Enums;
 using StardewModdingAPI.Utilities;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.Menus;
 using StardewValley.Objects;
 
@@ -91,6 +92,7 @@ public static class MainGameLoopEvents
 				break;
 			case ItemGrabMenu itemGrabMenu:
 				if (itemGrabMenu.context is Chest) return; // The OpenChest action handles this.
+				if (itemGrabMenu.context is ShippingBin) return;
 				Main.Bot.ItemGrabMenu.SetUI(itemGrabMenu);
 				ItemGrabActions.RegisterActions(itemGrabMenu);
 				break;

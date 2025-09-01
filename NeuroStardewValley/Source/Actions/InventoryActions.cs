@@ -8,11 +8,48 @@ using StardewValley;
 using StardewValley.Inventories;
 using StardewValley.Objects;
 using StardewValley.Objects.Trinkets;
+using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Actions;
 
  static class InventoryActions
 {
+    #region UI
+
+    public class OpenInventory : NeuroAction
+    {
+        public override string Name => "open_inventory";
+        protected override string Description => "Open your inventory and allow altering the placement of items, this will also stop time.";
+        protected override JsonSchema Schema => new();
+        protected override ExecutionResult Validate(ActionData actionData)
+        {
+            return ExecutionResult.Success();
+        }
+
+        protected override void Execute()
+        {
+            Main.Bot.PlayerInformation.OpenInventory();
+            RegisterInventoryActions();
+        }
+    }
+    public class ExitInventory : NeuroAction
+    {
+        public override string Name => "close_inventory";
+        protected override string Description => "Close your inventory and go back to playing the game, this will make time tick again.";
+        protected override JsonSchema Schema => new();
+        protected override ExecutionResult Validate(ActionData actionData)
+        {
+            return ExecutionResult.Success();
+        }
+
+        protected override void Execute()
+        {
+            Main.Bot.PlayerInformation.ExitMenu();
+        }
+    }
+
+    #endregion
+    
     private class MoveItem : NeuroAction<Item>
     {
         private int _position;
@@ -224,7 +261,7 @@ namespace NeuroStardewValley.Source.Actions;
         {
             string slot = actionData.Data?.Value<string>("slot")!;
             string action = actionData.Data?.Value<string>("action")!;
-            string inventory = actionData.Data?.Value<string>("inventory_slot")!;
+            string? inventory = actionData.Data?.Value<string>("inventory_slot");
 
             if (action == "equip")
             {
@@ -297,39 +334,6 @@ namespace NeuroStardewValley.Source.Actions;
             RegisterInventoryActions();
         }
     }
-    public class OpenInventory : NeuroAction
-    {
-        public override string Name => "open_inventory";
-        protected override string Description => "Open your inventory and allow altering the placement of items, this will also stop time.";
-        protected override JsonSchema Schema => new();
-        protected override ExecutionResult Validate(ActionData actionData)
-        {
-            return ExecutionResult.Success();
-        }
-
-        protected override void Execute()
-        {
-            Main.Bot.PlayerInformation.OpenInventory();
-            RegisterInventoryActions();
-        }
-    }
-    public class ExitInventory : NeuroAction
-    {
-        public override string Name => "close_inventory";
-        protected override string Description => "Close your inventory and go back to playing the game, this will make time tick again.";
-        protected override JsonSchema Schema => new();
-        protected override ExecutionResult Validate(ActionData actionData)
-        {
-            return ExecutionResult.Success();
-        }
-
-        protected override void Execute()
-        {
-            Main.Bot.PlayerInformation.ExitMenu();
-
-            RegisterMainGameActions.RegisterPostAction();
-        }
-    }
     
     #region Attach
 
@@ -345,8 +349,8 @@ namespace NeuroStardewValley.Source.Actions;
             Required = new List<string> { "item", "attached_item" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["item"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory)),
-                ["attached_item"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory))
+                ["item"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory)), // item to attach
+                ["attached_item"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory)) // item we attach to
             }
         };
         protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<Item, Item> resultData)
@@ -360,12 +364,92 @@ namespace NeuroStardewValley.Source.Actions;
                 return ExecutionResult.Failure($"You have not selected both items.");
             }
             
+            if (!Enumerable.Range(0, Main.Bot.Inventory.MaxInventory).Contains((int)item) ||
+                !Enumerable.Range(0, Main.Bot.Inventory.MaxInventory).Contains((int)attachToItem))
+            {
+                return ExecutionResult.Failure($"The index you provided was not a valid index");
+            }
+
+            Item toolItem = Main.Bot.Inventory.Inventory[(int)item];
+            Item attachItem = Main.Bot.Inventory.Inventory[(int)attachToItem];
+            if (toolItem is not Tool tool)
+            {
+                return ExecutionResult.Failure($"The index you provided does not point to an item that has an attachment slot.");
+            }
+            if (!tool.canThisBeAttached((Object)attachItem))
+            {
+                return ExecutionResult.Failure($"{attachItem.Name} cannot be attached to {tool.Name}");
+            }
+
+            if (tool.attachments.Count(obj => obj is not null) >= tool.AttachmentSlotsCount)
+            {
+                return ExecutionResult.Failure($"This item already has too many attachments on it.");
+            }
+
+            resultData = new KeyValuePair<Item, Item>(tool, attachItem);
             return ExecutionResult.Success();
         }
 
         protected override void Execute(KeyValuePair<Item, Item> resultData)
         {
-            throw new NotImplementedException();
+            Main.Bot.Inventory.AttachItem(resultData.Value,resultData.Key);
+            RegisterInventoryActions();
+        }
+    }
+    
+    public class RemoveItem : NeuroAction<Item>
+    {
+        public override string Name => "remove_attached_item";
+        protected override string Description => "Remove the item attached to another item." +
+                                                 " The attachment will either, be placed the first empty slot in your inventory or it will be dropped on the floor. This depends on how much free space you have.";
+        protected override JsonSchema Schema => new()
+        {
+            Type = JsonSchemaType.Object,
+            Required = new List<string> { "item" },
+            Properties = new Dictionary<string, JsonSchema>
+            {
+                ["item"] = QJS.Enum(Enumerable.Range(0, Main.Bot.Inventory.MaxInventory))
+            }
+        };
+        protected override ExecutionResult Validate(ActionData actionData, out Item? resultData)
+        {
+            int? index = actionData.Data?.Value<int>("item");
+
+            resultData = null;
+            if (index is null)
+            {
+                return ExecutionResult.Failure($"The index you provided was null.");
+            }
+
+            if (!Enumerable.Range(0, Main.Bot.Inventory.MaxInventory).Contains((int)index))
+            {
+                return ExecutionResult.Failure($"The index you provided was not a valid index");
+            }
+
+            Item i = Main.Bot.Inventory.Inventory[(int)index];
+            if (i is not Tool tool)
+            {
+                return ExecutionResult.Failure($"The index you provided does not point to an item that has an attachment slot.");
+            }
+
+            if (tool.attachments.Count(obj => obj is not null) == 0)
+            {
+                return ExecutionResult.Failure($"This item does not have an attachment on it.");
+            }
+
+            resultData = tool;
+            return ExecutionResult.Success($"Removing the {tool.Name}'s attachment");
+        }
+
+        protected override void Execute(Item? resultData)
+        {
+            if (resultData is not Tool tool)
+            {
+                return;
+            }
+            
+            Main.Bot.Inventory.RemoveAttached(tool);
+            RegisterInventoryActions();
         }
     }
     
@@ -375,9 +459,9 @@ namespace NeuroStardewValley.Source.Actions;
     {
         ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
         actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())
-            .AddAction(new ExitInventory()).AddAction(new MoveItem());
+            .AddAction(new ExitInventory()).AddAction(new MoveItem()).AddAction(new AttachItem()).AddAction(new RemoveItem());
 
-        string nameList = InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true);
+        string nameList = InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true, true);
         List<string> itemList = PrepareItemStringList(Main.Bot.Inventory.GetEquippedClothing()).ToList();
         List<string> trinkets = Main.Bot.Inventory.GetCurrentEquippedTrinkets(Game1.player)
             .Where(trinket => trinket is not null).Select(trinket => trinket.Name).ToList();

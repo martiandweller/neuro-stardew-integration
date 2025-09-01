@@ -5,6 +5,7 @@ using StardewModdingAPI.Events;
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.EventMethods;
+using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Menus;
 using Logger = NeuroStardewValley.Debug.Logger;
@@ -74,6 +75,8 @@ internal sealed class Main : Mod
         Bot.GameEvents.BotLargeTerrainFeatureChanged += WorldEvents.LargeTerrainFeatureChanged;
         Bot.GameEvents.BotLocationFurnitureChanged += WorldEvents.LocationFurnitureChanged;
 
+        CharacterController.FailedPathFinding += OneTimeEvents.FailedCharacterController;
+        
         if (_config.Debug)
         {
             helper.Events.Input.ButtonPressed += InputOnButtonPressed;
@@ -118,6 +121,11 @@ internal sealed class Main : Mod
         if (e.Button == SButton.X)
         {
             Bot.FishingBar.Fish(100);
+        }
+
+        if (e.Button == SButton.H)
+        {
+            Logger.Info($"mouse state: {Game1.input.GetMouseState()}");
         }
     }
 

@@ -2,7 +2,10 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
+using NeuroStardewValley.Source.Utilities;
+using Newtonsoft.Json.Linq;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Buildings;
@@ -15,18 +18,19 @@ public static class ShippingBinActions
 	private static void RegisterBinActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
-		window.AddAction(new ExitBin())
-			.AddAction(new SellItems())
-			.SetForce(0,"You have opened the nearest shipping bin, you can use this to sell items. This should be your main source of making money","")
+		window.AddAction(new ExitBin()).AddAction(new SellItems())
+			.SetForce(0,"You have opened the nearest shipping bin, you can use this to sell items." + 
+			            " This should be your main source of making money", 
+				$"These are the items you can ship: {InventoryContext.GetShippableString(Main.Bot.Inventory.Inventory)}",true)
 			.Register();
 	}
 	
 	public class GoToNearestShippingBin : NeuroAction<ShippingBin>
 	{
-		private static ShippingBin Bin;
+		private static ShippingBin _bin = new();
 		public override string Name => "go_to_nearest_shipping";
 		protected override string Description => "Walk and open nearest shipping bin";
-		protected override JsonSchema? Schema => new();
+		protected override JsonSchema Schema => new();
 
 		protected override ExecutionResult Validate(ActionData actionData, out ShippingBin resultData)
 		{
@@ -62,8 +66,9 @@ public static class ShippingBinActions
 		{
 			await Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 0),
 				false);
-			Bin = resultData;
-			HandleShippingBinUI();
+			_bin = resultData;
+			HandleShippingBinUi();
+			Main.Bot.ShippingBinInteraction.SetUI((ItemGrabMenu)Game1.activeClickableMenu);
 			RegisterBinActions();
 		}
 
@@ -87,10 +92,11 @@ public static class ShippingBinActions
 
 			return points;
 		}
-
-		private static void HandleShippingBinUI()
+		
+		// TODO: I would rather not do this, however opening relies on Game1.input.mouseState and we cannot change that rn.
+		private static void HandleShippingBinUi()
 		{
-			ItemGrabMenu itemGrabMenu = new ItemGrabMenu(null, true, false, Utility.highlightShippableObjects, ShipItemReplica, "", null, true, true, false, true, false, 0, null, -1, Bin);
+			ItemGrabMenu itemGrabMenu = new ItemGrabMenu(null, true, false, Utility.highlightShippableObjects, ShipItemReplica, "", null, true, true, false, true, false, 0, null, -1, _bin);
 			itemGrabMenu.initializeUpperRightCloseButton();
 			itemGrabMenu.setBackgroundTransparency(false);
 			itemGrabMenu.setDestroyItemOnClick(true);
@@ -108,19 +114,19 @@ public static class ShippingBinActions
 				// Bin.showShipment(null);
 				return;
 			}
-			Bin.showShipment(farm.getShippingBin(Game1.player)[farm.getShippingBin(Game1.player).Count - 1]);
+			_bin.showShipment(farm.getShippingBin(Game1.player)[farm.getShippingBin(Game1.player).Count - 1]);
 		}
-		private static void ShipItemReplica(Item i,Farmer farmer)
+		private static void ShipItemReplica(Item? i,Farmer farmer)
 		{
 			Farm? farm = Game1.currentLocation as Farm;
-			farmer = Game1.player;
-			if (i != null)
+			if (farm is null) return;
+			if (i is not null)
 			{
 				Game1.player.removeItemFromInventory(i);
 				Farm obj = farm;
-				obj?.getShippingBin(Game1.player).Add(i);
+				obj.getShippingBin(Game1.player).Add(i);
 				
-				Bin.showShipment(i, false);
+				_bin.showShipment(i, false);
 				farm.lastItemShipped = i;
 				if (Game1.player.ActiveItem == null)
 				{
@@ -142,7 +148,7 @@ public static class ShippingBinActions
 			Required = new List<string> { "item_index" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["item_index"] = new JsonSchema
+				["item_index"] = new()
 				{
 					Type = JsonSchemaType.Array,
 					Items = new JsonSchema { Type = JsonSchemaType.Integer },
@@ -152,23 +158,34 @@ public static class ShippingBinActions
 
 		protected override ExecutionResult Validate(ActionData actionData, out List<int>? resultData)
 		{
-			Array? array = actionData.Data?.Value<Array>("item_index");
+			var objarray = actionData.Data?.Value<object>("item_index");
 
 			resultData = new();
-			if (array is null)
+			if (objarray is null)
 			{
 				return ExecutionResult.Failure($"item index is null");
+			}
+
+			List<int> array = new();
+			foreach (var token in (JArray)objarray)
+			{
+				if (token.Value<int?>() is null) continue;
+				
+				array.Add(token.Value<int>());
 			}
 			
 			foreach (var item in array)
 			{
-				if (item is not int i)
+				if (item > Main.Bot.Inventory.MaxInventory - 1)
 				{
-					resultData = new List<int>();
-					return ExecutionResult.Failure("You have provided a value that is not an integer");
+					return ExecutionResult.Failure($"{item} is a larger index than there are slots in your inventory. You can only go up to {Main.Bot.Inventory.MaxInventory - 1}");
+				}
+				if (item < 0)
+				{
+					return ExecutionResult.Failure($"{item} is less than 0, the lowest possible index is 0.");
 				}
 				
-				resultData.Add(i);
+				resultData.Add(item);
 			}
 			
 			List<Item> items = new();
@@ -176,9 +193,7 @@ public static class ShippingBinActions
 			{
 				items.Add(Main.Bot.Inventory.Inventory[index]);	
 			}
-			List<string> itemNames = new();
-			items.ToList().ForEach(item => itemNames.Add(item.Name));
-			return ExecutionResult.Success($"You have sold: {string.Concat(itemNames,"\n")}");
+			return ExecutionResult.Success($"You have sold: {string.Concat(items.Select(item => $"\n{item.stack} {InventoryContext.QualityStrings[item.Quality]} {item.Name}").ToList())}.");
 		}
 
 		protected override void Execute(List<int>? resultData)
@@ -187,7 +202,7 @@ public static class ShippingBinActions
 			if (resultData is null) return;
 			foreach (var index in resultData)
 			{
-				items.Add(Main.Bot.Inventory.Inventory[index]);	
+				items.Add(Main.Bot.Inventory.Inventory[index]);
 			}
 			Main.Bot.ShippingBinInteraction.ShipMultipleItems(items.ToArray());
 			RegisterBinActions();
@@ -198,14 +213,15 @@ public static class ShippingBinActions
 	{
 		public override string Name => "exit_bin";
 		protected override string Description => "Close the bin and go back to the game";
-		protected override JsonSchema? Schema => new();
+		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
-			return ExecutionResult.Success();
+			return ExecutionResult.Success($"You have left the shipping bin.");
 		}
 		protected override void Execute()
 		{
-			RegisterMainGameActions.RegisterPostAction();
+			Main.Bot.ShippingBinInteraction.RemoveUi();
+			Game1.activeClickableMenu = null;
 		}
 	}
 }

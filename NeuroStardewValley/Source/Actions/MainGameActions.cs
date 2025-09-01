@@ -181,7 +181,6 @@ public static class MainGameActions
         private async Task ExecuteFunctions(Goal goal)
         {
             await Main.Bot.Pathfinding.Goto(goal, false, _destructive);
-            // TODO: add check for if character does not make it in a select amount of time to prevent softlock. 
         }
 
         private List<Point> GetExits()

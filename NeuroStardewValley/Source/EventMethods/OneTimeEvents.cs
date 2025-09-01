@@ -62,4 +62,11 @@ public class OneTimeEvents
 
 		Context.Send(context);
 	}
+	
+	public static void FailedCharacterController(object? sender, EventArgs e)
+	{
+		Context.Send($"The character controller failed, you should mention this so it can get fixed" +
+		             $" and try to do something different from what you were doing before.");
+		RegisterMainGameActions.RegisterPostAction();
+	}
 }
