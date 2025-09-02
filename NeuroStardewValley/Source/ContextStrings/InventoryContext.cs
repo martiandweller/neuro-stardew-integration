@@ -1,8 +1,7 @@
 using StardewValley;
 using StardewValley.Inventories;
-using Object = System.Object;
 
-namespace NeuroStardewValley.Source.Utilities;
+namespace NeuroStardewValley.Source.ContextStrings;
 
 public static class InventoryContext
 {

@@ -1,5 +1,5 @@
 
-namespace NeuroStardewValley.Source.Utilities;
+namespace NeuroStardewValley.Source.ContextStrings;
 
 public static class LetterContext
 {

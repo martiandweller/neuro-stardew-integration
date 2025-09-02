@@ -1,7 +1,7 @@
 using NeuroSDKCsharp.Messages.Outgoing;
 using StardewValley.Quests;
 
-namespace NeuroStardewValley.Source.Utilities;
+namespace NeuroStardewValley.Source.ContextStrings;
 
 public static class QuestContext
 {

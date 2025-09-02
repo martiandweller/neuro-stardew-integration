@@ -4,6 +4,7 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
+using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.EventMethods;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
@@ -126,6 +127,11 @@ internal sealed class Main : Mod
         if (e.Button == SButton.H)
         {
             Logger.Info($"mouse state: {Game1.input.GetMouseState()}");
+        }
+
+        if (e.Button == SButton.U)
+        {
+            NeuroSDKCsharp.Messages.Outgoing.Context.Send(RelationshipContext.GetAllCharactersLevel());
         }
     }
 

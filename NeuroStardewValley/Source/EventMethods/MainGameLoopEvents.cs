@@ -1,7 +1,9 @@
+using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
+using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
@@ -24,8 +26,7 @@ public static class MainGameLoopEvents
 		
 		Context.Send($"You have moved to {e.NewLocation.Name} from {e.OldLocation.Name}.",true);
     
-		string warps = WarpUtilities.GetWarpTiles(e.NewLocation);
-		string warpsString = WarpUtilities.GetWarpTilesString(warps);
+		string warpsString = WarpUtilities.GetWarpTilesString(WarpUtilities.GetWarpTiles(e.NewLocation));
 		
 		var locationCharacters = Main.Bot.Characters.GetCharactersInCurrentLocation(e.NewLocation);
 		string characterContext = "";
@@ -34,11 +35,7 @@ public static class MainGameLoopEvents
 			characterContext += $"{kvp.Value.Name} is at {kvp.Key} in this location";
 		}
 		
-		string tilesString = "";
-		foreach (var tile in WarpUtilities.GetTilesInLocation(e.NewLocation))
-		{
-			tilesString += "\n" + tile;
-		}
+		string tilesString = string.Join("\n",WarpUtilities.GetTilesInLocation(e.NewLocation)); // the \n adds a bunch of tokens, but not having it could be confusing and crashes tony.
 		
 		Context.Send(warpsString, true);
 		Context.Send(characterContext,true);
@@ -138,6 +135,10 @@ public static class MainGameLoopEvents
 					});
 				}
 
+				break;
+			case JunimoNoteMenu junimoNoteMenu:
+				Main.Bot.JunimoNote.SetMenu(junimoNoteMenu);
+				JunimoNoteActions.RegisterActions();
 				break;
 		}
 		

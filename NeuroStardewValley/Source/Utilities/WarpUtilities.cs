@@ -13,7 +13,7 @@ public static class WarpUtilities
 {
     public static List<string> GetTilesInLocation(GameLocation location)
     {
-        List<string> tileList = new();
+        List<string> tileList = new() {"These tiles are sent in the format of X,Y with \\n separating each tile"};
         List<Building> sentBuildings = new();
         WaterTiles.WaterTileData[,] waterTileData = { };
         if (location.waterTiles is not null)
@@ -33,7 +33,7 @@ public static class WarpUtilities
                 Rectangle rect = new Rectangle(x * Game1.tileSize, y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
                 if (x < waterTileData.GetLength(0) && y < waterTileData.GetLength(1) && waterTileData[x, y].isWater)
                 {
-                    tileList.Add($"Tile: {new Point(x, y)}, is water.");
+                    tileList.Add($"Water: {x},{y}");
                     continue;
                 }
 
@@ -45,19 +45,19 @@ public static class WarpUtilities
                 {
                     if (x < waterTileData.GetLength(0) && y < waterTileData.GetLength(1) && waterTileData[x, y].isWater)
                     {
-                        tileList.Add($"Tile: {new Point(x, y)}, is water.");
+                        tileList.Add($"Water: {x},{y}");
                         continue;
                     }
 
-                    tileList.Add($"Tile: {new Point(x, y)}, This is a border of the map.");
+                    tileList.Add($"Blocks: {x},{y}");
                     continue;
                 }
 
                 switch (obj)
                 {
                     case Object objectValue:
-                        tileList.Add($"Tile: {objectValue.TileLocation.ToPoint()}, object name: {objectValue.Name}," +
-                                     $" object Type: {objectValue.Type}");
+                        tileList.Add($"Tile: {x},{y}, name: {objectValue.Name}," +
+                                     $" Type: {objectValue.Type}");
                         break;
                     case Building building:
                         if (sentBuildings.Contains(building)) continue; // we do this as buildings take up multiple tiles
@@ -66,14 +66,14 @@ public static class WarpUtilities
                         int buildY = building.tileY.Value;
                         int buildWidth = building.tilesWide.Value;
                         int buildHeight = building.tilesHigh.Value;
-                        tileList.Add(
-                            $"The top left tile of the {building.buildingType.Value} is: {buildX},{buildY}. the bottom right is {buildX + buildWidth}, {buildY + buildHeight}");
+                        tileList.Add($"The top left tile of the {building.buildingType.Value} is: {buildX},{buildY}." +
+                                     $" the bottom right is {buildX + buildWidth}, {buildY + buildHeight}");
                         break;
                     case ResourceClump resourceClump:
-                        tileList.Add($"{resourceClump.modData.Name} is at tile: {resourceClump.Tile.ToPoint()}");
+                        tileList.Add($"{resourceClump.modData.Name} is at tile: {x},{y}");
                         break;
                     case TerrainFeature terrainFeature:
-                        tileList.Add($"{terrainFeature.modData.Name} is at tile: {terrainFeature.Tile.ToPoint()}");
+                        tileList.Add($"{terrainFeature.modData.Name} is at tile: {x},{y}");
                         break;
                 }
             }
