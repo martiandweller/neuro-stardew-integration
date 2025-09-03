@@ -131,7 +131,7 @@ internal sealed class Main : Mod
 
         if (e.Button == SButton.U)
         {
-            NeuroSDKCsharp.Messages.Outgoing.Context.Send(RelationshipContext.GetAllCharactersLevel());
+            NeuroSDKCsharp.Messages.Outgoing.Context.Send(PlayerContext.GetAllCharactersLevel());
         }
     }
 

@@ -8,7 +8,7 @@ using StardewValley;
 
 namespace NeuroStardewValley.Source.EventMethods;
 
-public class LessImportantEvents
+public static class LessImportantEvents
 {
 	public static void OnBotDeath(object? sender, BotOnDeathEventArgs e)
 	{
@@ -117,16 +117,16 @@ public class LessImportantEvents
 		Context.Send(contextString, true);
 	}
 
-	private static bool ranCaughtFish;
+	private static bool _ranCaughtFish;
 	public static void CaughtFish(object? sender, EventArgs e)
 	{
 		Task.Run(async () =>
 		{
-			if (ranCaughtFish) return;
-			ranCaughtFish = true;
+			if (_ranCaughtFish) return;
+			_ranCaughtFish = true;
 			await Task.Delay(1500);
 			Main.Bot.FishingBar.CloseRewardMenu();
-			ranCaughtFish = false;
+			_ranCaughtFish = false;
 			RegisterMainGameActions.RegisterPostAction();
 		});
 	}

@@ -202,10 +202,10 @@ public static class MainGameLoopEvents
 		Main.Bot.EndDayShippingMenu.AdvanceToNextDay();
 	}
 
-	public static string NewDayContext()
+	public static string NewDayContext(bool sendQuests = true)
 	{
 		string time = StringUtilities.FormatTimeString();
-		QuestContext.SendContext();
+		if (sendQuests) QuestContext.SendContext();
 		Main.Bot.Time.GetTodayFestivalData(out Dictionary<string, string> _, out GameLocation _,
 			out int startTime, out var endTime);
 		string contextString = $"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.";
@@ -222,6 +222,10 @@ public static class MainGameLoopEvents
 		{
 			contextString = $" A new day has started. You are in your farm-house, {contextString}";
 		}
+
+		contextString += $" This is the level of your relationship with all the characters you have interacted with: " +
+		                 $"{PlayerContext.GetAllCharactersLevel()}.\nAnd these are the levels of all your skills:" +
+		                 $" {PlayerContext.GetAllSkillLevel()}.";
 
 		return contextString;
 	}

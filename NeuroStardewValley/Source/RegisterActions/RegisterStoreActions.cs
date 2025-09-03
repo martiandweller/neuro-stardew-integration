@@ -28,9 +28,10 @@ public static class RegisterStoreActions
 		for (int i = 0; i < items.Count - 1; i++)
 		{
 			ISalable itemISalable = items[i];
-			itemString += $"\n{i}: {itemISalable.Name}, description: {StringUtilities.FormatItemString(itemISalable.getDescription())} cost: {itemISalable.salePrice()}";
+			ItemStockInformation stockInformation = Main.Bot.Shop.StockInformation[itemISalable];
+			itemString += $"\n{i}: {itemISalable.Name}, description: {StringUtilities.FormatItemString(itemISalable.getDescription())} cost: {stockInformation.Price}";
 			Item item = ItemRegistry.Create(itemISalable.QualifiedItemId);
-			if (item is Tool)
+			if (item is Tool && !string.IsNullOrEmpty(Main.Bot.Shop.StockInformation[itemISalable].TradeItem))
 			{
 				Item upgradeItem = ItemRegistry.Create(Main.Bot.Shop.StockInformation[itemISalable].TradeItem);
 				itemString += $" items needed for upgrade: {upgradeItem.Name} {Main.Bot.Shop.StockInformation[itemISalable].TradeItemCount}";

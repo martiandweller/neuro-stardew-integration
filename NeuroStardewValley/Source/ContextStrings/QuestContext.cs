@@ -23,7 +23,7 @@ public static class QuestContext
 			questString = string.Concat(questString, $"This quest has been completed, you should get your reward from it.");
 		}
 
-		return string.Concat(questString, quest.IsTimedQuest() ? $" Time left: {quest.GetDaysLeft()}" : $" This is not a timed quest.");
+		return string.Concat(questString, quest.IsTimedQuest() ? $" Time left: {quest.GetDaysLeft()}" : $" There is no time limit on this quest.");
 	}
 	
 	public static string GetQuestsStrings()

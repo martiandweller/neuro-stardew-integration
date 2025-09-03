@@ -2,9 +2,8 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.ContextStrings;
-using NeuroStardewValley.Source.RegisterActions;
-using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Inventories;
 using StardewValley.Objects;
@@ -460,7 +459,7 @@ namespace NeuroStardewValley.Source.Actions;
     {
         ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
         actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())
-            .AddAction(new ExitInventory()).AddAction(new MoveItem()).AddAction(new AttachItem()).AddAction(new RemoveItem());
+            .AddAction(new ExitInventory()).AddAction(new AttachItem()).AddAction(new RemoveItem()).AddAction(new CraftingActions.SetCraftingPage());
 
         string nameList = InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true, true);
         List<string> itemList = PrepareItemStringList(Main.Bot.Inventory.GetEquippedClothing()).ToList();
