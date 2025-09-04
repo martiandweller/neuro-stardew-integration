@@ -3,6 +3,7 @@ using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
+using StardewValley;
 using StardewValley.GameData.Pets;
 using StardewValley.Menus;
 
@@ -41,7 +42,7 @@ public static class MainMenuActions
             }
         }
 
-        protected override JsonSchema? Schema => new()
+        protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
             Required = RequiredOptions(),
@@ -58,8 +59,32 @@ public static class MainMenuActions
             foreach (var kvp in EnabledCharacterOptions)
             {
                 data[kvp.Key] = actionData.Data?.Value<string>(kvp.Key);
-                if (data[kvp.Key] != "animal_breed") continue;
-                if (!Main.Bot.CharacterCreation.ChangePet(data["animal_preference"]!, data["animal_breed"]!))
+                switch (kvp.Key)
+                {
+                    case "name":
+                        if (!Main.Bot.AdheresToTextBoxLimit((TitleMenu.subMenu),data[kvp.Key]!, new() {"nameBox"}))
+                        {
+                            return ExecutionResult.Failure($"{data[kvp.Key]} is too long, you should try a different name next time.");
+                        }
+
+                        break;
+                    case "favourite_thing":
+                        if (!Main.Bot.AdheresToTextBoxLimit(TitleMenu.subMenu,data[kvp.Key]!, new() {"farmnameBox"}))
+                        {
+                            return ExecutionResult.Failure($"{data[kvp.Key]} is too long, you should try a different name next time.");
+                        }
+                        break;
+                    case "farm_name":
+                        if (!Main.Bot.AdheresToTextBoxLimit(TitleMenu.subMenu,data[kvp.Key]!, new() {"favThingBox"}))
+                        {
+                            return ExecutionResult.Failure($"{data[kvp.Key]} is too long, you should try a different name next time.");
+                        }
+                        break;
+                }
+
+                if (data[kvp.Key] is not ("animal_breed" or "animal_type")) continue;
+                
+                if (!Main.Bot.CharacterCreation.ChangePetType(data["animal_preference"]!) || !Main.Bot.CharacterCreation.ChangePetBreed(data["animal_breed"]!))
                 {
                     return ExecutionResult.Failure("That is not a valid animal");
                 }
@@ -149,6 +174,10 @@ public static class MainMenuActions
             Main.Bot.CharacterCreation.SkipIntro();
             if (!CanCreateCharacter)
             {
+                foreach (var kvp in DefaultCharacterOptions)
+                {
+                    Logger.Info($"kvp key: {kvp.Key}   value: {kvp.Value}");
+                }
                 SetCharacter(DefaultCharacterOptions!,true);
                 
                 return new();
@@ -173,37 +202,54 @@ public static class MainMenuActions
                             List<string> shirtList = new();
                             for (int i = 0; i < Main.Bot.CharacterCreation.GetPossibleShirts().Values.Count; i++)
                             {
-                                shirtList.Add($"string id: {Main.Bot.CharacterCreation.GetPossibleShirts().Keys.ToArray()[i]} shirt name: {Main.Bot.CharacterCreation.GetPossibleShirts().Values.ToArray()[i]}");
+                                shirtList.Add($"\nstring id: {Main.Bot.CharacterCreation.GetPossibleShirts().Keys.ToArray()[i]} shirt name: {Main.Bot.CharacterCreation.GetPossibleShirts().Values.ToArray()[i]}");
                             }
                             IEnumerable<string> shirtEnumerable = shirtList;
-                            Context.Send($"All possible shirts: {shirtEnumerable}");
+                            Context.Send($"All possible shirts: {string.Concat(shirtEnumerable)}");
                             properties.Add("Shirt",QJS.Enum(Enumerable.Range(0,Main.Bot.CharacterCreation.GetPossibleShirts().Values.Count)));
                             break;
                         case "pants": // 0-3
                             List<string> pantsList = new();
                             for (int i = 0; i < Main.Bot.CharacterCreation.GetPossiblePants().Values.Count; i++)
                             {
-                                pantsList.Add($"pants id: {Main.Bot.CharacterCreation.GetPossiblePants().Keys.ToArray()[i]} pants name: {Main.Bot.CharacterCreation.GetPossiblePants().Values.ToArray()[i]}");
+                                pantsList.Add($"\npants id: {Main.Bot.CharacterCreation.GetPossiblePants().Keys.ToArray()[i]} pants name: {Main.Bot.CharacterCreation.GetPossiblePants().Values.ToArray()[i]}");
                             }
                             IEnumerable<string> pantsEnumerable = pantsList;
-                            Context.Send($"All possible pants: {pantsEnumerable}");
+                            Context.Send($"All possible pants: {String.Concat(pantsEnumerable)}");
                             properties.Add("Pants",QJS.Enum(Enumerable.Range(0,Main.Bot.CharacterCreation.GetPossiblePants().Values.Count)));
                             break;
                         case "accessories": // 0-30
                             properties.Add(kvp.Key,QJS.Enum(Enumerable.Range(0,30)));
                             break;
                         case "name":
-                            properties.Add(kvp.Key,QJS.Type(JsonSchemaType.String));
+                            properties.Add(kvp.Key,new JsonSchema
+                            {
+                                Type = JsonSchemaType.String,
+                                MaxLength = 20, // mmmm magic number yummy (There is no solid max length, and it is based on font)
+                                MinLength = 1
+                            });
                             break;
                         case "farm_name":
-                            properties.Add(kvp.Key,QJS.Type(JsonSchemaType.String));
+                            properties.Add(kvp.Key,new JsonSchema
+                            {
+                                Type = JsonSchemaType.String,
+                                MaxLength = 20,
+                                MinLength = 1
+                            });
                             break;
                         case "favourite_thing":
-                            properties.Add(kvp.Key,QJS.Type(JsonSchemaType.String));
+                            properties.Add(kvp.Key,new JsonSchema
+                            {
+                                Type = JsonSchemaType.String,
+                                MaxLength = 20,
+                                MinLength = 1
+                            });
                             break;
                         case "animal_preference": // 2 animal types 0-3 options for each
                             properties.Add(kvp.Key + "",QJS.Enum(GetValidPetNames()));
-                            properties.Add(kvp.Key + "",QJS.Enum(GetModdedPetBreeds()));// find better way to do this
+                            break;
+                        case "animal_breed":
+                            properties.Add(kvp.Key,QJS.Enum(GetModdedPetBreeds()));// find better way to do this
                             break;
                         case "eye_hue":
                             properties.Add("eye_hue",QJS.Type(JsonSchemaType.Integer));
@@ -244,7 +290,7 @@ public static class MainMenuActions
                             option.Add(kvp.Key,DefaultCharacterOptions[kvp.Key]);
                             break;
                     }
-                    SetCharacter(option!);
+                    SetCharacter(option);
                     option.Clear();
                 }
             }
@@ -267,10 +313,8 @@ public static class MainMenuActions
         
         private static void SetCharacter(Dictionary<string, string?> choice,bool enabled = false)
         {
-            Logger.Info($"Running set character");
             foreach (var kvp in EnabledCharacterOptions)
             {
-                Logger.Info($"kvp: {kvp.Key}  value: {kvp.Value}");
                 if (enabled)
                 {
                     if (!kvp.Value)
@@ -317,14 +361,25 @@ public static class MainMenuActions
                         Main.Bot.CharacterCreation.SetFavThing(choice["favourite_thing"]!);
                         break;
                     case "animal_preference":
-                        Logger.Info($"animal: {choice["animal_preference"]} int: {CatBreedStrings.IndexOf(choice["animal_breed"]!).ToString()}  string: {choice["animal_breed"]}");
-                        if (DogBreedStrings.IndexOf(choice["animal_breed"]!) == -1)
+                        Main.Bot.CharacterCreation.ChangePetType(choice["animal_preference"]!);
+                        break;
+                    case "animal_breed":
+                        if (!EnabledCharacterOptions["animal_breed"])
                         {
-                            Main.Bot.CharacterCreation.ChangePet(choice["animal_preference"]!, CatBreedStrings.IndexOf(choice["animal_breed"]!).ToString());
+                            Main.Bot.CharacterCreation.ChangePetBreed(choice["animal_breed"]!);
+                            return;
+                        }
+                        if (Game1.player.whichPetType == "Cat")
+                        {
+                            Main.Bot.CharacterCreation.ChangePetBreed(CatBreedStrings.IndexOf(choice["animal_breed"]!).ToString());
+                        }
+                        else if (Game1.player.whichPetType == "Dog")
+                        {
+                            Main.Bot.CharacterCreation.ChangePetBreed(DogBreedStrings.IndexOf(choice["animal_breed"]!).ToString());
                         }
                         else
                         {
-                            Main.Bot.CharacterCreation.ChangePet(choice["animal_preference"]!, DogBreedStrings.IndexOf(choice["animal_breed"]!).ToString());
+                            Main.Bot.CharacterCreation.ChangePetBreed(choice["animal_breed"]!);
                         }
                         break;
                     case "eye_hue":

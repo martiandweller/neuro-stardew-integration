@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using StardewBotFramework.Source;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -126,12 +127,22 @@ internal sealed class Main : Mod
 
         if (e.Button == SButton.H)
         {
-            Logger.Info($"mouse state: {Game1.input.GetMouseState()}");
+            MouseState mouseState = Game1.input.GetMouseState();
+            Logger.Info($"mouse state: {mouseState}");
+            Logger.Info($"{new Vector2((int)((Utility.ModifyCoordinateFromUIScale(mouseState.X) + (float)Game1.viewport.X) / 64f), (int)((Utility.ModifyCoordinateFromUIScale(mouseState.Y) + (float)Game1.viewport.Y) / 64f))}");
         }
 
         if (e.Button == SButton.U)
         {
             NeuroSDKCsharp.Messages.Outgoing.Context.Send(PlayerContext.GetAllCharactersLevel());
+        }
+
+        if (e.Button == SButton.R)
+        {
+            foreach (var building in Game1.currentLocation.buildings)
+            {
+                building.FinishConstruction();
+            }
         }
     }
 

@@ -8,6 +8,7 @@ using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewBotFramework.Source.Events.World_Events;
+using StardewBotFramework.Source.Modules.Menus;
 using StardewModdingAPI.Enums;
 using StardewModdingAPI.Utilities;
 using StardewValley;
@@ -139,6 +140,10 @@ public static class MainGameLoopEvents
 			case JunimoNoteMenu junimoNoteMenu:
 				Main.Bot.JunimoNote.SetMenu(junimoNoteMenu);
 				JunimoNoteActions.RegisterActions();
+				break;
+			case PurchaseAnimalsMenu animalsMenu:
+				Main.Bot.AnimalMenu.SetUI(animalsMenu);
+				BuyAnimalsActions.RegisterActions();
 				break;
 		}
 		
