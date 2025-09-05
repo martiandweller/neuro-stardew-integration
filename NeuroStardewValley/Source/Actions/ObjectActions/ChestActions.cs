@@ -6,6 +6,7 @@ using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
+using Newtonsoft.Json.Linq;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Inventories;
@@ -16,7 +17,7 @@ namespace NeuroStardewValley.Source.Actions.ObjectActions;
 
 public static class ChestActions
 {
-	private static Chest? _chest;
+	public static Chest? Chest;
 
 	public class OpenChest : NeuroAction<Chest>
 	{
@@ -83,19 +84,18 @@ public static class ChestActions
 		{
 			await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(position.X,position.Y),false);
 			Open(chest);
-			RegisterChestActions();
 		}
 		
 		private static IInventory Open(Chest chest)
 		{
-			_chest = chest;
-			Dictionary<Point, Object> objects = StringUtilities.GetObjectsInLocation(_chest);
+			Chest = chest;
+			Dictionary<Point, Object> objects = StringUtilities.GetObjectsInLocation(Chest);
 
-			if (!objects.ContainsValue(_chest)) return new Inventory();
+			if (!objects.ContainsValue(Chest)) return new Inventory();
 
-			Main.Bot.Chest.OpenChest(_chest);
+			Main.Bot.Chest.OpenChest(Chest);
 
-			return Main.Bot.Chest.GetItems(_chest);
+			return Main.Bot.Chest.GetItems(Chest);
 		}
 
 		private static List<string> GetChestsLocations(out List<Chest> chests)
@@ -125,7 +125,7 @@ public static class ChestActions
 		protected override JsonSchema Schema => new ();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
-			if (_chest is null) return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
+			if (Chest is null) return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
 			return ExecutionResult.Success();
 		}
 
@@ -137,8 +137,9 @@ public static class ChestActions
 		
 		private static void Close()
 		{
-			if (_chest is null) return;
+			if (Chest is null) return;
 			Main.Bot.Chest.CloseChest();
+			Main.Bot.ItemGrabMenu.RemoveUi(); // do this as colour changing is in here
 		}
 	}
 	
@@ -161,21 +162,29 @@ public static class ChestActions
 		};
 		protected override ExecutionResult Validate(ActionData actionData,out List<Item> resultData)
 		{
-			if (_chest is null)
+			if (Chest is null)
 			{
 				resultData = new();
 				return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
 			}
-			int[]? array = actionData.Data?.Value<int[]>("item_index");
+			var objarray = actionData.Data?.Value<object>("item_index");
 
-			resultData = new List<Item>();
-			if (array is null)
+			resultData = new();
+			if (objarray is null)
 			{
 				return ExecutionResult.Failure($"item index is null");
 			}
+
+			List<int> array = new();
+			foreach (var token in (JArray)objarray)
+			{
+				if (token.Value<int?>() is null) continue;
+				
+				array.Add(token.Value<int>());
+			}
 			
-			var nullItems = _chest.Items.Where(slot => slot is null);
-			if (array.Length > nullItems.ToList().Count)
+			var nullItems = Chest.Items.Where(slot => slot is null);
+			if (array.Count > nullItems.ToList().Count)
 			{
 				return ExecutionResult.Failure($"You have tried to add too many items to this chest.");
 			}
@@ -189,10 +198,10 @@ public static class ChestActions
 
 		protected override void Execute(List<Item>? resultData)
 		{
-			if (_chest is null || resultData is null) return;
+			if (Chest is null || resultData is null) return;
 			foreach (var item in resultData)
 			{
-				Main.Bot.Chest.PutItemInChest(_chest,item,Game1.player);
+				Main.Bot.Chest.PutItemInChest(Chest,item,Game1.player);
 			}
 			RegisterChestActions();
 		}
@@ -211,58 +220,67 @@ public static class ChestActions
 				["item_index"] = new()
 				{
 					Type = JsonSchemaType.Array,
-					Items = new JsonSchema { Type = JsonSchemaType.Integer },
+					Items = new JsonSchema { Type = JsonSchemaType.Integer }
 				}
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData,out List<Item> resultData)
 		{
-			if (_chest is null)
+			if (Chest is null)
 			{
 				resultData = new();
 				return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
 			}
-			int[]? array = actionData.Data?.Value<int[]>("item_index");
+			var objarray = actionData.Data?.Value<object>("item_index");
 
 			resultData = new();
-			if (array is null)
+			if (objarray is null)
 			{
 				return ExecutionResult.Failure($"item index is null");
 			}
 
+			List<int> array = new();
+			foreach (var token in (JArray)objarray)
+			{
+				if (token.Value<int?>() is null) continue;
+				
+				array.Add(token.Value<int>());
+			}
+
 			foreach (var index in array)
 			{
-				if (_chest.Items[index] is null)
+				if (Chest.Items[index] is null)
 				{
 					return ExecutionResult.Failure($"{index} is not a valid item in this chest.");
 				}
 			}
 
-			resultData.AddRange(array.Select(item => _chest.Items[item]));
+			resultData.AddRange(array.Select(item => Chest.Items[item]));
 
 			List<string> itemNames = new();
 			resultData.ToList().ForEach(item => itemNames.Add(item.Name));
-			return ExecutionResult.Success($"You have added: {string.Concat(itemNames,"\n")} to the chest");
+			return ExecutionResult.Success($"You have added: {string.Join("\n",itemNames)} to the chest");
 		}
 
 		protected override void Execute(List<Item>? resultData)
 		{
-			if (_chest is null || resultData is null) return;
+			if (Chest is null || resultData is null) return;
 			foreach (var item in resultData)
 			{
-				Main.Bot.Chest.TakeItemFromChest(_chest,item,Game1.player);
+				Main.Bot.Chest.TakeItemFromChest(Chest,item,Game1.player);
 			}
 			RegisterChestActions();
 		}
 	}
 	
-	private static void RegisterChestActions()
+	public static void RegisterChestActions(bool includeColourPicker = false)
 	{
 		Logger.Info($"registering chest actions");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
 		window.AddAction(new CloseChest()).AddAction(new AddItemsToChest()).AddAction(new TakeItemsFromChest());
-		string nameList = InventoryContext.GetInventoryString(_chest!.Items, true);
+		if (includeColourPicker) window.AddAction(new ItemGrabActions.SelectColour());
+		string nameList = InventoryContext.GetInventoryString(Chest!.Items, true);
 		window.SetForce(0,$"You are now interacting with a chest", 
 			$"These are the items in this chest: {nameList}.\n This is your inventory: " +
 			$"{InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory,true)}",true);

@@ -15,11 +15,11 @@ public static class RegisterStoreActions
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
-		window.AddAction(new ShopActions.CloseShop()).AddAction(new ShopActions.BuyItem());
+		window.AddAction(new ShopActions.CloseShop()).AddAction(new ShopActions.BuyItem()).AddAction(new ShopActions.SellItem());
 
 		string itemString = "These are the items in the shop and their sale prices:";
-		List<ISalable>? items = Main.Bot.Shop.ListAllItems();
-		if (items is null)
+		List<ISalable> items = Main.Bot.Shop.ListAllItems();
+		if (items.Count < 1)
 		{
 			Game1.activeClickableMenu = null;
 			RegisterMainGameActions.RegisterPostAction();
@@ -31,10 +31,23 @@ public static class RegisterStoreActions
 			ItemStockInformation stockInformation = Main.Bot.Shop.StockInformation[itemISalable];
 			itemString += $"\n{i}: {itemISalable.Name}, description: {StringUtilities.FormatItemString(itemISalable.getDescription())} cost: {stockInformation.Price}";
 			Item item = ItemRegistry.Create(itemISalable.QualifiedItemId);
-			if (item is Tool && !string.IsNullOrEmpty(Main.Bot.Shop.StockInformation[itemISalable].TradeItem))
+			if (item is Tool && !string.IsNullOrEmpty(stockInformation.TradeItem))
 			{
-				Item upgradeItem = ItemRegistry.Create(Main.Bot.Shop.StockInformation[itemISalable].TradeItem);
-				itemString += $" items needed for upgrade: {upgradeItem.Name} {Main.Bot.Shop.StockInformation[itemISalable].TradeItemCount}";
+				Item upgradeItem = ItemRegistry.Create(stockInformation.TradeItem);
+				itemString += $" items needed for upgrade: {upgradeItem.Name} {stockInformation.TradeItemCount}";
+			}
+		}
+
+		itemString += "\nThese are the items you can sell to the shop: ";
+
+		if (Main.Bot.Shop._currentShop is null) return;
+		foreach (var item in Main.Bot.Shop._currentShop.inventory.actualInventory)
+		{
+			if (item is null) continue;
+
+			if (Main.Bot.Shop._currentShop.inventory.highlightMethod(item))
+			{
+				itemString += $"\n{item.Name} sell price: {item.sellToStorePrice()}";
 			}
 		}
 		window.SetForce(0, "You are in a shop", itemString);

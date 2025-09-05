@@ -26,7 +26,7 @@ public static class BuildingActions
 			Required = new List<string> { "building" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["building"] = QJS.Enum(GetLocationsBuildings().Select(building => TokenParser.ParseText(building.GetData().Name)))
+				["building"] = QJS.Enum(GetLocationsBuildings().Select(building => building.GetData().Name))
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out Building? resultData)
@@ -39,13 +39,12 @@ public static class BuildingActions
 				return ExecutionResult.Failure($"Building was null or empty");
 			}
 
-			if (!GetLocationsBuildings().Select(buildingData => TokenParser.ParseText(buildingData.GetData().Name))
-				    .Contains(buildingString))
+			if (!GetLocationsBuildings().Select(StringUtilities.TokenizeBuildingName).Contains(buildingString))
 			{
 				return ExecutionResult.Failure($"Building you gave is not valid.");
 			}
 			
-			int index = GetLocationsBuildings().Select(buildingData => TokenParser.ParseText(buildingData.GetData().Name)).ToList().IndexOf(buildingString);
+			int index = GetLocationsBuildings().Select(StringUtilities.TokenizeBuildingName).ToList().IndexOf(buildingString);
 			Building building = GetLocationsBuildings()[index];
 
 			if (GetBuildingsActionTiles(new List<Building> { building })[building].Count == 0 && building.GetIndoors() == null)

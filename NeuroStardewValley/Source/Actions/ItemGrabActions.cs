@@ -1,7 +1,9 @@
+using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.Actions.ObjectActions;
 using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley;
@@ -66,6 +68,81 @@ public static class ItemGrabActions
 			}
 		}
 	}
+	
+	public class SelectColour : NeuroAction<int>
+	{
+		private static Dictionary<int, Color> Colours = new Dictionary<int, Color>()
+		{
+			{0, Color.Black},
+			{1, new Color(85, 85, 255) },
+			{2, new Color(119, 191, 255)},
+			{3, new Color(0, 170, 170)},
+			{4, new Color(0, 234, 175)},
+			{5, new Color(0, 170, 0)},
+			{6, new Color(159, 236, 0)},
+			{7, new Color(255, 234, 18)},
+			{8, new Color(255, 167, 18)},
+			{9, new Color(255, 105, 18)},
+			{10, new Color(255, 0, 0)},
+			{11, new Color(135, 0, 35)},
+			{12, new Color(255, 173, 199)},
+			{13, new Color(255, 117, 195)},
+			{14, new Color(172, 0, 198)},
+			{15, new Color(143, 0, 255)},
+			{16, new Color(89, 11, 142)},
+			{17, new Color(64, 64, 64)},
+			{18, new Color(100, 100, 100)},
+			{19, new Color(200, 200, 200)},
+			{20, new Color(254, 254, 254)},
+		};
+		
+		private static ItemGrabMenu? Menu = Game1.activeClickableMenu as ItemGrabMenu;
+		
+		public override string Name => "select_colour";
+		protected override string Description => "Select a colour to make this object.";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "colour" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["colour"] = QJS.Enum(GetColours().Select(colour => colour.ToString()))
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out int resultData)
+		{
+			string? colourString = actionData.Data?.Value<string>("colour");
+
+			resultData = -1;
+			if (string.IsNullOrEmpty(colourString))
+			{
+				return ExecutionResult.Failure($"colour must be a value in the enum.");
+			}
+
+			int index = GetColours().Select(colour => colour.ToString()).ToList().IndexOf(colourString);
+			if (index == -1)
+			{
+				return ExecutionResult.Failure($"{colourString} is not a valid value, you should try something else.");
+			}
+
+			resultData = index;
+			return ExecutionResult.Success($"You selected {colourString}");
+		}
+
+		protected override void Execute(int resultData)
+		{
+			Color color = GetColours()[resultData];
+			Main.Bot.ItemGrabMenu.ChangeColour(DiscreteColorPicker.getSelectionFromColor(color));
+			ChestActions.RegisterChestActions(true);
+		}
+
+		private static List<Color> GetColours()
+		{
+			List<Color> colours = new();
+			colours.AddRange(Colours.Values);
+			return colours;
+		}
+	}
 
 	public class AddItem : NeuroAction<Item>
 	{
@@ -118,6 +195,10 @@ public static class ItemGrabActions
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
 		window.AddAction(new TakeItem()).AddAction(new AddItem());
+		if (menu.colorPickerToggleButton.visible && menu.CanHaveColorPicker())
+		{
+			window.AddAction(new SelectColour());
+		}
 
 		Inventory inv = new Inventory();
 		inv.AddRange(Menu.ItemsToGrabMenu.actualInventory);

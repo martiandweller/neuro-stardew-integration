@@ -84,11 +84,11 @@ public static class MainGameActions
     public class PathFindToExit : NeuroAction<Goal?>
     {
         private bool _destructive;
-        private GameLocation sentLocation;
+        private GameLocation? _sentLocation;
 
         private IEnumerable<string> ExitStrings(List<Point> exits)
         {
-            sentLocation = Game1.currentLocation;
+            _sentLocation = Game1.currentLocation;
             IEnumerable<string> exitStrings = new List<string>();
             foreach (var point in exits)
             {
@@ -120,7 +120,7 @@ public static class MainGameActions
             bool? destructive = actionData.Data?.Value<bool>("destructive");
 
             Logger.Info($"data: {pointStr}");
-            if (!Game1.currentLocation.Equals(sentLocation))
+            if (!Game1.currentLocation.Equals(_sentLocation))
             {
                 goal = null;
                 return ExecutionResult.ModFailure($"This action has been called in a different location than it was registered. This is most likely an issue with the integration");
@@ -186,6 +186,7 @@ public static class MainGameActions
         private List<Point> GetExits()
         {
             string warps = GetWarpTiles(Game1.currentLocation);
+            if (string.IsNullOrEmpty(warps)) return new List<Point>();
             string[] warpExtracts = warps.Split(' ');
             List<Point> warpLocation = new();
             int runs = 0;
@@ -204,8 +205,8 @@ public static class MainGameActions
         {
             if (location.Name == "Farm")
             {
-                location.TryGetMapProperty("FarmHouseEntry", out var FarmHousewarps);
-                location.TryGetMapProperty("ShippingBinLocation", out var ShippingBin);
+                location.TryGetMapProperty("FarmHouseEntry", out _);
+                location.TryGetMapProperty("ShippingBinLocation", out _);
             }
             location.TryGetMapProperty("Warp", out var warps);
             return warps;

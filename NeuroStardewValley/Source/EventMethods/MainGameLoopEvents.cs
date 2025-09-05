@@ -3,6 +3,7 @@ using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
+using NeuroStardewValley.Source.Actions.ObjectActions;
 using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
@@ -24,10 +25,10 @@ public static class MainGameLoopEvents
 
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
 	{
-		
-		Context.Send($"You have moved to {e.NewLocation.Name} from {e.OldLocation.Name}.",true);
-    
-		string warpsString = WarpUtilities.GetWarpTilesString(WarpUtilities.GetWarpTiles(e.NewLocation));
+		Context.Send($"You have moved to {e.NewLocation.Name} from {e.OldLocation.Name}. The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}",true);
+		string warps = WarpUtilities.GetWarpTiles(e.NewLocation);
+		string warpsString;
+		warpsString = !string.IsNullOrEmpty(warps) ? WarpUtilities.GetWarpTilesString(warps) : "There are no warps in this location";
 		
 		var locationCharacters = Main.Bot.Characters.GetCharactersInCurrentLocation(e.NewLocation);
 		string characterContext = "";
@@ -89,8 +90,18 @@ public static class MainGameLoopEvents
 				Main.Bot.EndDayShippingMenu.SetMenu(shippingMenu);
 				break;
 			case ItemGrabMenu itemGrabMenu:
-				if (itemGrabMenu.context is Chest) return; // The OpenChest action handles this.
-				if (itemGrabMenu.context is ShippingBin) return;
+				switch (itemGrabMenu.context)
+				{
+					case Chest chest:
+						Main.Bot.ItemGrabMenu.SetUI(itemGrabMenu);
+						Main.Bot.Chest.SetChest(chest);
+						ChestActions.Chest = chest;
+						ChestActions.RegisterChestActions(true);
+						return;
+					case ShippingBin:
+						return;
+				}
+
 				Main.Bot.ItemGrabMenu.SetUI(itemGrabMenu);
 				ItemGrabActions.RegisterActions(itemGrabMenu);
 				break;
@@ -171,7 +182,12 @@ public static class MainGameLoopEvents
 
 		Context.Send($"You have passed out and the day has ended. Maybe you should go back home earlier tomorrow.");
 	}
-		
+	
+	public static void OnBotDamaged(object? sender, BotDamagedEventArgs e)
+	{
+		Context.Send($"You were damaged by {e.Damager.Name}, they did {e.Damaged} damage. You now have {Main.Bot.PlayerInformation.Health} health left.");
+	}
+	
 	public static void LocationNpcChanged(object? sender, BotCharacterListChangedEventArgs e)
 	{
 		foreach (var npc in e.Added)
@@ -227,7 +243,7 @@ public static class MainGameLoopEvents
 		{
 			contextString = $" A new day has started. You are in your farm-house, {contextString}";
 		}
-
+		
 		contextString += $" This is the level of your relationship with all the characters you have interacted with: " +
 		                 $"{PlayerContext.GetAllCharactersLevel()}.\nAnd these are the levels of all your skills:" +
 		                 $" {PlayerContext.GetAllSkillLevel()}.";

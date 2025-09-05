@@ -1,18 +1,15 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
-using StardewBotFramework.Debug;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.GameData.Buildings;
 using StardewValley.Menus;
-using StardewValley.Tools;
+using StardewValley.TokenizableStrings;
 using Logger = NeuroStardewValley.Debug.Logger;
-using Rectangle = xTile.Dimensions.Rectangle;
 
 namespace NeuroStardewValley.Source.Actions.Menus;
 
@@ -23,7 +20,7 @@ public static class CarpenterActions
 		public override string Name => "change_building";
 		protected override string Description => "Change the currently selected building";
 
-		protected override JsonSchema? Schema => new()
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "building" },
@@ -213,7 +210,7 @@ public static class PlaceBuildingActions
 	{
 		public override string Name => "place_building";
 		protected override string Description => "Place building at the specified location.";
-		protected override JsonSchema? Schema => new()
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "tile_x", "tile_y" },
@@ -248,17 +245,17 @@ public static class PlaceBuildingActions
 			return ExecutionResult.Success();
 		}
 
-		protected override void Execute(Point resultData)
+		protected override void Execute(Point resultData) // This is run in validation
 		{
 			Logger.Info($"result data: {resultData}");
 		}
 	}
 
-	private class SelectBuilding : NeuroAction<Point>
+	private class SelectBuilding : NeuroAction<Building>
 	{
 		public override string Name => "select_building";
 		protected override string Description => "Select a building to either upgrade,destroy or move.";
-		protected override JsonSchema? Schema => new()
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "building" },
@@ -267,44 +264,56 @@ public static class PlaceBuildingActions
 				["building"] = QJS.Enum(GetSchema())
 			}
 		};
-		protected override ExecutionResult Validate(ActionData actionData, out Point resultData)
+		protected override ExecutionResult Validate(ActionData actionData, out Building? resultData)
 		{
 			string? buildingStr = actionData.Data?.Value<string>("building");
 
 			if (buildingStr is null)
 			{
-				resultData = new();
+				resultData = null;
 				return ExecutionResult.Failure($"You have provided a null value in building");
 			}
 
 			Building? building = GetBuilding(buildingStr);
 			if (!GetSchema().Contains(buildingStr) || building is null)
 			{
-				resultData = new();
+				resultData = null;
 				return ExecutionResult.Failure($"You have provided an invalid value in building");
 			}
 			
 			if (building.buildingType.Value == Main.Bot.FarmBuilding.BlueprintEntry.UpgradeFrom)
 			{
-				resultData = new (building.tileX.Value,building.tileY.Value);
-				return ExecutionResult.Success($"selected: {building.GetData().NameForGeneralType}"); 
+				resultData = building;
+				return ExecutionResult.Success($"selected: {StringUtilities.TokenizeBuildingName(building)}"); 
 			}
 
-			resultData = new();
+			resultData = null;
 			return ExecutionResult.Failure($"You have provided a tile that does not have a valid building in it.");
 		}
 
-		protected override void Execute(Point resultData)
+		protected override void Execute(Building? resultData)
 		{
+			if (resultData is null) return;
 			Main.Bot.FarmBuilding.SelectBuilding(resultData);
 		}
 
 		private static List<string> GetSchema()
 		{
+			if (Main.Bot.FarmBuilding._carpenterMenu is null) return new();
 			List<string> names = new();
-			foreach (var building in Game1.currentLocation.buildings)
+			List<Building> buildings;
+			if (Main.Bot.FarmBuilding._carpenterMenu.Action == CarpenterMenu.CarpentryAction.Upgrade)
 			{
-				names.Add($"{building.GetData().Name}  pos: {building.tileX.Value},{building.tileY.Value}");
+				buildings = Game1.currentLocation.buildings.Where(building =>
+					building.buildingType.Value == Main.Bot.FarmBuilding._carpenterMenu.Blueprint.UpgradeFrom).ToList();
+			}
+			else
+			{
+				buildings = Game1.currentLocation.buildings.ToList();
+			}
+			foreach (var building in buildings)
+			{
+				names.Add($"{StringUtilities.TokenizeBuildingName(building)}  pos: {building.tileX.Value},{building.tileY.Value}");
 			}
 
 			return names;
@@ -314,7 +323,7 @@ public static class PlaceBuildingActions
 		{
 			foreach (var building in Game1.currentLocation.buildings)
 			{
-				if ($"{building.GetData().Name}  pos: {building.tileX.Value},{building.tileY.Value}" == str)
+				if ($"{StringUtilities.TokenizeBuildingName(building)}  pos: {building.tileX.Value},{building.tileY.Value}" == str)
 				{
 					return building;
 				}
@@ -328,7 +337,7 @@ public static class PlaceBuildingActions
 	{
 		public override string Name => "cancel_building";
 		protected override string Description => "Cancel placing the current building.";
-		protected override JsonSchema? Schema => new();
+		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
 			return ExecutionResult.Success();
@@ -343,8 +352,12 @@ public static class PlaceBuildingActions
 
 	public static void RegisterPlaceBuilding(bool upgrade = false)
 	{
+		// This stops from running SelectBuilding schema too early leading to no buildings
+		while (Game1.IsFading() || Main.Bot.FarmBuilding._carpenterMenu?.Action == CarpenterMenu.CarpentryAction.None)
+		{
+			continue;
+		}
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
-		Logger.Info($"Action: {Main.Bot.FarmBuilding._carpenterMenu!.Action}");
 		if (upgrade)
 		{
 			window.AddAction(new SelectBuilding());
@@ -354,7 +367,7 @@ public static class PlaceBuildingActions
 			window.AddAction(new PlaceBuilding());
 		}
 		window.AddAction(new CancelPlacingBuilding());
-		window.SetForce(3, "", "");
+		window.SetForce(5, "", "");
 		window.Register();
 	}
 }

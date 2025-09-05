@@ -120,17 +120,14 @@ public static class BuyAnimalsActions
 				return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,"BuildingCheck"));
 			}
 			resultData = building;
-			return ExecutionResult.Success($"You have selected a: {TokenParser.ParseText(building.GetData().Name)}");
+			return ExecutionResult.Success($"You have selected a: {StringUtilities.TokenizeBuildingName(building)}");
 		}
 
 		protected override void Execute(Building? resultData)
 		{
 			if (resultData is null) return;
-			Vector2 clickTile = new Vector2((int)((Utility.ModifyCoordinateFromUIScale(resultData.tileX.Value) + Game1.viewport.X) / 64f)
-				, (int)((Utility.ModifyCoordinateFromUIScale(resultData.tileY.Value) + Game1.viewport.Y) / 64f));
-			Building selection = Main.Bot.AnimalMenu.Menu?.TargetLocation.getBuildingAt(clickTile)!;
-			Logger.Error($"selection: {selection}   click tile: {clickTile}");
 			Main.Bot.AnimalMenu.SelectBuilding(resultData);
+			RegisterActions();
 		}
 
 		private static List<string> GetSchema()
@@ -141,7 +138,7 @@ public static class BuyAnimalsActions
 			using var enumerator = enumerable.GetEnumerator();
 			while (enumerator.MoveNext())
 			{
-				strings.Add($"{enumerator.Current.tileX.Value},{enumerator.Current.tileY.Value} {TokenParser.ParseText(enumerator.Current.GetData().Name)}");
+				strings.Add($"{enumerator.Current.tileX.Value},{enumerator.Current.tileY.Value} {StringUtilities.TokenizeBuildingName(enumerator.Current)}");
 			}
 			
 			return strings;
@@ -194,6 +191,7 @@ public static class BuyAnimalsActions
 		{
 			if (string.IsNullOrEmpty(resultData)) return;
 			Main.Bot.AnimalMenu.NameAnimal(resultData);
+			RegisterActions();
 		}
 	}
 
@@ -210,6 +208,7 @@ public static class BuyAnimalsActions
 		protected override void Execute()
 		{
 			Main.Bot.AnimalMenu.RandomName();
+			RegisterActions();
 		}
 	}
 

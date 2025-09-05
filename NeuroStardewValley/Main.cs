@@ -7,6 +7,7 @@ using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.EventMethods;
+using StardewBotFramework.Source.Events.EventArgs;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Menus;
@@ -60,6 +61,7 @@ internal sealed class Main : Mod
         Bot.GameEvents.BotWarped += MainGameLoopEvents.OnWarped;
         Bot.GameEvents.MenuChanged += MainGameLoopEvents.OnMenuChanged;
         Bot.GameEvents.BotLocationNpcChanged += MainGameLoopEvents.LocationNpcChanged;
+        Bot.GameEvents.OnBotDamaged += MainGameLoopEvents.OnBotDamaged;
 
         helper.Events.GameLoop.SaveLoaded += OneTimeEvents.GameLoopOnSaveLoaded;
 

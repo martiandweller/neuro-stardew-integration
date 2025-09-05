@@ -4,19 +4,17 @@ using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
-using StardewBotFramework.Debug;
 using StardewValley;
-using Logger = NeuroStardewValley.Debug.Logger;
 
 namespace NeuroStardewValley.Source.Actions;
 
-public class ShopActions
+public static class ShopActions
 {
 	public class OpenShop : NeuroAction<KeyValuePair<int,int>>
 	{
 		public override string Name => "open_shop";
 		protected override string Description => "This will open the shop that is at the provided x,y coordinate.";
-		protected override JsonSchema? Schema => new()
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "tile_x","tile_y" },
@@ -53,9 +51,8 @@ public class ShopActions
 			return ExecutionResult.Success($"opening shop");
 		}
 
-		protected override void Execute(KeyValuePair<int, int> resultData)
+		protected override void Execute(KeyValuePair<int, int> resultData)// we set it in validation this is not good practice, but we kinda need to do it.
 		{
-			return; // we set it in validation this is not good practice, but we kinda need to do it.
 		}
 	}
 	
@@ -69,7 +66,7 @@ public class ShopActions
 			Required = new List<string> { "item_index" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["item_index"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Shop.ListAllItems()!.Count)), // get shop menu items
+				["item_index"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Shop.ListAllItems().Count)), // get shop menu items
 				["amount"] = QJS.Type(JsonSchemaType.Integer)
 			}
 		};
@@ -87,13 +84,13 @@ public class ShopActions
 			int index = (int)itemIndex;
 			int amount = (int)itemAmount;
 
-			if (!Enumerable.Range(0, Main.Bot.Shop.ListAllItems()!.Count).Contains(index))
+			if (!Enumerable.Range(0, Main.Bot.Shop.ListAllItems().Count).Contains(index))
 			{
 				return ExecutionResult.Failure($"{index} is not a valid index.");
 			}
 
-			ISalable sellItem = Main.Bot.Shop.ListAllItems()![index];
-			Main.Bot.Shop.ForSaleStats(out List<ISalable> list, out var currency);
+			ISalable sellItem = Main.Bot.Shop.ListAllItems()[index];
+			Main.Bot.Shop.ForSaleStats(out List<ISalable> _, out var currency);
 			switch (currency)
 			{
 				case 0:
@@ -134,11 +131,61 @@ public class ShopActions
 
 		protected override void Execute(KeyValuePair<ISalable,int> resultData)
 		{
-			Logger.Info($"isalable: {resultData.Key.Name}  amount: {resultData.Value}");
-			int index = Main.Bot.Shop.ListAllItems()!.IndexOf(resultData.Key);
-			Logger.Info($"index: {index}");
+			int index = Main.Bot.Shop.ListAllItems().IndexOf(resultData.Key);
 			Main.Bot.Shop.BuyItem(index,resultData.Value);
 			RegisterStoreActions.RegisterDefaultShop();
+		}
+	}
+
+	public class SellItem : NeuroAction<KeyValuePair<int, int>> // index of item and amount
+	{
+		public override string Name => "sell_back_item";
+		protected override string Description => "Sell back an item you have bought from here";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "item_index" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["item_index"] = QJS.Enum(Main.Bot.Shop._currentShop?.inventory.actualInventory.Where(item => item is not null && (bool)Main.Bot.Shop._currentShop?.inventory.highlightMethod(item)).Select(item => Main.Bot.Shop._currentShop.inventory.actualInventory.IndexOf(item)) ?? Array.Empty<int>()), // get shop menu items
+				["amount"] = QJS.Type(JsonSchemaType.Integer)
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<int, int> resultData)
+		{
+			int? itemIndex = actionData.Data?.Value<int>("item_index");
+			int? itemAmount = actionData.Data?.Value<int>("amount");
+			
+			resultData = new();
+			if (Main.Bot.Shop._currentShop is null) return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,"Main.Bot.Shop._currentShop"));
+			if (itemIndex is null || itemAmount is null)
+			{
+				return ExecutionResult.Failure($"A value you provided was null.");
+			}
+
+			int index = (int)itemIndex;
+			int amount = (int)itemAmount;
+
+			if (Main.Bot.Inventory.Inventory[index] is null)
+			{
+				return ExecutionResult.Failure($"{index} is not a valid index.");
+			}
+
+			Item sellItem = Main.Bot.Inventory.Inventory[index];
+			
+			if (sellItem.salePrice() == -1)
+			{
+				return ExecutionResult.Failure($"You cannot sell this item.");
+			}
+
+			if (amount == 0) amount = 1;
+			resultData = new KeyValuePair<int, int>(index, amount);
+			return ExecutionResult.Success();
+		}
+
+		protected override void Execute(KeyValuePair<int, int> resultData)
+		{
+			Main.Bot.Shop.SellBackItem(resultData.Key);
 		}
 	}
 

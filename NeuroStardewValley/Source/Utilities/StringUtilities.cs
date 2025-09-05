@@ -1,6 +1,8 @@
 using Microsoft.Xna.Framework;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.Network;
+using StardewValley.TokenizableStrings;
 using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Utilities;
@@ -136,5 +138,10 @@ public class StringUtilities
 	{
 		itemString = itemString.Replace("\n", " ");
 		return itemString;
+	}
+	
+	public static string TokenizeBuildingName(Building building)
+	{
+		return TokenParser.ParseText(building.GetData().Name);
 	}
 }
