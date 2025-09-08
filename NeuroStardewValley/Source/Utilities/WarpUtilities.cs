@@ -1,6 +1,4 @@
-using System.Reflection.Metadata;
 using Microsoft.Xna.Framework;
-using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Debug;
 using StardewValley;
 using StardewValley.Buildings;
@@ -11,18 +9,28 @@ namespace NeuroStardewValley.Source.Utilities;
 
 public static class WarpUtilities
 {
-    public static List<string> GetTilesInLocation(GameLocation location)
+    public static List<string> GetTilesInLocation(GameLocation location, Character? startTile = null,int radius = 0)
     {
-        List<string> tileList = new() {"These tiles are sent in the format of X,Y with \\n separating each tile"};
+        List<string> tileList = new() {"These tiles are sent in the format of X,Y with a \\n separating each tile"};
         List<Building> sentBuildings = new();
         WaterTiles.WaterTileData[,] waterTileData = { };
         if (location.waterTiles is not null)
         {
             waterTileData = location.waterTiles.waterTiles;
         }
-
+        
         int maxX = location.Map.DisplayWidth / Game1.tileSize;
         int maxY = location.Map.DisplayHeight / Game1.tileSize;
+        
+        Rectangle rangeRect = new();
+        if (startTile is not null)
+        {
+            Logger.Info($"Character pos: {startTile.TilePoint}   radius: {radius}");
+            rangeRect = new(Math.Clamp((startTile.TilePoint.X - radius) * 64,0,maxX * 64),
+                Math.Clamp((startTile.TilePoint.Y - radius) * 64,0,maxY * 64),
+                (radius * 2) * 64, (radius * 2) * 64); // this should reach to startTile.x + radius
+            Logger.Info($"rect: {rangeRect}");
+        }
 
         Logger.Info($"map size X: {maxX}  maxY: {maxY}");
 
@@ -31,6 +39,11 @@ public static class WarpUtilities
             for (int y = 0; y < maxY; y++)
             {
                 Rectangle rect = new Rectangle(x * Game1.tileSize, y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
+                Logger.Info($"tile rect: {rect}   range rect: {rangeRect}");
+                if (startTile is not null && !rangeRect.Intersects(rect))
+                {
+                    continue;
+                }
                 if (x < waterTileData.GetLength(0) && y < waterTileData.GetLength(1) && waterTileData[x, y].isWater)
                 {
                     tileList.Add($"Water: {x},{y}");
@@ -125,27 +138,30 @@ public static class WarpUtilities
         return warps;
     }
 
-    public static string GetWarpTilesString(string warpTiles)
+    public static Dictionary<Point, string> GetWarpsAsPoint(string warps)
     {
-        string[] warpExtracts = warpTiles.Split(' ');
+        string[] warpExtracts = warps.Split(' ');
         Dictionary<Point, string> warpLocation = new();
-        int runs = 0;
-        for (int i = 0; i < warpExtracts.Length / 5; i++)
+        for (int i = 0; i < warpExtracts.Length / 5; i += 5) // divide by five to only get tile locations
         {
-            Logger.Info($"tile: {warpExtracts[runs]} next tile: {warpExtracts[runs + 1]}");
-            Point tile = new Point(int.Parse(warpExtracts[runs]), int.Parse(warpExtracts[runs + 1]));
-            
-            string locationName = warpExtracts[runs + 2];
-            // Point LocationTile = new Point(int.Parse(warpExtracts[runs + 3]), int.Parse(warpExtracts[runs + 4]));
+            Logger.Info($"tile: {warpExtracts[i]} next tile: {warpExtracts[i + 1]}");
+            Point tile = new Point(int.Parse(warpExtracts[i]), int.Parse(warpExtracts[i + 1]));
+
+            string locationName = warpExtracts[i + 2];
             warpLocation.Add(tile,locationName);
-            runs += 5;
         }
 
+        return warpLocation;
+    }
+
+    public static string GetWarpTilesString(string warpTiles)
+    {
+        var warpLocation = GetWarpsAsPoint(warpTiles);
+        
         string s = "";
         foreach (var kvp in warpLocation)
         {
-            Logger.Info(kvp.Key.ToString());
-            Logger.Info(kvp.Value);
+            Logger.Info($"key: {kvp.Key.ToString()}  value: {kvp.Value}");
             s +=  "\n" + kvp.Value + ": " + kvp.Key;
         }
 

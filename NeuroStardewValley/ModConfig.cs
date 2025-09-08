@@ -6,6 +6,7 @@ public class ModConfig
     public string WebsocketUri { get; set; }
     public bool AllowCharacterCreation { get; set; } // Allow Neuro to create her own character
     public int SaveSlot { get; set; } // save slot to use
+    public int StaminaSendInterval { get; set; } // The amount of hours between each stamina context, sent every hour divisible by four would be 400  
     public Dictionary<string, bool> CharacterCreationOptions { get; set; }
     public Dictionary<string, string> CharacterCreationDefault { get; set; }
 
@@ -16,6 +17,7 @@ public class ModConfig
         WebsocketUri = "ws://localhost:8000/ws/";
         AllowCharacterCreation = false;
         SaveSlot = 0;
+        StaminaSendInterval = 400;
         
         CharacterCreationOptions = new()
         {

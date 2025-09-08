@@ -184,7 +184,7 @@ public static class BuyAnimalsActions
 			}
 
 			resultData = nameString;
-			return ExecutionResult.Success($"");
+			return ExecutionResult.Success();
 		}
 
 		protected override void Execute(string? resultData)
@@ -219,7 +219,7 @@ public static class BuyAnimalsActions
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
-			return ExecutionResult.Success();
+			return ExecutionResult.Success($"You have selected the name: {Main.Bot.AnimalMenu.Menu?.textBox.Text}, for the {Main.Bot.AnimalMenu.Menu?.animalBeingPurchased.displayType}.");
 		}
 
 		protected override void Execute()

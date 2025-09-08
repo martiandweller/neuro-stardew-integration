@@ -30,13 +30,13 @@ public class OneTimeEvents
 
 	public static void OnHUDMessageAdded(object? sender, HUDMessageAddedEventArgs e)
 	{
-		string context;
-		string message = StringUtilities.FormatBannerMessage(e.Message);
 		if (e is {MessageSubjectItem: not null}) // remove banners that say they add items (may have other effects no other way though)
 		{
 			Logger.Info($"e was null");
 			return;	
 		}
+		string context;
+		string message = StringUtilities.FormatBannerMessage(e.Message);
 		switch (e.WhatType) // these are the types listed on the stardew wiki lists in the CommonTasks/UserInterface section
 		{
 			case 1:

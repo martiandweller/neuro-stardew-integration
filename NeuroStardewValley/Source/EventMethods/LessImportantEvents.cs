@@ -12,8 +12,7 @@ public static class LessImportantEvents
 {
 	public static void OnBotDeath(object? sender, BotOnDeathEventArgs e)
 	{
-		Context.Send(
-			$"Oh No you died! It was at {e.DeathLocation.Name} {e.DeathPoint}. You lost: {e.ItemLostAmount}");
+		Context.Send($"Oh no you died! It was at {e.DeathLocation.Name} {e.DeathPoint}. You lost: {e.ItemLostAmount}");
 	}
 
 	public static void OnUiTimeChanged(object? sender, TimeEventArgs e)
@@ -25,6 +24,10 @@ public static class LessImportantEvents
 
 		string text = StringUtilities.Format24HourString();
 		Context.Send($"The current time is {text}, This is sent in the 24 hour notion.", true);
+		if (Game1.timeOfDay % Main.Config.StaminaSendInterval == 0)
+		{
+			Context.Send($"Your current stamina is {Game1.player.Stamina} from the max of {Game1.player.MaxStamina}", true);
+		}
 	}
 
 	public static void OnChatMessage(object? sender, ChatMessageReceivedEventArgs e)

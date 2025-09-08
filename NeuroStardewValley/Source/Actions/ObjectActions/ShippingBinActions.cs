@@ -16,7 +16,7 @@ namespace NeuroStardewValley.Source.Actions.ObjectActions;
 
 public static class ShippingBinActions
 {
-	private static void RegisterBinActions()
+	public static void RegisterBinActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		window.AddAction(new ExitBin()).AddAction(new SellItems())
@@ -69,8 +69,6 @@ public static class ShippingBinActions
 				false);
 			_bin = resultData;
 			HandleShippingBinUi();
-			Main.Bot.ShippingBinInteraction.SetUI((ItemGrabMenu)Game1.activeClickableMenu);
-			RegisterBinActions();
 		}
 
 		private static Dictionary<int, Queue<ShippingBin>> ClosestShippingBin(Point place, List<ShippingBin> bins)
@@ -112,7 +110,6 @@ public static class ShippingBinActions
 			Farm farm = (Farm)Game1.currentLocation;
 			if (farm.getShippingBin(Game1.player).Count == 0)
 			{
-				// Bin.showShipment(null);
 				return;
 			}
 			_bin.showShipment(farm.getShippingBin(Game1.player)[farm.getShippingBin(Game1.player).Count - 1]);

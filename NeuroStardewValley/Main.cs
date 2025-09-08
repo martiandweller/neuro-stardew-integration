@@ -7,7 +7,6 @@ using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.EventMethods;
-using StardewBotFramework.Source.Events.EventArgs;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Menus;
@@ -25,7 +24,7 @@ internal sealed class Main : Mod
     
     public static StardewClient Bot = null!;
 
-    private ModConfig? _config;
+    public static ModConfig Config = null!;
     private static string? _uriString;
     
     public static bool CanCreateCharacter;
@@ -42,13 +41,13 @@ internal sealed class Main : Mod
     {
         Bot = new StardewClient(helper, ModManifest, Monitor, helper.Multiplayer);
 
-        _config = Helper.ReadConfig<ModConfig>();
-        _uriString = _config.WebsocketUri;
-        CanCreateCharacter = _config.AllowCharacterCreation;
-        _configSaveSlot = _config.SaveSlot;
+        Config = Helper.ReadConfig<ModConfig>();
+        _uriString = Config.WebsocketUri;
+        CanCreateCharacter = Config.AllowCharacterCreation;
+        _configSaveSlot = Config.SaveSlot;
 
-        EnabledCharacterOptions = _config.CharacterCreationOptions;
-        DefaultCharacterOptions = _config.CharacterCreationDefault;
+        EnabledCharacterOptions = Config.CharacterCreationOptions;
+        DefaultCharacterOptions = Config.CharacterCreationDefault;
 
         Logger.SetMonitor(Monitor);
 
@@ -81,7 +80,7 @@ internal sealed class Main : Mod
 
         CharacterController.FailedPathFinding += OneTimeEvents.FailedCharacterController;
         
-        if (_config.Debug)
+        if (Config.Debug)
         {
             helper.Events.Input.ButtonPressed += InputOnButtonPressed;
         }

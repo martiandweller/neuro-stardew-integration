@@ -1,4 +1,3 @@
-using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
@@ -9,7 +8,6 @@ using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewBotFramework.Source.Events.World_Events;
-using StardewBotFramework.Source.Modules.Menus;
 using StardewModdingAPI.Enums;
 using StardewModdingAPI.Utilities;
 using StardewValley;
@@ -25,10 +23,9 @@ public static class MainGameLoopEvents
 
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
 	{
-		Context.Send($"You have moved to {e.NewLocation.Name} from {e.OldLocation.Name}. The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}",true);
+		if (e.Player.passedOut) return;
 		string warps = WarpUtilities.GetWarpTiles(e.NewLocation);
-		string warpsString;
-		warpsString = !string.IsNullOrEmpty(warps) ? WarpUtilities.GetWarpTilesString(warps) : "There are no warps in this location";
+		string warpsString = !string.IsNullOrEmpty(warps) ? WarpUtilities.GetWarpTilesString(warps) : "There are no warps in this location";
 		
 		var locationCharacters = Main.Bot.Characters.GetCharactersInCurrentLocation(e.NewLocation);
 		string characterContext = "";
@@ -36,13 +33,14 @@ public static class MainGameLoopEvents
 		{
 			characterContext += $"{kvp.Value.Name} is at {kvp.Key} in this location";
 		}
-		
-		string tilesString = string.Join("\n",WarpUtilities.GetTilesInLocation(e.NewLocation)); // the \n adds a bunch of tokens, but not having it could be confusing and crashes tony.
+
+		string tilesString = string.Join("\n",WarpUtilities.GetTilesInLocation(e.NewLocation,e.Player,50)); // the \n adds a bunch of tokens, but not having it could be confusing and crashes tony.
 		
 		Context.Send(warpsString, true);
 		Context.Send(characterContext,true);
-		RegisterMainGameActions.RegisterPostAction(e, 0, $"You are at {e.NewLocation.Name}", 
-			$"These are the tiles that have an object on them around you: {tilesString}", false);
+		RegisterMainGameActions.RegisterPostAction(e, 0, 
+			$"You are at {e.NewLocation.Name} from {e.OldLocation.Name}. The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}", 
+			$"These are the tiles that have an object on them around you: {tilesString}", true);
 	}
 
 	public static void OnMenuChanged(object? sender, BotMenuChangedEventArgs e)
@@ -99,6 +97,8 @@ public static class MainGameLoopEvents
 						ChestActions.RegisterChestActions(true);
 						return;
 					case ShippingBin:
+						Main.Bot.ShippingBinInteraction.SetUI((ItemGrabMenu)Game1.activeClickableMenu);
+						ShippingBinActions.RegisterBinActions();
 						return;
 				}
 
@@ -228,7 +228,7 @@ public static class MainGameLoopEvents
 		string time = StringUtilities.FormatTimeString();
 		if (sendQuests) QuestContext.SendContext();
 		Main.Bot.Time.GetTodayFestivalData(out Dictionary<string, string> _, out GameLocation _,
-			out int startTime, out var endTime);
+			out int startTime, out int endTime);
 		string contextString = $"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.";
 		if (Main.Bot.Time.IsFestival())
 		{
@@ -247,7 +247,12 @@ public static class MainGameLoopEvents
 		contextString += $" This is the level of your relationship with all the characters you have interacted with: " +
 		                 $"{PlayerContext.GetAllCharactersLevel()}.\nAnd these are the levels of all your skills:" +
 		                 $" {PlayerContext.GetAllSkillLevel()}.";
-
+		
+		string warps = WarpUtilities.GetWarpTiles(Game1.currentLocation);
+		string warpString = !string.IsNullOrEmpty(warps) ? WarpUtilities.GetWarpTilesString(warps) : "There are no warps in this location";
+		contextString += $"These are the warps here: {warpString}\n";
+		contextString += string.Join("\n",WarpUtilities.GetTilesInLocation(Game1.currentLocation));
+		
 		return contextString;
 	}
 }
