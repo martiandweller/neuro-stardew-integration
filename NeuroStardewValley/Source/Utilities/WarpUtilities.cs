@@ -50,7 +50,8 @@ public static class WarpUtilities
                     continue;
                 }
 
-                if (!Game1.currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, false, Game1.player))
+                if (!Game1.currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
+                        false, Game1.player, true,false,false,true))
                     continue;
 
                 object? obj = GetTileType(location, new Point(x, y));

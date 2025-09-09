@@ -14,7 +14,7 @@ public static class DialogueUtils
 			{
 				if (emotion is "$4" or "$u")
 				{
-					return "Neutral"; // wiki doesn't contain unique portraits :(
+					return ""; // wiki doesn't contain unique portraits :(
 				}
 				return EmotionStrings[EmotionCommandStrings.ToList().IndexOf(emotion)];
 			}

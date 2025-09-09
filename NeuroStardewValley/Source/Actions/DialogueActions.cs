@@ -1,6 +1,9 @@
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Source.RegisterActions;
+using StardewValley;
+using StardewValley.Menus;
 using Context = NeuroSDKCsharp.Messages.Outgoing.Context;
 
 namespace NeuroStardewValley.Source.Actions;
@@ -11,17 +14,18 @@ public static class DialogueActions
 	{
 		public override string Name => "advance_dialogue";
 		protected override string Description => "This will advance the current dialogue.";
-		protected override JsonSchema Schema => new JsonSchema();
+		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
-			// if (Main.Bot.Dialogue.CurrentDialogue is null) return ExecutionResult.ModFailure($"There is no dialogue currently, this is most likely an issue with the mod.");
+			if (Game1.activeClickableMenu is not DialogueBox dialogueBox || dialogueBox.responses.Length > 0) return ExecutionResult.ModFailure($"There is no dialogue currently, this is most likely an issue with the mod.");
 			return ExecutionResult.Success();
 		}
 
 		protected override void Execute()
 		{
-			Main.Bot.Dialogue.AdvanceDialogBox(out var line);
-			Context.Send($"Dialogue line: {line}");
+			bool sendAction = Main.Bot.Dialogue.CurrentDialogue?.dialogues.Count > 1 && !Main.Bot.Dialogue.CurrentDialogue.isOnFinalDialogue();
+			Main.Bot.Dialogue.AdvanceDialogBox(out _);
+			if (sendAction) RegisterDialogueActions.RegisterActions();
 		}
 	}
 	

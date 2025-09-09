@@ -44,8 +44,12 @@ public static class RegisterDialogueActions
 					stateString = $"The current dialogue is {dialogueBox.getCurrentString()}";
 				}
 			}
-			
-			window.SetForce(2, "", stateString);
+			float seconds = 0;
+			if (dialogueBox.showTyping)
+			{
+				seconds = 0.03f * dialogueBox.getCurrentString().Length;
+			}
+			window.SetForce(seconds, "You are currently engaging in dialogue.", stateString);
 			window.Register();
 		}
 		else

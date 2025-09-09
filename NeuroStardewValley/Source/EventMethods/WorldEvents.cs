@@ -1,6 +1,7 @@
 using System.Collections;
 using NeuroSDKCsharp.Messages.Outgoing;
 using StardewBotFramework.Source.Events.World_Events;
+using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley.Objects;
 using StardewValley.TerrainFeatures;
 using Object = StardewValley.Object;
@@ -23,6 +24,8 @@ public static class WorldEvents
 			using var enumerator = e.Removed.GetEnumerator();
 			HandleEnumeratorContext(enumerator,"{0} was removed from this location.");
 		}
+		
+		// if (CharacterController.IsMoving()) CharacterController.ForceStopMoving();
 	}
 
 	public static void LocationFurnitureChanged(object? sender, BotFurnitureChangedEventArgs e)

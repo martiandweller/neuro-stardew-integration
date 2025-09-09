@@ -24,6 +24,7 @@ public static class MainGameLoopEvents
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
 	{
 		if (e.Player.passedOut) return;
+		if (Game1.eventUp) return;
 		string warps = WarpUtilities.GetWarpTiles(e.NewLocation);
 		string warpsString = !string.IsNullOrEmpty(warps) ? WarpUtilities.GetWarpTilesString(warps) : "There are no warps in this location";
 		
@@ -97,7 +98,7 @@ public static class MainGameLoopEvents
 						ChestActions.RegisterChestActions(true);
 						return;
 					case ShippingBin:
-						Main.Bot.ShippingBinInteraction.SetUI((ItemGrabMenu)Game1.activeClickableMenu);
+						Main.Bot.ShippingBinInteraction.SetUI(itemGrabMenu);
 						ShippingBinActions.RegisterBinActions();
 						return;
 				}
@@ -155,6 +156,10 @@ public static class MainGameLoopEvents
 			case PurchaseAnimalsMenu animalsMenu:
 				Main.Bot.AnimalMenu.SetUI(animalsMenu);
 				BuyAnimalsActions.RegisterActions();
+				break;
+			case ItemListMenu itemListMenu:
+				Main.Bot.ItemListMenu.SetMenu(itemListMenu);
+				ItemListMenuActions.RegisterActions();
 				break;
 		}
 		
