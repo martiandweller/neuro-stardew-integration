@@ -76,7 +76,7 @@ public static class MainGameActions
 
         private async Task ExecuteFunctions(Goal goal)
         {
-            await Main.Bot.Pathfinding.Goto(goal, false, _destructive);
+            await Main.Bot.Pathfinding.Goto(goal, _destructive);
             RegisterMainGameActions.RegisterPostAction();
         }
     }
@@ -180,7 +180,7 @@ public static class MainGameActions
         
         private async Task ExecuteFunctions(Goal goal)
         {
-            await Main.Bot.Pathfinding.Goto(goal, false, _destructive);
+            await Main.Bot.Pathfinding.Goto(goal, _destructive);
         }
 
         private List<Point> GetExits()
@@ -210,6 +210,54 @@ public static class MainGameActions
             }
             location.TryGetMapProperty("Warp", out var warps);
             return warps;
+        }
+    }
+
+    public class GoToCharacter : NeuroAction<KeyValuePair<NPC,bool>>
+    {
+        public override string Name => "go_to_character";
+        protected override string Description => "Go to a character that is in this location.";
+        protected override JsonSchema Schema => new()
+        {
+            Type = JsonSchemaType.Object,
+            Required = new List<string> { "character","interact" },
+            Properties = new Dictionary<string, JsonSchema>
+            {
+                ["character"] = QJS.Enum(Game1.currentLocation.characters.Select(npc => npc.Name).ToList()),
+                ["interact"] = QJS.Type(JsonSchemaType.Boolean)
+            }
+        };
+        protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<NPC,bool> resultData)
+        {
+            string? charName = actionData.Data?.Value<string>("character");
+            bool? interact = actionData.Data?.Value<bool>("interact");
+
+            resultData = new();
+            if (string.IsNullOrEmpty(charName) || interact is null)
+            {
+                ExecutionResult.Failure($"You provided either an empty or null string");
+            }
+
+            int index = Game1.currentLocation.characters.Select(npc => npc.Name).ToList().IndexOf(charName!);
+            if (index == -1)
+            {
+                return ExecutionResult.Failure($"The value you provided was invalid.");
+            }
+            
+            resultData = new(Game1.currentLocation.characters[index],interact!.Value);
+            return ExecutionResult.Success();
+        }
+
+        protected override void Execute(KeyValuePair<NPC,bool> resultData)
+        {
+            Task.Run(async () =>
+            {
+                await Main.Bot.Pathfinding.Goto(new Goal.GoalDynamic(resultData.Key, 1));
+                if (resultData.Value)
+                {
+                    Main.Bot.Characters.InteractWithCharacter(resultData.Key);
+                }
+            });
         }
     }
 }

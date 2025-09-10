@@ -31,7 +31,6 @@ public static class RegisterDialogueActions
 				window.AddAction(new DialogueActions.AdvanceDialogue());
 				if (dialogueBox.characterDialogue is not null)
 				{
-					Main.Bot.Dialogue.SetCurrentDialogue(dialogueBox.characterDialogue);
 					stateString = $"{dialogueBox.characterDialogue.speaker.Name} is talking to you, they said: {dialogueBox.characterDialogue.getCurrentDialogue()}";
 					if (DialogueUtils.ReplaceEmotionSymbols(dialogueBox.characterDialogue.CurrentEmotion) != "")
 					{

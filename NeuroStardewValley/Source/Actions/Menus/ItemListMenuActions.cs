@@ -28,7 +28,7 @@ public class ItemListMenuActions
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		window.AddAction(new ExitMenu());
-		var items = Main.Bot.ItemListMenu.GetItems().Select(item => $"\n{item.Name} amount: {item.stack}");
+		var items = Main.Bot.ItemListMenu.GetItems().Where(item => item is not null).Select(item => $"\n{item.Name} amount: {item.stack}");
 		var enumerable = items.ToList();
 		var itemsList = enumerable.ToList();
 		Logger.Info($"items: {itemsList.Count}");

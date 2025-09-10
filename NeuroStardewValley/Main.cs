@@ -61,6 +61,7 @@ internal sealed class Main : Mod
         Bot.GameEvents.MenuChanged += MainGameLoopEvents.OnMenuChanged;
         Bot.GameEvents.BotLocationNpcChanged += MainGameLoopEvents.LocationNpcChanged;
         Bot.GameEvents.OnBotDamaged += MainGameLoopEvents.OnBotDamaged;
+        Bot.GameEvents.EventFinished += MainGameLoopEvents.EventFinished;
 
         helper.Events.GameLoop.SaveLoaded += OneTimeEvents.GameLoopOnSaveLoaded;
 

@@ -136,7 +136,7 @@ public static class BuildingActions
 			if (result.Value)
 			{
 				Point pos = result.Key.Tile;
-				await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(pos.X, pos.Y), false);
+				await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(pos.X, pos.Y));
 				if (!RangeCheck.InRange(pos)) // in case pathfinding can't get to tile
 				{
 					Context.Send($"The pathfinding had an issue, leading to you not being able to go to the tile. You should try something else.");
@@ -233,7 +233,7 @@ public static class BuildingActions
 		{
 			if (resultData)
 			{
-				await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Pos.X,Pos.Y),false);
+				await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Pos.X,Pos.Y));
 				if (!Utility.tileWithinRadiusOfPlayer(Pos.X, Pos.Y, 1, Game1.player)) // in case pathfinding can't get to door
 				{
 					Context.Send($"The pathfinding had an issue, leading to you not being able to enter the building. You should try something else.");

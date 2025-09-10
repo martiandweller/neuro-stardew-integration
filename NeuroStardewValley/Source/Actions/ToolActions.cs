@@ -126,7 +126,7 @@ public static class ToolActions
 
             if (_pathfind)
             {
-                await Main.Bot.Pathfinding.Goto(new Goal.GoalPosition(_tile.X, _tile.Y), false); // get direction of final this to point
+                await Main.Bot.Pathfinding.Goto(new Goal.GoalPosition(_tile.X, _tile.Y)); // get direction of final this to point
                 int direction = _directions.ToList().IndexOf(_direction);
                 Main.Bot.Tool.UseTool(direction);
             }

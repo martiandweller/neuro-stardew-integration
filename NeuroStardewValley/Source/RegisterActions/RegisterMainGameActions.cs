@@ -17,9 +17,8 @@ public static class RegisterMainGameActions
 {
 	public static void RegisterActions(ActionWindow window,bool checkCanMove = true)
 	{
-		if (!Context.IsPlayerFree) return;
-
-		window.AddAction(new MainGameActions.Pathfinding()).AddAction(new MainGameActions.PathFindToExit());
+		window.AddAction(new MainGameActions.Pathfinding()).AddAction(new MainGameActions.PathFindToExit())
+			.AddAction(new MainGameActions.GoToCharacter());
 
 		// if (Context.CanPlayerMove)
 		// {
@@ -149,6 +148,10 @@ public static class RegisterMainGameActions
 
 	public static void RegisterPostAction(BotWarpedEventArgs? e = null,int afterSeconds = 0,string query = "",string state = "",bool? ephemeral = null)
 	{
+		// this can cause issues with cutscene where the bot gets warped and then goes into a cutscene and after does not have any actions registered as this cancels it 
+		// still unsure how to fix this as we can't just register the actions after
+		if (!Context.IsPlayerFree) return;
+		
 		Logger.Info($"register actions again.");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		RegisterActions(window,false);

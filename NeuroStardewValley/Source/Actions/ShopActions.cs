@@ -147,7 +147,7 @@ public static class ShopActions
 			Required = new List<string> { "item_index" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["item_index"] = QJS.Enum(Main.Bot.Shop._currentShop?.inventory.actualInventory.Where(item => item is not null && (bool)Main.Bot.Shop._currentShop?.inventory.highlightMethod(item)).Select(item => Main.Bot.Shop._currentShop.inventory.actualInventory.IndexOf(item)) ?? Array.Empty<int>()), // get shop menu items
+				["item_index"] = QJS.Enum(Main.Bot.Shop._currentShop?.inventory.actualInventory.Where(item => item is not null && (bool)Main.Bot.Shop._currentShop.inventory.highlightMethod(item)).Select(item => Main.Bot.Shop._currentShop.inventory.actualInventory.IndexOf(item)) ?? Array.Empty<int>()), // get shop menu items
 				["amount"] = QJS.Type(JsonSchemaType.Integer)
 			}
 		};

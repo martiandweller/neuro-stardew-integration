@@ -50,7 +50,6 @@ public static class MainGameLoopEvents
 		if (e.OldMenu is DialogueBox)
 		{
 			Logger.Info($"Removing dialogue box");
-			Main.Bot.Dialogue.CurrentDialogue = null;
 			if (Game1.player.isInBed.Value)
 			{
 				return; // we don't need to send any actions at this point
@@ -204,6 +203,17 @@ public static class MainGameLoopEvents
 		{
 			Context.Send($"{npc.Name} has exited this location.",true);
 		}
+	}
+
+	// may need to check what event was ended in the future
+	public static void EventFinished(object? sender, EventEndedEventArgs e)
+	{ 
+		Task.Run(async () =>
+		{
+			await Task.Delay((int)Game1.fadeToBlackAlpha / (int)Game1.globalFadeSpeed);
+			RegisterMainGameActions.RegisterPostAction();
+			Logger.Error($"Running event finished: event: {e.Event}");
+		});
 	}
 	
 	private static async Task ShippingMenuContext()

@@ -82,7 +82,7 @@ public static class ChestActions
 
 		private static async Task ExecuteFunctions(Point position,Chest chest)
 		{
-			await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(position.X,position.Y),false);
+			await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(position.X,position.Y));
 			Open(chest);
 		}
 		
