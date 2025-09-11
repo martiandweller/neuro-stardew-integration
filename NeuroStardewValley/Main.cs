@@ -45,7 +45,7 @@ internal sealed class Main : Mod
         _uriString = Config.WebsocketUri;
         CanCreateCharacter = Config.AllowCharacterCreation;
         _configSaveSlot = Config.SaveSlot;
-
+        
         EnabledCharacterOptions = Config.CharacterCreationOptions;
         DefaultCharacterOptions = Config.CharacterCreationDefault;
 
@@ -54,7 +54,6 @@ internal sealed class Main : Mod
         helper.Events.GameLoop.GameLaunched += GameLaunched;
         helper.Events.GameLoop.UpdateTicking += UpdateTicking;
         helper.Events.Display.MenuChanged += OneTimeEvents.CharacterCreatorMenu;
-        helper.Events.Display.Rendered += StardewBotFramework.Debug.DrawFoundTiles.OnRenderPathNode;
         Bot.GameEvents.DayStarted += MainGameLoopEvents.OnDayStarted;
         Bot.GameEvents.DayEnded += MainGameLoopEvents.OnDayEnded;
         Bot.GameEvents.BotWarped += MainGameLoopEvents.OnWarped;
@@ -63,7 +62,7 @@ internal sealed class Main : Mod
         Bot.GameEvents.OnBotDamaged += MainGameLoopEvents.OnBotDamaged;
         Bot.GameEvents.EventFinished += MainGameLoopEvents.EventFinished;
 
-        helper.Events.GameLoop.SaveLoaded += OneTimeEvents.GameLoopOnSaveLoaded;
+        helper.Events.GameLoop.SaveLoaded += OneTimeEvents.OnSaveLoaded;
 
         Bot.GameEvents.ChatMessageReceived += LessImportantEvents.OnChatMessage;
         Bot.GameEvents.BotSkillChanged += LessImportantEvents.OnBotSkillChanged;
@@ -83,6 +82,7 @@ internal sealed class Main : Mod
         
         if (Config.Debug)
         {
+            helper.Events.Display.Rendered += StardewBotFramework.Debug.DrawFoundTiles.OnRenderPathNode;
             helper.Events.Input.ButtonPressed += InputOnButtonPressed;
         }
     }

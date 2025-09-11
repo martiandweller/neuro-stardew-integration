@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using NeuroStardewValley.Debug;
 using StardewValley;
 using StardewValley.Buildings;
+using StardewValley.Objects;
 using StardewValley.TerrainFeatures;
 using Object = StardewValley.Object;
 
@@ -11,9 +12,10 @@ public static class WarpUtilities
 {
     public static List<string> GetTilesInLocation(GameLocation location, Character? startTile = null,int radius = 0)
     {
-        List<string> tileList = new() {"These tiles are sent in the format of X,Y with a \\n separating each tile"};
-        List<Building> sentBuildings = new();
-        WaterTiles.WaterTileData[,] waterTileData = { };
+        List<string> tileList = new() {"These tiles are sent in the format of X,Y with a \\n separating each tile." +
+                                       " If a tile has an action you can try to use it to open a shop"};
+        HashSet<Building> sentBuildings = new();
+        WaterTiles.WaterTileData[,] waterTileData = {};
         if (location.waterTiles is not null)
         {
             waterTileData = location.waterTiles.waterTiles;
@@ -25,11 +27,9 @@ public static class WarpUtilities
         Rectangle rangeRect = new();
         if (startTile is not null)
         {
-            Logger.Info($"Character pos: {startTile.TilePoint}   radius: {radius}");
             rangeRect = new(Math.Clamp((startTile.TilePoint.X - radius) * 64,0,maxX * 64),
                 Math.Clamp((startTile.TilePoint.Y - radius) * 64,0,maxY * 64),
                 (radius * 2) * 64, (radius * 2) * 64); // this should reach to startTile.x + radius
-            Logger.Info($"rect: {rangeRect}");
         }
 
         Logger.Info($"map size X: {maxX}  maxY: {maxY}");
@@ -39,11 +39,11 @@ public static class WarpUtilities
             for (int y = 0; y < maxY; y++)
             {
                 Rectangle rect = new Rectangle(x * Game1.tileSize, y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
-                Logger.Info($"tile rect: {rect}   range rect: {rangeRect}");
-                if (startTile is not null && !rangeRect.Intersects(rect))
+                if (startTile is not null && !rangeRect.Intersects(rect)) // is outside of range
                 {
                     continue;
                 }
+
                 if (x < waterTileData.GetLength(0) && y < waterTileData.GetLength(1) && waterTileData[x, y].isWater)
                 {
                     tileList.Add($"Water: {x},{y}");
@@ -57,31 +57,39 @@ public static class WarpUtilities
                 object? obj = GetTileType(location, new Point(x, y));
                 if (obj is null)
                 {
-                    if (x < waterTileData.GetLength(0) && y < waterTileData.GetLength(1) && waterTileData[x, y].isWater)
+                    string tileString = $"Block: {x},{y}";
+                    if (location.isActionableTile(x, y, Main.Bot._farmer))
                     {
-                        tileList.Add($"Water: {x},{y}");
-                        continue;
+                        tileString += " has an action";
                     }
-
-                    tileList.Add($"Blocks: {x},{y}");
+                    tileList.Add(tileString);
                     continue;
                 }
 
                 switch (obj)
                 {
+                    case Chest chest:
+                        string name = chest.giftbox.Value ? "Gift-box" : "Chest";
+                        string tileString = $"{name} tile: {x},{y}";
+                        if (!chest.giftbox.Value) tileString += $", colour: {chest.getCategoryColor()}";
+                        tileList.Add(tileString);
+                        break;
                     case Object objectValue:
-                        tileList.Add($"Tile: {x},{y}, name: {objectValue.Name}," +
-                                     $" Type: {objectValue.Type}");
+                        tileList.Add($"Tile: {x},{y}, name: {objectValue.Name}, Type: {objectValue.Type}");
                         break;
                     case Building building:
-                        if (sentBuildings.Contains(building)) continue; // we do this as buildings take up multiple tiles
-                        sentBuildings.Add(building);
+                        if (!sentBuildings.Add(building)) continue; // we do this as buildings take up multiple tiles
                         int buildX = building.tileX.Value;
                         int buildY = building.tileY.Value;
                         int buildWidth = building.tilesWide.Value;
                         int buildHeight = building.tilesHigh.Value;
-                        tileList.Add($"The top left tile of the {building.buildingType.Value} is: {buildX},{buildY}." +
-                                     $" the bottom right is {buildX + buildWidth}, {buildY + buildHeight}");
+                        Point humanDoor = building.getPointForHumanDoor();
+                        string contextString = $"The top left tile of the {building.buildingType.Value} is: {buildX},{buildY}." +
+                                            $" the bottom right is {buildX + buildWidth}, {buildY + buildHeight}. ";
+                        if (humanDoor != new Point(-1,-1)) contextString += $" The door is at {humanDoor.X},{humanDoor.Y}.";
+                        if (building.animalDoor.Value != new Point(-1, -1))
+                            contextString += $" The animal door is at: {building.animalDoor.Value}.";
+                        tileList.Add(contextString);
                         break;
                     case ResourceClump resourceClump:
                         tileList.Add($"{resourceClump.modData.Name} is at tile: {x},{y}");
@@ -95,7 +103,7 @@ public static class WarpUtilities
         return tileList;
     }
     
-    public static object? GetTileType(GameLocation location,Point tile)
+    private static object? GetTileType(GameLocation location,Point tile)
     {
         if (location.Objects.ContainsKey(tile.ToVector2()))
         {
@@ -139,7 +147,7 @@ public static class WarpUtilities
         return warps;
     }
 
-    public static Dictionary<Point, string> GetWarpsAsPoint(string warps)
+    private static Dictionary<Point, string> GetWarpsAsPoint(string warps)
     {
         string[] warpExtracts = warps.Split(' ');
         Dictionary<Point, string> warpLocation = new();

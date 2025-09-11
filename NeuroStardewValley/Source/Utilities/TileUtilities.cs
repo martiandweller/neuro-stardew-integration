@@ -1,4 +1,6 @@
 using Microsoft.Xna.Framework;
+using NeuroStardewValley.Debug;
+using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 
 namespace NeuroStardewValley.Source.Utilities;
@@ -25,5 +27,15 @@ public static class TileUtilities
 		}
 		reason = "";
 		return true;
+	}
+	
+	/// <summary>
+	/// <see cref="Graph.IsInNeighbours"/>
+	/// </summary>
+	public static bool IsNeighbour(Point tile, Point neighbour,out int direction,int directions = 8)
+	{
+		bool result = Graph.IsInNeighbours(tile, neighbour, out var d,directions);
+		direction = d;
+		return result;
 	}
 }

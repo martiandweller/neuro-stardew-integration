@@ -11,7 +11,7 @@ using StardewValley;
 
 namespace NeuroStardewValley.Source.Actions;
 
-public static class MainGameActions
+public static class PathFindingActions
 {
     public class Pathfinding : NeuroAction<Goal?>
     {
@@ -257,6 +257,7 @@ public static class MainGameActions
                 {
                     Main.Bot.Characters.InteractWithCharacter(resultData.Key);
                 }
+                RegisterMainGameActions.RegisterPostAction(); // should not get registered if character starts talking
             });
         }
     }

@@ -6,11 +6,12 @@ using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewModdingAPI.Events;
+using StardewValley;
 using StardewValley.Menus;
 
 namespace NeuroStardewValley.Source.EventMethods;
 
-public class OneTimeEvents
+public static class OneTimeEvents
 {
 	public static void CharacterCreatorMenu(object? sender, MenuChangedEventArgs e)
 	{
@@ -23,7 +24,7 @@ public class OneTimeEvents
 		}
 	}
 
-	public static void GameLoopOnSaveLoaded(object? sender, SaveLoadedEventArgs e)
+	public static void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 	{
 		RegisterMainGameActions.LoadGameActions("Your save has loaded and you are in the game.",MainGameLoopEvents.NewDayContext(false));
 	}
@@ -66,6 +67,7 @@ public class OneTimeEvents
 	{
 		Context.Send($"The character controller failed, you should mention this so it can get fixed." +
 		             $" You should also do something different from what you were doing before.");
+		if (Main.Config.Debug) Game1.addHUDMessage(new HUDMessage("Pathfinding failed :("));
 		RegisterMainGameActions.RegisterPostAction();
 	}
 }

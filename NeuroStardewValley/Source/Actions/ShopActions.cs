@@ -43,6 +43,20 @@ public static class ShopActions
 				return ExecutionResult.Failure(reason);
 			}
 
+			if (!Main.Bot._currentLocation.isActionableTile(x, y, Main.Bot._farmer))
+			{
+				return ExecutionResult.Failure($"The provided tile is not a shop or cannot be accessed by you.");
+			}
+
+			if (!TileUtilities.IsNeighbour(Main.Bot._farmer.TilePoint, new Point(x, y),out var direction))
+			{
+				return ExecutionResult.Failure($"You are not next to the tile, you should try to move closer.");
+			}
+			if (direction < 4) // so we don't set to an invalid value if shop is diagonal
+			{
+				Main.Bot._farmer.FacingDirection = direction;
+			}
+
 			if (!Main.Bot.Shop.OpenShopUi(x, y))
 			{
 				return ExecutionResult.Failure($"There is not a shop at the value you provided");
@@ -51,7 +65,7 @@ public static class ShopActions
 			return ExecutionResult.Success($"opening shop");
 		}
 
-		protected override void Execute(KeyValuePair<int, int> resultData)// we set it in validation this is not good practice, but we kinda need to do it.
+		protected override void Execute(KeyValuePair<int, int> resultData) // we set it in validation this is not good practice, but we kinda need to do it.
 		{
 		}
 	}
@@ -147,7 +161,7 @@ public static class ShopActions
 			Required = new List<string> { "item_index" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["item_index"] = QJS.Enum(Main.Bot.Shop._currentShop?.inventory.actualInventory.Where(item => item is not null && (bool)Main.Bot.Shop._currentShop.inventory.highlightMethod(item)).Select(item => Main.Bot.Shop._currentShop.inventory.actualInventory.IndexOf(item)) ?? Array.Empty<int>()), // get shop menu items
+				["item_index"] = QJS.Enum(Main.Bot.Shop._currentShop?.inventory.actualInventory.Where(item => item is not null && Main.Bot.Shop._currentShop.inventory.highlightMethod(item)).Select(item => Main.Bot.Shop._currentShop.inventory.actualInventory.IndexOf(item)) ?? Array.Empty<int>()), // get shop menu items
 				["amount"] = QJS.Type(JsonSchemaType.Integer)
 			}
 		};

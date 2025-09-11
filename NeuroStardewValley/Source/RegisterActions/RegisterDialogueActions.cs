@@ -48,7 +48,7 @@ public static class RegisterDialogueActions
 			{
 				seconds = 0.03f * dialogueBox.getCurrentString().Length;
 			}
-			window.SetForce(seconds, "You are currently engaging in dialogue.", stateString);
+			window.SetForce(seconds + 2, "You are currently engaging in dialogue.", stateString); // add two to account for box setup
 			window.Register();
 		}
 		else

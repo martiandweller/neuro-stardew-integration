@@ -5,9 +5,9 @@ using StardewBotFramework.Debug;
 
 namespace NeuroStardewValley.Source.Actions.Menus;
 
-public class ItemListMenuActions
+public static class ItemListMenuActions
 {
-	public class ExitMenu : NeuroAction
+	private class ExitMenu : NeuroAction
 	{
 		public override string Name => "exit_menu";
 		protected override string Description => "Exit this menu.";
@@ -29,11 +29,8 @@ public class ItemListMenuActions
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		window.AddAction(new ExitMenu());
 		var items = Main.Bot.ItemListMenu.GetItems().Where(item => item is not null).Select(item => $"\n{item.Name} amount: {item.stack}");
-		var enumerable = items.ToList();
-		var itemsList = enumerable.ToList();
-		Logger.Info($"items: {itemsList.Count}");
 		window.SetForce(0, "You are in a menu, that tells you about the items you lost.",
-			$"{itemsList}");
+			$"{string.Concat(items.ToList())}");
 		window.Register();
 	}
 }

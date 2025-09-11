@@ -12,7 +12,7 @@ public static class LessImportantEvents
 {
 	public static void OnBotDeath(object? sender, BotOnDeathEventArgs e)
 	{
-		Context.Send($"Oh no you died! It was at {e.DeathLocation.Name} {e.DeathPoint}. You lost: {e.ItemLostAmount}");
+		Context.Send($"Oh no you died! It was at {e.DeathLocation.Name} {e.DeathPoint}.");
 	}
 
 	public static void OnUiTimeChanged(object? sender, TimeEventArgs e)
@@ -79,13 +79,7 @@ public static class LessImportantEvents
 			while (enumerator.MoveNext())
 			{
 				item = enumerator.Current;
-				contextString += $"Added {item.Name} to your inventory";
-				if (item.Stack > 1)
-				{
-					contextString += $" it's stack size was {item.Stack}";
-				}
-
-				contextString += "\n";
+				contextString += $"\nAdded {item.Stack} {item.Name} to your inventory";
 			}
 		}
 
@@ -95,13 +89,7 @@ public static class LessImportantEvents
 			while (enumerator.MoveNext())
 			{
 				item = enumerator.Current;
-				contextString += $"Removed {item.Name} to your inventory";
-				if (item.Stack > 1)
-				{
-					contextString += $" It's stack size was {item.Stack}";
-				}
-
-				contextString += "\n";
+				contextString += $"\nRemoved {item.Stack} {item.Name} from your inventory";
 			}
 		}
 

@@ -65,7 +65,7 @@ public static class ShippingBinActions
 
 		private static async Task ExecuteFunctions(ShippingBin resultData)
 		{
-			await Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 0));
+			await Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 1));
 			_bin = resultData;
 			HandleShippingBinUi();
 		}

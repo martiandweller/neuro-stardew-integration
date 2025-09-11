@@ -39,7 +39,7 @@ public static class MainGameLoopEvents
 		
 		Context.Send(warpsString, true);
 		Context.Send(characterContext,true);
-		RegisterMainGameActions.RegisterPostAction(e, 0, 
+		RegisterMainGameActions.RegisterPostAction(e, 0,
 			$"You are at {e.NewLocation.Name} from {e.OldLocation.Name}. The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}", 
 			$"These are the tiles that have an object on them around you: {tilesString}", true);
 	}
@@ -207,12 +207,18 @@ public static class MainGameLoopEvents
 
 	// may need to check what event was ended in the future
 	public static void EventFinished(object? sender, EventEndedEventArgs e)
-	{ 
+	{
+		Logger.Info($"Running event finished: event: {e.Event}  can move after: {e.Event.canMoveAfterDialogue()}");
+		if (e.Event.exitLocation is not null)
+		{
+			Logger.Error($"exit location: {e.Event.exitLocation.Name}  {e.Event.exitLocation.Location}  {e.Event.exitLocation.IsRequestFor(e.Event.exitLocation.Location)}");
+			return; // player should get warped after event
+		}
 		Task.Run(async () =>
 		{
-			await Task.Delay((int)Game1.fadeToBlackAlpha / (int)Game1.globalFadeSpeed);
+			await Task.Delay(15);
+			Logger.Info($"post event task delay");
 			RegisterMainGameActions.RegisterPostAction();
-			Logger.Error($"Running event finished: event: {e.Event}");
 		});
 	}
 	
@@ -242,8 +248,7 @@ public static class MainGameLoopEvents
 	{
 		string time = StringUtilities.FormatTimeString();
 		if (sendQuests) QuestContext.SendContext();
-		Main.Bot.Time.GetTodayFestivalData(out Dictionary<string, string> _, out GameLocation _,
-			out int startTime, out int endTime);
+		Main.Bot.Time.GetTodayFestivalData(out _, out _, out int startTime, out int endTime);
 		string contextString = $"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.";
 		if (Main.Bot.Time.IsFestival())
 		{
