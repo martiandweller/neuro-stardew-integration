@@ -9,6 +9,7 @@ using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.GameData.Buildings;
+using StardewValley.Locations;
 using StardewValley.TokenizableStrings;
 
 namespace NeuroStardewValley.Source.Actions.ObjectActions;
@@ -18,7 +19,7 @@ public static class BuildingActions
 	public class InteractWithBuilding : NeuroAction<Building>
 	{
 		public override string Name => "interact_with_building";
-		protected override string Description => "This will interact with the building specified.";
+		protected override string Description => "This will interact with the building specified, you can use this to either enter the interacted building or interact with a part of it. e.g. the mail-box.";
 
 		protected override JsonSchema Schema => new()
 		{
@@ -26,7 +27,7 @@ public static class BuildingActions
 			Required = new List<string> { "building" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["building"] = QJS.Enum(GetLocationsBuildings().Select(building => building.GetData().Name))
+				["building"] = QJS.Enum(GetLocationsBuildings().Select(StringUtilities.TokenizeBuildingName))
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out Building? resultData)
@@ -53,7 +54,7 @@ public static class BuildingActions
 			}
 			
 			resultData = building;
-			return ExecutionResult.Success(buildingString);
+			return ExecutionResult.Success($"You are now interacting with the {buildingString}.");
 		}
 
 		protected override void Execute(Building? resultData)
@@ -61,17 +62,25 @@ public static class BuildingActions
 			if (resultData is null) return;
 			
 			ActionWindow window = ActionWindow.Create(Main.GameInstance);
+			string stateString = $"Select an action to do with the selected {StringUtilities.TokenizeBuildingName(resultData)}," +
+			                     $" the bottom left of the building is at {resultData.tileX},{resultData.tileY} and is " +
+			                     $"{resultData.tilesHigh} tiles high and {resultData.tilesWide} tiles wide.";
 			if (GetBuildingsActionTiles(new List<Building> { resultData })[resultData].Count > 0)
 			{
 				window.AddAction(new BuildingAction(resultData));
 			}
-			if (resultData.GetIndoors() != null)
+			if (resultData.GetIndoors() != null && resultData.OnUseHumanDoor(Main.Bot._farmer))
 			{
+				stateString += $" The building's door being at {resultData.getPointForHumanDoor()}.";
 				window.AddAction(new EnterBuilding(resultData));
 			}
+
+			if (resultData.isCabin || resultData.GetIndoors() is FarmHouse)
+			{
+				stateString += $" The mailbox is located at {resultData.getMailboxPosition()}";
+			}
 			
-			window.SetForce(0, $"You are interacting with a building.",
-				$"Select an action to do with the selected building");
+			window.SetForce(0, $"You are interacting with a building.", stateString);
 			window.Register();
 		}
 	}
@@ -172,8 +181,7 @@ public static class BuildingActions
 	{
 		private readonly Building _building;
 
-		private Point Pos => new(_building.tileX.Value + _building.humanDoor.X,
-			_building.tileY.Value + _building.humanDoor.Y);
+		private Point Pos => _building.getPointForHumanDoor();
 
 		public EnterBuilding(Building building)
 		{
@@ -181,14 +189,14 @@ public static class BuildingActions
 		}
 		
 		public override string Name => "enter_building";
-		protected override string Description => "Enter the building you selected before.";
+		protected override string Description => "Enter the building you selected before, if you are not in a radius of 1 to the door, you can path-find to it.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "path-find" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["path-find"] = QJS.Type(JsonSchemaType.Boolean)
+				["pathfind"] = QJS.Type(JsonSchemaType.Boolean)
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData,out bool resultData)
@@ -206,7 +214,7 @@ public static class BuildingActions
 			if (Game1.player.mount != null)
 			{
 				Game1.showRedMessage(Game1.content.LoadString("Strings\\Buildings:DismountBeforeEntering")); // keep these so people can laugh at her.
-				return ExecutionResult.Failure($"You need to dismount before being able to enter this building");
+				return ExecutionResult.Failure($"You need to dismount before being able to enter this building.");
 			}
 			if (Game1.player.team.demolishLock.IsLocked())
 			{
@@ -215,7 +223,7 @@ public static class BuildingActions
 			}
 			
 			// This shouldn't happen as we only send if indoors exists, but I don't trust my code.
-			if (_building.GetIndoors() is null) return ExecutionResult.Failure($"You cannot enter this building as it does not have an interior");
+			if (_building.GetIndoors() is null) return ExecutionResult.Failure($"You cannot enter this building as it does not have an interior.");
 
 			if (!RangeCheck.InRange(Pos) && !pathfind.Value)
 			{
@@ -224,17 +232,17 @@ public static class BuildingActions
 			return ExecutionResult.Success();
 		}
 
-		protected override void Execute(bool resultData)
+		protected override void Execute(bool pathfinding)
 		{
-			Task.Run(async () => await ExecuteFunction(resultData));
+			Task.Run(async () => await ExecuteFunction(pathfinding));
 		}
 
-		private async Task ExecuteFunction(bool resultData)
+		private async Task ExecuteFunction(bool pathfinding)
 		{
-			if (resultData)
+			if (pathfinding)
 			{
 				await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Pos.X,Pos.Y));
-				if (!Utility.tileWithinRadiusOfPlayer(Pos.X, Pos.Y, 1, Game1.player)) // in case pathfinding can't get to door
+				if (!RangeCheck.InRange(Pos)) // in case pathfinding can't get to door
 				{
 					Context.Send($"The pathfinding had an issue, leading to you not being able to enter the building. You should try something else.");
 					RegisterMainGameActions.RegisterPostAction();

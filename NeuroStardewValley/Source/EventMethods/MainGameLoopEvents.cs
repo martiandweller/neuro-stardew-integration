@@ -160,9 +160,14 @@ public static class MainGameLoopEvents
 				Main.Bot.ItemListMenu.SetMenu(itemListMenu);
 				ItemListMenuActions.RegisterActions();
 				break;
+			case MineElevatorMenu mineElevatorMenu:
+				Main.Bot.ElevatorMenu.SetMenu(mineElevatorMenu);
+				ElevatorMenuActions.RegisterAction();
+				break;
 		}
 		
-		if (e is { NewMenu: null } and {OldMenu:not TitleMenu and not LevelUpMenu}) // ugly but it gets rid of warning and double send at start of game
+		// ugly but it gets rid of warning and double send at start of game and other double sends
+		if (e is { NewMenu: null } and {OldMenu:not TitleMenu and not LevelUpMenu and not MineElevatorMenu})
 		{
 			Logger.Info($"old menu: {e.OldMenu.GetType()}");
 			RegisterMainGameActions.RegisterPostAction();

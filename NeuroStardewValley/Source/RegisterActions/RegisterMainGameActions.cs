@@ -34,9 +34,14 @@ public static class RegisterMainGameActions
 			window.AddAction(new BuildingActions.InteractWithBuilding());
 		}
 
+		if (Game1.currentLocation.characters.Any(monster => monster.IsMonster))
+		{
+			window.AddAction(new PathFindingActions.AttackMonster());
+		}
+
 		if (Game1.player.CurrentItem is not null)
 		{
-			window.AddAction(new ToolActions.UseItem());	
+			window.AddAction(new ToolActions.UseItem());
 		}
 
 		if (Game1.player.questLog.Count > 0)

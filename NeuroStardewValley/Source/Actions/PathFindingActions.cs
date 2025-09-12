@@ -8,6 +8,7 @@ using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Algorithms;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
+using StardewValley.Monsters;
 
 namespace NeuroStardewValley.Source.Actions;
 
@@ -258,6 +259,42 @@ public static class PathFindingActions
                     Main.Bot.Characters.InteractWithCharacter(resultData.Key);
                 }
                 RegisterMainGameActions.RegisterPostAction(); // should not get registered if character starts talking
+            });
+        }
+    }
+
+    public class AttackMonster : NeuroAction<Monster>
+    {
+        public override string Name => "attack_monster";
+        protected override string Description => "attack monster";
+
+        protected override JsonSchema Schema => new()
+        {
+            Type = JsonSchemaType.Object,
+            Required = new List<string> { "monster" },
+            Properties = new Dictionary<string, JsonSchema>
+            {
+                ["monster"] = QJS.Enum(Game1.currentLocation.characters.Where(monster => monster.IsMonster)
+                    .Select(monster => monster.Name).ToList())
+            }
+        };
+        protected override ExecutionResult Validate(ActionData actionData, out Monster? resultData)
+        {
+            string? monsterName = actionData.Data?.Value<string>("monster");
+
+            NPC monster = Main.Bot._currentLocation.characters.Where(monster => monster.Name == monsterName).ToArray()[0];
+            
+            resultData = monster as Monster;
+            return ExecutionResult.Success($"");
+        }
+
+        protected override void Execute(Monster? resultData)
+        {
+            if (resultData is null) return;
+            Task.Run(async () =>
+            {                
+                await Main.Bot.Pathfinding.AttackMonster(new Goal.GoalDynamic(resultData, 1));
+                RegisterMainGameActions.RegisterPostAction();
             });
         }
     }
