@@ -266,7 +266,7 @@ public static class PathFindingActions
     public class AttackMonster : NeuroAction<Monster>
     {
         public override string Name => "attack_monster";
-        protected override string Description => "attack monster";
+        protected override string Description => "Select a monster to attack.";
 
         protected override JsonSchema Schema => new()
         {
@@ -275,17 +275,28 @@ public static class PathFindingActions
             Properties = new Dictionary<string, JsonSchema>
             {
                 ["monster"] = QJS.Enum(Game1.currentLocation.characters.Where(monster => monster.IsMonster)
-                    .Select(monster => monster.Name).ToList())
+                    .Select(monster => $"{monster.Name}").ToList())
             }
         };
         protected override ExecutionResult Validate(ActionData actionData, out Monster? resultData)
         {
             string? monsterName = actionData.Data?.Value<string>("monster");
 
-            NPC monster = Main.Bot._currentLocation.characters.Where(monster => monster.Name == monsterName).ToArray()[0];
+            resultData = null;
+            if (string.IsNullOrEmpty(monsterName))
+            {
+                return ExecutionResult.Failure($"You need to provide a monster to attack.");
+            }
             
+            NPC monster = Main.Bot._currentLocation.characters.Where(monster => monster.IsMonster)
+                .Where(monster => $"{monster.Name}" == monsterName).ToArray()[0];
+
+            if (monster is null)
+            {
+                return ExecutionResult.Failure($"That monster no longer exists in this location");
+            }
             resultData = monster as Monster;
-            return ExecutionResult.Success($"");
+            return ExecutionResult.Success($"You are attacking a {monster.Name}");
         }
 
         protected override void Execute(Monster? resultData)

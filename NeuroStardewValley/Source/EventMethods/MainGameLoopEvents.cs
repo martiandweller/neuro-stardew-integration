@@ -23,6 +23,7 @@ public static class MainGameLoopEvents
 
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
 	{
+		WarpUtilities.ActionableTiles.Clear();
 		if (e.Player.passedOut) return;
 		if (Game1.eventUp) return;
 		string warps = WarpUtilities.GetWarpTiles(e.NewLocation);

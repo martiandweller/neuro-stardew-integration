@@ -3,6 +3,7 @@ using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.Actions.ObjectActions;
+using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewModdingAPI;
 using StardewValley;
@@ -27,6 +28,11 @@ public static class RegisterMainGameActions
 		if (Game1.currentLocation.furniture.Count > 0 || Game1.currentLocation.Objects.Length > 0)
 		{
 			window.AddAction(new WorldObjectActions.InteractWithObject());
+		}
+
+		if (WarpUtilities.ActionableTiles.Count > 0)
+		{
+			window.AddAction(new WorldObjectActions.InteractWithActionTile());
 		}
 
 		if (Game1.currentLocation.buildings.Count > 0)
@@ -147,9 +153,6 @@ public static class RegisterMainGameActions
 					window.AddAction(new ShippingBinActions.GoToNearestShippingBin());
 				}
 
-				break;
-			case ShopLocation shopLocation:
-				window.AddAction(new ShopActions.OpenShop());
 				break;
 		}
 	}

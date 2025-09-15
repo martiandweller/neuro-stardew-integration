@@ -15,7 +15,14 @@ public static class RegisterStoreActions
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
-		window.AddAction(new ShopActions.CloseShop()).AddAction(new ShopActions.BuyItem()).AddAction(new ShopActions.SellItem());
+		window.AddAction(new ShopActions.CloseShop()).AddAction(new ShopActions.BuyItem());
+
+		// amount of items that can be highlighted
+		if ((bool)Main.Bot.Shop._currentShop?.inventory.actualInventory.Any(item =>
+			    item is not null && Main.Bot.Shop._currentShop.inventory.highlightMethod(item)))
+		{
+			window.AddAction(new ShopActions.SellBackItem());
+		}
 
 		string itemString = "These are the items in the shop and their sale prices:";
 		List<ISalable> items = Main.Bot.Shop.ListAllItems();

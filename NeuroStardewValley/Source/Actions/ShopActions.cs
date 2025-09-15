@@ -10,66 +10,6 @@ namespace NeuroStardewValley.Source.Actions;
 
 public static class ShopActions
 {
-	public class OpenShop : NeuroAction<KeyValuePair<int,int>>
-	{
-		public override string Name => "open_shop";
-		protected override string Description => "This will open the shop that is at the provided x,y coordinate.";
-		protected override JsonSchema Schema => new()
-		{
-			Type = JsonSchemaType.Object,
-			Required = new List<string> { "tile_x","tile_y" },
-			Properties = new Dictionary<string, JsonSchema>
-			{
-				["tile_x"] = QJS.Type(JsonSchemaType.Integer),
-				["tile_y"] = QJS.Type(JsonSchemaType.Integer)
-			}
-		};
-		protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<int, int> resultData)
-		{
-			int? nullX = actionData.Data?.Value<int>("tile_x");
-			int? mullY = actionData.Data?.Value<int>("tile_y");
-
-			if (nullX is null || mullY is null)
-			{
-				resultData = new KeyValuePair<int, int>(-1, -1);				
-				return ExecutionResult.Failure($"A value you provided was null");
-			}
-
-			int x = (int)nullX;
-			int y = (int)mullY;
-			resultData = new KeyValuePair<int, int>(x, y);
-			if (!TileUtilities.IsValidTile(new Point(x, y), out var reason, false, false))
-			{
-				return ExecutionResult.Failure(reason);
-			}
-
-			if (!Main.Bot._currentLocation.isActionableTile(x, y, Main.Bot._farmer))
-			{
-				return ExecutionResult.Failure($"The provided tile is not a shop or cannot be accessed by you.");
-			}
-
-			if (!TileUtilities.IsNeighbour(Main.Bot._farmer.TilePoint, new Point(x, y),out var direction))
-			{
-				return ExecutionResult.Failure($"You are not next to the tile, you should try to move closer.");
-			}
-			if (direction < 4) // so we don't set to an invalid value if shop is diagonal
-			{
-				Main.Bot._farmer.FacingDirection = direction;
-			}
-
-			if (!Main.Bot.Shop.OpenShopUi(x, y))
-			{
-				return ExecutionResult.Failure($"There is not a shop at the value you provided");
-			}
-			
-			return ExecutionResult.Success($"opening shop");
-		}
-
-		protected override void Execute(KeyValuePair<int, int> resultData) // we set it in validation this is not good practice, but we kinda need to do it.
-		{
-		}
-	}
-	
 	public class BuyItem : NeuroAction<KeyValuePair<ISalable,int>>
 	{
 		public override string Name => "buy_item";
@@ -151,7 +91,7 @@ public static class ShopActions
 		}
 	}
 
-	public class SellItem : NeuroAction<KeyValuePair<int, int>> // index of item and amount
+	public class SellBackItem : NeuroAction<KeyValuePair<int, int>> // index of item and amount
 	{
 		public override string Name => "sell_back_item";
 		protected override string Description => "Sell back an item you have bought from here";

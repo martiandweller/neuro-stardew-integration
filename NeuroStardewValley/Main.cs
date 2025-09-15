@@ -134,11 +134,6 @@ internal sealed class Main : Mod
             Logger.Info($"{new Vector2((int)((Utility.ModifyCoordinateFromUIScale(mouseState.X) + (float)Game1.viewport.X) / 64f), (int)((Utility.ModifyCoordinateFromUIScale(mouseState.Y) + (float)Game1.viewport.Y) / 64f))}");
         }
 
-        if (e.Button == SButton.U)
-        {
-            NeuroSDKCsharp.Messages.Outgoing.Context.Send(PlayerContext.GetAllCharactersLevel());
-        }
-
         if (e.Button == SButton.R)
         {
             foreach (var building in Game1.currentLocation.buildings)
@@ -146,6 +141,13 @@ internal sealed class Main : Mod
                 building.FinishConstruction();
             }
         }
+
+        if (e.Button == SButton.U)
+        {
+            bool result = Bot._currentLocation.isActionableTile((int)Game1.currentCursorTile.X, (int)Game1.currentCursorTile.Y,
+                Game1.player);
+            Logger.Warning($"is action: {result}");
+        }        
     }
 
     private void GameLaunched(object? sender, GameLaunchedEventArgs e)

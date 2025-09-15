@@ -10,10 +10,11 @@ namespace NeuroStardewValley.Source.Utilities;
 
 public static class WarpUtilities
 {
+    public static HashSet<Point> ActionableTiles = new();
     public static List<string> GetTilesInLocation(GameLocation location, Character? startTile = null,int radius = 0)
     {
         List<string> tileList = new() {"These tiles are sent in the format of X,Y with a \\n separating each tile." +
-                                       " If a tile has an action you can try to use it to open a shop"};
+                                       " If a tile has an action you can try to use it with the interact_with_tile action"};
         HashSet<Building> sentBuildings = new();
         WaterTiles.WaterTileData[,] waterTileData = {};
         if (location.waterTiles is not null)
@@ -61,6 +62,29 @@ public static class WarpUtilities
                     if (location.isActionableTile(x, y, Main.Bot._farmer))
                     {
                         tileString += " has an action";
+                        ActionableTiles.Add(new Point(x, y));
+                        string[] action = ArgUtility.SplitBySpace(Main.Bot._currentLocation.doesTileHaveProperty(x, y, "Action", "Buildings"));
+                        if (action.Length < 1)
+                        {
+                            tileList.Add(tileString);
+                            continue;
+                        }
+                        
+                        switch (action[0])
+                        {
+                            case "Dialogue":
+                            case "Message":
+                            case "MessageOnce":
+                            case "NPCMessage":
+                            case "MessageSpeech":
+                                tileList.Add(tileString);
+                                continue;
+                            case "Letter":
+                                tileList.Add(action[0]);
+                                continue;
+                        }
+                        tileString += $": {string.Join(" ", action)}";
+                        Logger.Info($"tile: {x},{y}  length: {action.Length}  action: {string.Concat(action.ToList())}");                            
                     }
                     tileList.Add(tileString);
                     continue;
@@ -78,16 +102,19 @@ public static class WarpUtilities
                         tileList.Add($"Tile: {x},{y}, name: {objectValue.Name}, Type: {objectValue.Type}");
                         break;
                     case Building building:
+                        if (building.isActionableTile(x, y, Main.Bot._farmer))
+                        {
+                            tileList.Add($"{x},{y} has an action for the {StringUtilities.TokenizeBuildingName(building)}");
+                            break;
+                        }
                         if (!sentBuildings.Add(building)) continue; // we do this as buildings take up multiple tiles
                         int buildX = building.tileX.Value;
                         int buildY = building.tileY.Value;
-                        int buildWidth = building.tilesWide.Value;
-                        int buildHeight = building.tilesHigh.Value;
                         Point humanDoor = building.getPointForHumanDoor();
-                        string contextString = $"The top left tile of the {building.buildingType.Value} is: {buildX},{buildY}." +
-                                            $" the bottom right is {buildX + buildWidth}, {buildY + buildHeight}. ";
+                        string contextString = $"The top left tile of the {StringUtilities.TokenizeBuildingName(building)} is: {buildX},{buildY}." +
+                                            $" the bottom right is {buildX + building.tilesWide.Value}, {buildY + building.tilesHigh.Value}. ";
                         if (humanDoor != new Point(-1,-1)) contextString += $" The door is at {humanDoor.X},{humanDoor.Y}.";
-                        if (building.animalDoor.Value != new Point(-1, -1))
+                        if (building.animalDoor.Value != new Point(-1, -1)) 
                             contextString += $" The animal door is at: {building.animalDoor.Value}.";
                         tileList.Add(contextString);
                         break;
@@ -112,12 +139,9 @@ public static class WarpUtilities
 
         foreach (var building in location.buildings)
         {
-            if (tile.X < building.tileX.Value || tile.X > building.tileX.Value + building.tilesWide.Value)
+            if (building.occupiesTile(tile.ToVector2()))
             {
-                if (tile.Y < building.tileY.Value || tile.Y < building.tileY.Value + building.tilesHigh.Value)
-                {
-                    return building;
-                }
+                return building;
             }
         }
         
