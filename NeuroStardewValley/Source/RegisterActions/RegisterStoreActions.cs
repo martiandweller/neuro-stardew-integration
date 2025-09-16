@@ -17,8 +17,15 @@ public static class RegisterStoreActions
 
 		window.AddAction(new ShopActions.CloseShop()).AddAction(new ShopActions.BuyItem());
 
+		// mainly just to stop warnings
+		if (Main.Bot.Shop._currentShop is null)
+		{
+			Game1.activeClickableMenu = null;
+			RegisterMainGameActions.RegisterPostAction();
+			return;
+		}
 		// amount of items that can be highlighted
-		if ((bool)Main.Bot.Shop._currentShop?.inventory.actualInventory.Any(item =>
+		if (Main.Bot.Shop._currentShop.inventory.actualInventory.Any(item =>
 			    item is not null && Main.Bot.Shop._currentShop.inventory.highlightMethod(item)))
 		{
 			window.AddAction(new ShopActions.SellBackItem());

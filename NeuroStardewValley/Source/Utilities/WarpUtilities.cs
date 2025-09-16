@@ -10,10 +10,17 @@ namespace NeuroStardewValley.Source.Utilities;
 
 public static class WarpUtilities
 {
-    public static HashSet<Point> ActionableTiles = new();
+    public static readonly HashSet<Point> ActionableTiles = new();
+    /// <summary>
+    /// Get tiles in the specified location, to be used as context.
+    /// </summary>
+    /// <param name="location">The <see cref="GameLocation"/> you want to get the tiles of.</param>
+    /// <param name="startTile">The Character you want to base the radius off</param>
+    /// <param name="radius">the radius of tiles.</param>
     public static List<string> GetTilesInLocation(GameLocation location, Character? startTile = null,int radius = 0)
     {
-        List<string> tileList = new() {"These tiles are sent in the format of X,Y with a \\n separating each tile." +
+        string str = radius == 0 ? "" : $"closest {radius} ";
+        List<string> tileList = new() {$"These are the {str}tiles they are sent in the format of X,Y with a \\n separating each tile." +
                                        " If a tile has an action you can try to use it with the interact_with_tile action"};
         HashSet<Building> sentBuildings = new();
         WaterTiles.WaterTileData[,] waterTileData = {};
@@ -21,9 +28,12 @@ public static class WarpUtilities
         {
             waterTileData = location.waterTiles.waterTiles;
         }
+
+        int minX = startTile is null ? 0 : startTile.TilePoint.X - radius;
+        int minY = startTile is null ? 0 : startTile.TilePoint.Y - radius;
         
-        int maxX = location.Map.DisplayWidth / Game1.tileSize;
-        int maxY = location.Map.DisplayHeight / Game1.tileSize;
+        int maxX = startTile is null ? location.Map.DisplayWidth / Game1.tileSize : startTile.TilePoint.X + radius;
+        int maxY = startTile is null ? location.Map.DisplayHeight / Game1.tileSize : startTile.TilePoint.Y + radius;
         
         Rectangle rangeRect = new();
         if (startTile is not null)
@@ -35,15 +45,12 @@ public static class WarpUtilities
 
         Logger.Info($"map size X: {maxX}  maxY: {maxY}");
 
-        for (int x = 0; x < maxX; x++)
+        for (int x = minX; x < maxX; x++)
         {
-            for (int y = 0; y < maxY; y++)
+            for (int y = minY; y < maxY; y++)
             {
                 Rectangle rect = new Rectangle(x * Game1.tileSize, y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
-                if (startTile is not null && !rangeRect.Intersects(rect)) // is outside of range
-                {
-                    continue;
-                }
+                if (startTile is not null && !rangeRect.Intersects(rect)) continue; // is outside of range
 
                 if (x < waterTileData.GetLength(0) && y < waterTileData.GetLength(1) && waterTileData[x, y].isWater)
                 {
@@ -171,7 +178,7 @@ public static class WarpUtilities
         return warps;
     }
 
-    private static Dictionary<Point, string> GetWarpsAsPoint(string warps)
+    public static Dictionary<Point, string> GetWarpsAsPoint(string warps)
     {
         string[] warpExtracts = warps.Split(' ');
         Dictionary<Point, string> warpLocation = new();
@@ -195,7 +202,21 @@ public static class WarpUtilities
         foreach (var kvp in warpLocation)
         {
             Logger.Info($"key: {kvp.Key.ToString()}  value: {kvp.Value}");
-            s +=  "\n" + kvp.Value + ": " + kvp.Key;
+            s += $"\n{kvp.Value}: {kvp.Key}";
+        }
+
+        return s;
+    }
+
+    public static List<string> GetWarpTilesStrings(string warpTiles)
+    {
+        var warpLocation = GetWarpsAsPoint(warpTiles);
+        
+        List<string> s = new();
+        foreach (var kvp in warpLocation)
+        {
+            Logger.Info($"key: {kvp.Key.ToString()}  value: {kvp.Value}");
+            s.Add($"{kvp.Key.X},{kvp.Key.Y}");
         }
 
         return s;

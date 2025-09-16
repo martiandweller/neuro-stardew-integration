@@ -5,7 +5,6 @@ using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
-using StardewBotFramework.Source;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewBotFramework.Source.ObjectDestruction;
 using StardewValley;
@@ -202,8 +201,8 @@ public static class ToolActions
 
 			int x = int.Parse(xStr);
 			int y = int.Parse(yStr);
-			if (Game1.currentLocation.Map.DisplayWidth / Game1.tileSize < x ||
-			    Game1.currentLocation.Map.DisplayHeight / Game1.tileSize < y)
+			if (TileUtilities.MaxX < x ||
+			    TileUtilities.MaxY < y)
 			{
 				resultData = new Point(-1, -1);
 				return ExecutionResult.Failure("The value you provided is larger than the map");
@@ -261,9 +260,9 @@ public static class ToolActions
 			string? rightXStr = actionData.Data?.Value<string>("right_x");
 			string? bottomYStr = actionData.Data?.Value<string>("bottom_y");
 
+			resultData = new ();
 			if (leftXStr is null || topYStr is null || rightXStr is null || bottomYStr is null)
 			{
-				resultData = new ();
 				return ExecutionResult.Failure("You did not provide a correct schema");
 			}
 
@@ -273,19 +272,14 @@ public static class ToolActions
 			int bottomY = int.Parse(bottomYStr);
 			if (leftX < 0 || topY < 0 || rightX < 0 || bottomY < 0) 
 			{
-				resultData = new ();
 				return ExecutionResult.Failure("The value you provided is less than 0");
 			}
 			
-			if (leftX > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize ||
-			    topY > Game1.currentLocation.Map.DisplayHeight / Game1.tileSize || 
-				rightX > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || 
-			    bottomY > Game1.currentLocation.Map.DisplayHeight / Game1.tileSize ) 
+			if (rightX > TileUtilities.MaxX || bottomY > TileUtilities.MaxY) 
 			{
-				resultData = new ();
 				return ExecutionResult.Failure("The value you provided is larger than the map");
 			}
-
+			
 			resultData = new () {leftX,topY,rightX,bottomY};
 			return ExecutionResult.Success($"You are now watering the farm-land");
 		}

@@ -85,32 +85,16 @@ public static class PathFindingActions
     public class PathFindToExit : NeuroAction<Goal?>
     {
         private bool _destructive;
-        private GameLocation? _sentLocation;
-
-        private IEnumerable<string> ExitStrings(List<Point> exits)
-        {
-            _sentLocation = Game1.currentLocation;
-            IEnumerable<string> exitStrings = new List<string>();
-            foreach (var point in exits)
-            {
-                string exitFormat = $"{point.X},{point.Y}";
-                exitStrings = exitStrings.Append(exitFormat);
-            }
-
-            return exitStrings;
-        }
         public override string Name => "move_to_exit";
-
         protected override string Description =>
             "This will move the character to the provided tile to go to an exit";
-
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
             Required = new List<string> { "exit" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["exit"] = QJS.Enum(ExitStrings(GetExits())),
+                ["exit"] = QJS.Enum(WarpUtilities.GetWarpTilesStrings(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation))),
                 ["destructive"] = QJS.Type(JsonSchemaType.Boolean)
             }
         };
@@ -121,16 +105,15 @@ public static class PathFindingActions
             bool? destructive = actionData.Data?.Value<bool>("destructive");
 
             Logger.Info($"data: {pointStr}");
-            if (!Game1.currentLocation.Equals(_sentLocation))
+            goal = null;
+            if (!Game1.currentLocation.Equals(Main.Bot._currentLocation))
             {
-                goal = null;
                 return ExecutionResult.ModFailure($"This action has been called in a different location than it was registered. This is most likely an issue with the integration");
             }
             
             if (pointStr is null || destructive is null)
             {
                 Logger.Error($"data or yData is null");
-                goal = new Goal();
                 return ExecutionResult.Failure($"A value you gave was null");
             }
             
@@ -138,17 +121,15 @@ public static class PathFindingActions
 
             Point exitPoint = new Point(int.Parse(coords[0]), int.Parse(coords[1]));
 
-            if (!GetExits().Contains(exitPoint))
-            {
-                goal = null;
+            if (!WarpUtilities.GetWarpsAsPoint(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation)).ContainsKey(exitPoint))
+            { 
                 return ExecutionResult.Failure($"The provided tile is not an exit");
             }
 
-            if (exitPoint.X > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || exitPoint.X < -1 || // some exits are at -1 IDK why I hate it
-                exitPoint.Y > Game1.currentLocation.Map.DisplayWidth / Game1.tileSize || exitPoint.Y < -1)
+            if (exitPoint.X > TileUtilities.MaxX || exitPoint.X < -1 || // some exits are at -1
+                exitPoint.Y > TileUtilities.MaxY || exitPoint.Y < -1)
             {
                 Logger.Error($"Values are invalid due to either being larger than map size or less than 0");
-                goal = null;
                 return ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map. If you were provided this position by the game, it is an issue with the mod.");
             }
 
@@ -156,14 +137,12 @@ public static class PathFindingActions
             AlgorithmBase.IPathing pathing = new AStar.Pathing();
             if (Main.Bot.Pathfinding.IsBlocked(exitPoint.X, exitPoint.Y) && (bool)!destructive)
             {
-                goal = null;
                 return ExecutionResult.Failure("You gave a position that is blocked. Maybe try something else!");
             }
 
-            if (pathing.FindPath(new PathNode(Game1.player.TilePoint.X, Game1.player.TilePoint.Y, null),
+            if (pathing.FindPath(new PathNode(Main.Bot._farmer.TilePoint.X, Main.Bot._farmer.TilePoint.Y, null),
                     new Goal.GoalPosition(exitPoint.X, exitPoint.Y), Game1.currentLocation, 10000,_destructive).Result.Count == 0)
             {
-                goal = null;
                 return ExecutionResult.Failure("You cannot make it to this exit, you should try something else.");
             }
 
@@ -182,35 +161,6 @@ public static class PathFindingActions
         private async Task ExecuteFunctions(Goal goal)
         {
             await Main.Bot.Pathfinding.Goto(goal, _destructive);
-        }
-
-        private List<Point> GetExits()
-        {
-            string warps = GetWarpTiles(Game1.currentLocation);
-            if (string.IsNullOrEmpty(warps)) return new List<Point>();
-            string[] warpExtracts = warps.Split(' ');
-            List<Point> warpLocation = new();
-            int runs = 0;
-            for (int i = 0; i < warpExtracts.Length / 5; i++)
-            {
-                Point tile = new Point(int.Parse(warpExtracts[runs]), int.Parse(warpExtracts[runs + 1]));
-                
-                warpLocation.Add(tile);
-                runs += 5;
-            }
-
-            return warpLocation;
-        }
-        
-        private static string GetWarpTiles(GameLocation location)
-        {
-            if (location.Name == "Farm")
-            {
-                location.TryGetMapProperty("FarmHouseEntry", out _);
-                location.TryGetMapProperty("ShippingBinLocation", out _);
-            }
-            location.TryGetMapProperty("Warp", out var warps);
-            return warps;
         }
     }
 
