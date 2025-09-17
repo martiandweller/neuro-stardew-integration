@@ -5,9 +5,11 @@ using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
+using StardewBotFramework.Source;
 using StardewBotFramework.Source.Modules.Pathfinding.Algorithms;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.Monsters;
 
 namespace NeuroStardewValley.Source.Actions;
@@ -94,7 +96,7 @@ public static class PathFindingActions
             Required = new List<string> { "exit" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["exit"] = QJS.Enum(WarpUtilities.GetWarpTilesStrings(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation))),
+                ["exit"] = QJS.Enum(WarpUtilities.GetWarpTilesStrings(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation,true))),
                 ["destructive"] = QJS.Type(JsonSchemaType.Boolean)
             }
         };
@@ -121,7 +123,7 @@ public static class PathFindingActions
 
             Point exitPoint = new Point(int.Parse(coords[0]), int.Parse(coords[1]));
 
-            if (!WarpUtilities.GetWarpsAsPoint(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation)).ContainsKey(exitPoint))
+            if (!WarpUtilities.GetWarpsAsPoint(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation,true)).ContainsKey(exitPoint))
             { 
                 return ExecutionResult.Failure($"The provided tile is not an exit");
             }
@@ -154,13 +156,29 @@ public static class PathFindingActions
         protected override void Execute(Goal? goal)
         {
             if (goal is null) return; // probably fine
+            Logger.Warning($"post execute null check");
 
             Task.Run(async () => await ExecuteFunctions(goal));
         }
         
         private async Task ExecuteFunctions(Goal goal)
         {
+            Logger.Warning($"async execute functions");
+            Vector2 vec2 = goal.VectorLocation.ToVector2() * 64;
+            var buildings = Main.Bot._currentLocation.buildings
+                .Where(building => building.GetBoundingBox().Contains(vec2)).ToList();
+            if (buildings.Count > 0)
+            {
+                Building building = buildings[0];
+                Point door = building.getPointForHumanDoor();
+                await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(door.X,door.Y), _destructive);
+                Main.Bot.Building.UseHumanDoor(building);
+                RegisterMainGameActions.RegisterPostAction();
+                return;
+            }
+            
             await Main.Bot.Pathfinding.Goto(goal, _destructive);
+            RegisterMainGameActions.RegisterPostAction();
         }
     }
 

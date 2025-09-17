@@ -80,8 +80,14 @@ public static class RegisterMainGameActions
 			case Farm:
 			{
 				bool madeDestroyAction = false;
+				bool hasItem = false;
 				foreach (var item in Main.Bot.PlayerInformation.Inventory) // use this instead of .Any as can't declare wateringCan in any
 				{
+					if (!hasItem)
+					{
+						window.AddAction(new ToolActions.UseToolInRect());
+						hasItem = true;
+					}
 					switch (item)
 					{
 						case WateringCan wateringCan:

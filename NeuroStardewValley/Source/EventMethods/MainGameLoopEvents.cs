@@ -26,7 +26,7 @@ public static class MainGameLoopEvents
 		WarpUtilities.ActionableTiles.Clear();
 		if (e.Player.passedOut) return;
 		if (Game1.eventUp) return;
-		string warps = WarpUtilities.GetWarpTiles(e.NewLocation);
+		string warps = WarpUtilities.GetWarpTiles(e.NewLocation,true);
 		string warpsString = !string.IsNullOrEmpty(warps) ? WarpUtilities.GetWarpTilesString(warps) : "There are no warps in this location";
 		
 		var locationCharacters = Main.Bot.Characters.GetCharactersInCurrentLocation(e.NewLocation);

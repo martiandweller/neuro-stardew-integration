@@ -172,9 +172,29 @@ public static class WarpUtilities
         return null;
     }
     
-    public static string GetWarpTiles(GameLocation location)
+    public static string GetWarpTiles(GameLocation location,bool addBuildings = false)
     {
         location.TryGetMapProperty("Warp", out var warps);
+        if (!addBuildings) return warps;
+
+        warps += GetBuildingWarps(location);
+        return warps;
+    }
+
+    public static string GetBuildingWarps(GameLocation location)
+    {
+        string warps = "";
+        foreach (var building in location.buildings)
+        {
+            Rectangle door = building.getRectForHumanDoor();
+            if (!building.HasIndoors() || building.getPointForHumanDoor() == new Point(-1,-1)) continue;
+            
+            door.Inflate(128,128); // adjust by two tiles as warp typically is one tile away from door
+            foreach (var warp in building.GetIndoors().warps.Where(warp => door.Contains(new Vector2(warp.TargetX,warp.TargetY) * 64))) 
+            {
+                warps += $" {warp.TargetX} {warp.TargetY} {warp.TargetName} {warp.X} {warp.Y}";
+            }
+        }
         return warps;
     }
 
@@ -182,8 +202,14 @@ public static class WarpUtilities
     {
         string[] warpExtracts = warps.Split(' ');
         Dictionary<Point, string> warpLocation = new();
-        for (int i = 0; i < warpExtracts.Length / 5; i += 5) // divide by five to only get tile locations
+        for (int i = 0; i < warpExtracts.Length; i += 5) // divide by five to only get tile locations
         {
+            string fullString = "";
+            for (int j = 0; j < 5; j++)
+            {
+                fullString += $" {warpExtracts[i + j]}";
+            }
+            Logger.Info($"full warp string: {fullString}");
             Logger.Info($"tile: {warpExtracts[i]} next tile: {warpExtracts[i + 1]}");
             Point tile = new Point(int.Parse(warpExtracts[i]), int.Parse(warpExtracts[i + 1]));
 
