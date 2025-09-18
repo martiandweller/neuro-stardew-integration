@@ -189,10 +189,10 @@ public static class WarpUtilities
             Rectangle door = building.getRectForHumanDoor();
             if (!building.HasIndoors() || building.getPointForHumanDoor() == new Point(-1,-1)) continue;
             
-            door.Inflate(128,128); // adjust by two tiles as warp typically is one tile away from door
+            door.Inflate(128,128); // adjust by two tiles as warp teleport location typically a few tiles away from entrance
             foreach (var warp in building.GetIndoors().warps.Where(warp => door.Contains(new Vector2(warp.TargetX,warp.TargetY) * 64))) 
             {
-                warps += $" {warp.TargetX} {warp.TargetY} {warp.TargetName} {warp.X} {warp.Y}";
+                warps += $" {warp.TargetX} {warp.TargetY} {building.GetIndoors().Name} {warp.X} {warp.Y}";
             }
         }
         return warps;
@@ -202,17 +202,13 @@ public static class WarpUtilities
     {
         string[] warpExtracts = warps.Split(' ');
         Dictionary<Point, string> warpLocation = new();
+        Logger.Info($"length: {warpExtracts.Length}   {warpExtracts[0]}");
+        if (warpExtracts.Length < 5) return new();
         for (int i = 0; i < warpExtracts.Length; i += 5) // divide by five to only get tile locations
         {
-            string fullString = "";
-            for (int j = 0; j < 5; j++)
-            {
-                fullString += $" {warpExtracts[i + j]}";
-            }
-            Logger.Info($"full warp string: {fullString}");
-            Logger.Info($"tile: {warpExtracts[i]} next tile: {warpExtracts[i + 1]}");
             Point tile = new Point(int.Parse(warpExtracts[i]), int.Parse(warpExtracts[i + 1]));
-
+            Logger.Info($"tile: {tile}   name: {warpExtracts[i+2]}");
+            
             string locationName = warpExtracts[i + 2];
             warpLocation.Add(tile,locationName);
         }

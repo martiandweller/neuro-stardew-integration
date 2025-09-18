@@ -14,7 +14,7 @@ namespace NeuroStardewValley.Source.Actions;
 
  static class InventoryActions
 {
-    #region UI
+    #region BaseUI
 
     public class OpenInventory : NeuroAction
     {
@@ -49,7 +49,9 @@ namespace NeuroStardewValley.Source.Actions;
     }
 
     #endregion
-    
+
+    #region ItemInteraction
+
     private class MoveItem : NeuroAction<Item>
     {
         private int _position;
@@ -334,6 +336,8 @@ namespace NeuroStardewValley.Source.Actions;
             RegisterInventoryActions();
         }
     }
+
+    #endregion
     
     #region Attach
 
@@ -453,6 +457,59 @@ namespace NeuroStardewValley.Source.Actions;
         }
     }
     
+    #endregion
+
+    #region ToolBar
+
+    public class ChangeSelectedToolbarSlot : NeuroAction<int>
+    	{
+    		public override string Name => "change_toolbar_slot";
+    		protected override string Description => $"Change currently selected toolbar slot, the slots available are between 0,{Main.Bot._farmer.MaxItems}.";
+    		protected override JsonSchema Schema => new()
+    		{
+    			Type = JsonSchemaType.Object,
+    			Required = new List<string> { "slot" },
+    			Properties = new Dictionary<string, JsonSchema>
+    			{
+    				["slot"] = QJS.Enum(Enumerable.Range(0, Main.Bot._farmer.MaxItems))
+    			}
+    		};
+            
+    		protected override ExecutionResult Validate(ActionData actionData, out int resultData)
+    		{
+    			string? slotStr = actionData.Data?.Value<string>("slot");
+    
+    			if (string.IsNullOrEmpty(slotStr))
+    			{
+    				resultData = -1;
+    				return ExecutionResult.Failure($"slot can not be null");
+    			}
+                
+    			int slot = int.Parse(slotStr);
+    
+    			if (!Enumerable.Range(0, Main.Bot._farmer.MaxItems).Contains(slot))
+    			{
+    				resultData = -1;
+    				return ExecutionResult.Failure($"{slot} is not a valid slot index");
+    			}
+    
+    			resultData = slot;
+    			return ExecutionResult.Success($"Changing to slot: {slot}");
+    		}
+    
+    		protected override void Execute(int resultData)
+    		{
+    			int? toolbarRotates = resultData / 12;
+    			for (int i = 0; i < toolbarRotates; i++)
+    			{
+    				Main.Bot.Inventory.SelectInventoryRowForToolbar(true);
+    				resultData -= 12;
+    			}
+    			
+    			Main.Bot.Inventory.SelectSlot(resultData);
+    		}
+    	}
+
     #endregion
     
     private static void RegisterInventoryActions()

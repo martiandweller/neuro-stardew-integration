@@ -139,6 +139,7 @@ internal sealed class Main : Mod
             foreach (var building in Game1.currentLocation.buildings)
             {
                 building.FinishConstruction();
+                Logger.Info($"{building.GetIndoors()}    {building.GetIndoorsName()}    {building.GetIndoorsType()}");
             }
         }
 
@@ -147,7 +148,28 @@ internal sealed class Main : Mod
             bool result = Bot._currentLocation.isActionableTile((int)Game1.currentCursorTile.X, (int)Game1.currentCursorTile.Y,
                 Game1.player);
             Logger.Warning($"is action: {result}");
-        }        
+        }
+
+        if (e.Button == SButton.Y)
+        {
+            foreach (var objDict in Bot._currentLocation.Objects)
+            {
+                foreach (var kvp in objDict)
+                {
+                    Logger.Info($"object kvp: {kvp.Key}    {kvp.Value.Name}");
+                }
+            }
+
+            foreach (var dict in Bot._currentLocation.terrainFeatures)
+            {
+                foreach (var kvp in dict)
+                {
+                    Logger.Info($"features: {kvp.Key}  {kvp.Value.modData.Name}");
+                }
+            }
+
+            Logger.Info($"current location: {Bot._currentLocation}");
+        }
     }
 
     private void GameLaunched(object? sender, GameLaunchedEventArgs e)

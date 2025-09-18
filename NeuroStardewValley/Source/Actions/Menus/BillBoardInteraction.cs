@@ -37,17 +37,10 @@ public static class BillBoardInteraction
 
 	public static string GetCalendarContext()
 	{
-		string context = "";
-
-		foreach (var kvp in Main.Bot.BillBoard.GetCalendar())
-		{
-			context += $"\nDay: {kvp.Key} event type: {kvp.Value.Type}";
-			if (kvp.Value.Type != Billboard.BillboardEventType.None)
-			{
-				context = $"{context} {kvp.Value.HoverText}";
-			}
-		}
+		List<string> contextList = Main.Bot.BillBoard.GetCalendar()
+			.Where(kvp => kvp.Value.Type != Billboard.BillboardEventType.None).Select(kvp =>
+				$"\nDay: {kvp.Key}, event type: {kvp.Value.Type}, event description: {kvp.Value.HoverText}").ToList();
 		
-		return context;
+		return string.Concat(contextList);
 	}
 }

@@ -21,6 +21,8 @@ public static class MainGameLoopEvents
 {
 	public static readonly Dictionary<SkillType, int> SkillsChangedThisDay = new();
 
+	#region RegisterActions
+
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
 	{
 		WarpUtilities.ActionableTiles.Clear();
@@ -29,32 +31,23 @@ public static class MainGameLoopEvents
 		string warps = WarpUtilities.GetWarpTiles(e.NewLocation,true);
 		string warpsString = !string.IsNullOrEmpty(warps) ? WarpUtilities.GetWarpTilesString(warps) : "There are no warps in this location";
 		
-		var locationCharacters = Main.Bot.Characters.GetCharactersInCurrentLocation(e.NewLocation);
-		string characterContext = "";
-		foreach (var kvp in locationCharacters)
-		{
-			characterContext += $"{kvp.Value.Name} is at {kvp.Key} in this location";
-		}
-
-		string tilesString = string.Join("\n",WarpUtilities.GetTilesInLocation(e.NewLocation,e.Player,50)); // the \n adds a bunch of tokens, but not having it could be confusing and crashes tony.
+		string characterContext = string.Concat(Main.Bot.Characters.GetCharactersInCurrentLocation(e.NewLocation)
+			.Select(kvp => $"{kvp.Value.Name} is at {kvp.Key} in this location").ToList());
 		
 		Context.Send(warpsString, true);
 		Context.Send(characterContext,true);
 		RegisterMainGameActions.RegisterPostAction(e, 0,
-			$"You are at {e.NewLocation.Name} from {e.OldLocation.Name}. The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}", 
-			$"These are the tiles that have an object on them around you: {tilesString}", true);
+			$"You are at {e.NewLocation.Name} from {e.OldLocation.Name}, The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
+			$" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)} " +
+			$" if you want more information about them you should open your inventory.");
 	}
 
 	public static void OnMenuChanged(object? sender, BotMenuChangedEventArgs e)
 	{
 		Logger.Info($"current menu: {e.NewMenu}");
-		if (e.OldMenu is DialogueBox)
+		if (Game1.player.isInBed.Value)
 		{
-			Logger.Info($"Removing dialogue box");
-			if (Game1.player.isInBed.Value)
-			{
-				return; // we don't need to send any actions at this point
-			}
+			return; // we don't need to send any actions at this point
 		}
 
 		if (e.OldMenu is BobberBar) // handled by caughtFish event
@@ -65,7 +58,7 @@ public static class MainGameLoopEvents
 		switch (e.NewMenu)
 		{
 			case DialogueBox dialogueBox:
-				Logger.Info($"add new menu dialogue box");
+				Logger.Info($"add new dialogue box");
 				Main.Bot.Dialogue.CurrentDialogueBox = dialogueBox;
 				RegisterDialogueActions.RegisterActions();
 				break;
@@ -114,18 +107,19 @@ public static class MainGameLoopEvents
 				}
 				else
 				{
-					Context.Send($"These are the event that are happening this month, {BillBoardInteraction.GetCalendarContext()}\n There are: {billboard.calendarDays.Count} days in this month.");
-					Task.Run(async () => // delay for 5 seconds then exit menu
+					Context.Send($"These are the event that are happening this season, {BillBoardInteraction.GetCalendarContext()}" +
+					             $"\nThere are: {billboard.calendarDays.Count} days in this season. It is currently day {SDate.Now().Day} of {SDate.Now().Season}.");
+					Task.Run(async () => // delay for 6.5 seconds then exit menu
 					{
-						await Task.Delay(5000);
+						await Task.Delay(6500);
 						Main.Bot.BillBoard.ExitMenu();
 					});
 				}
 				break;
 			case LetterViewerMenu letterViewerMenu:
 				Main.Bot.LetterViewer.SetMenu(letterViewerMenu);
-				if (Main.Bot.LetterViewer.HasQuest is not null && Main.Bot.LetterViewer.HasQuest.Value ||
-				    Main.Bot.LetterViewer.itemsToGrab is not null && Main.Bot.LetterViewer.itemsToGrab.Value)
+				
+				if (letterViewerMenu.HasQuestOrSpecialOrder || letterViewerMenu.itemsLeftToGrab())
 				{
 					LetterActions.RegisterActions();
 				}
@@ -174,6 +168,27 @@ public static class MainGameLoopEvents
 			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
+	
+	// may need to check what event was ended in the future
+	public static void EventFinished(object? sender, EventEndedEventArgs e)
+	{
+		Logger.Info($"Running event finished: event: {e.Event}  can move after: {e.Event.canMoveAfterDialogue()}");
+		if (e.Event.exitLocation is not null)
+		{
+			Logger.Error($"exit location: {e.Event.exitLocation.Name}  {e.Event.exitLocation.Location}  {e.Event.exitLocation.IsRequestFor(e.Event.exitLocation.Location)}");
+			return; // player should get warped after event
+		}
+		Task.Run(async () =>
+		{
+			await Task.Delay(15); // this is because sometimes events finish before giving back control
+			Logger.Info($"post event task delay");
+			RegisterMainGameActions.RegisterPostAction();
+		});
+	}
+
+	#endregion
+
+	#region ContextEvents
 
 	public static void OnDayStarted(object? sender, BotDayStartedEventArgs e)
 	{
@@ -211,23 +226,10 @@ public static class MainGameLoopEvents
 		}
 	}
 
-	// may need to check what event was ended in the future
-	public static void EventFinished(object? sender, EventEndedEventArgs e)
-	{
-		Logger.Info($"Running event finished: event: {e.Event}  can move after: {e.Event.canMoveAfterDialogue()}");
-		if (e.Event.exitLocation is not null)
-		{
-			Logger.Error($"exit location: {e.Event.exitLocation.Name}  {e.Event.exitLocation.Location}  {e.Event.exitLocation.IsRequestFor(e.Event.exitLocation.Location)}");
-			return; // player should get warped after event
-		}
-		Task.Run(async () =>
-		{
-			await Task.Delay(15);
-			Logger.Info($"post event task delay");
-			RegisterMainGameActions.RegisterPostAction();
-		});
-	}
-	
+	#endregion
+
+	#region ContextHelpers
+
 	private static async Task ShippingMenuContext()
 	{
 		List<Item> soldItems = new();
@@ -281,4 +283,6 @@ public static class MainGameLoopEvents
 		
 		return contextString;
 	}
+
+	#endregion
 }

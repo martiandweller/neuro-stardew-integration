@@ -3,7 +3,6 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
-using NeuroStardewValley.Source.Actions.ObjectActions;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
@@ -11,6 +10,7 @@ using StardewBotFramework.Source.ObjectDestruction;
 using StardewBotFramework.Source.ObjectToolSwaps;
 using StardewValley;
 using StardewValley.Tools;
+using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Actions;
 
@@ -33,7 +33,7 @@ public static class ToolActions
             Required = new List<string> { "item", "direction" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["item"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is Tool).Select(tool => tool.Name).ToList()),
+                ["item"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is not null).Select(item => item.Name).ToList()),
                 ["direction"] = QJS.Enum(_directions),
                 ["tile_x"] = QJS.Type(JsonSchemaType.Integer),
                 ["tile_y"] = QJS.Type(JsonSchemaType.Integer)
@@ -55,7 +55,7 @@ public static class ToolActions
                 return ExecutionResult.Failure($"You have not provided the item to use");
             }
 
-            string[] items = Main.Bot.Inventory.Inventory.Where(item1 => item1 is Tool).Select(tool => tool.Name).ToArray();
+            string[] items = Main.Bot.Inventory.Inventory.Where(item1 => item1 is not null).Select(tool => tool.Name).ToArray();
             if (!items.Contains(item)) ExecutionResult.Failure($"{item} is not a valid item");
 
             if (direction is not null && xStr is not null && yStr is not null)
@@ -74,13 +74,13 @@ public static class ToolActions
             }
 
             selectedItem = null;
-            foreach (var tool in Main.Bot.Inventory.Inventory)
+            foreach (var i in Main.Bot.Inventory.Inventory)
             {
-                if (tool is null) continue;
+                if (i is null) continue;
 
-                if (tool.Name == item)
+                if (i.Name == item)
                 {
-                    selectedItem = tool;
+                    selectedItem = i;
                     break;
                 }
 
@@ -103,11 +103,25 @@ public static class ToolActions
             if (selectedItem is MeleeWeapon) meleeString = selectedItem.Name == "Scythe" ? "Scythe" : "Weapon";
             SwapItemHandler.SwapItem(selectedItem.GetType(),meleeString);
             
-            Task.Run(async () => await ExecuteFunctions());
+            Task.Run(async () => await ExecuteFunctions(selectedItem));
         }
 
-        private async Task ExecuteFunctions()
+        private async Task ExecuteFunctions(Item selectedItem)
         {
+	        if (selectedItem is not Tool)
+	        {
+		        if (selectedItem is Object obj && obj.Edibility != -300)
+		        {
+			        Main.Bot.Player.EatHeldItem();
+		        }
+
+		        if (Utility.isThereAnObjectHereWhichAcceptsThisItem(Main.Bot._currentLocation, selectedItem, Tile.X,
+			            Tile.Y))
+		        {
+			        Object objAt = Main.Bot._currentLocation.getObjectAtTile(Tile.X, Tile.Y);
+			        Main.Bot.Player.AddItemToObject(objAt, Main.Bot._farmer.ActiveItem);
+		        }
+	        }
 	        if (_pathfind)
 	        {
 		        await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Tile.X, Tile.Y)); // get direction of final this to point

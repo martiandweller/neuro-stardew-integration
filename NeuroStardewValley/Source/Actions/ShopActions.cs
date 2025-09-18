@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
@@ -14,7 +13,7 @@ public static class ShopActions
 	{
 		public override string Name => "buy_item";
 		protected override string Description => "Buy an item from the shop";
-		protected override JsonSchema Schema => new JsonSchema()
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "item_index" },

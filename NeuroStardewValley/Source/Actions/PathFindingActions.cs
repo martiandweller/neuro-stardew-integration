@@ -5,7 +5,6 @@ using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
-using StardewBotFramework.Source;
 using StardewBotFramework.Source.Modules.Pathfinding.Algorithms;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
@@ -67,7 +66,7 @@ public static class PathFindingActions
             
             goal = new Goal.GoalPosition(int.Parse(xStr), int.Parse(yStr));
             _destructive = (bool)destructive;
-            return ExecutionResult.Success();
+            return ExecutionResult.Success($"You are walking towards {goal.VectorLocation}.");
         }
 
         protected override void Execute(Goal? goal)

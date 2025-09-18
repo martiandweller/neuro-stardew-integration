@@ -2,9 +2,11 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley;
+using xTile.Dimensions;
 using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Actions.ObjectActions;
@@ -13,41 +15,43 @@ public static class WorldObjectActions
 {
 	public class InteractWithObject : NeuroAction<Object>
 	{
+		private static readonly List<KeyValuePair<Vector2, Object>> Objects = Main.Bot._currentLocation.Objects.Pairs.ToList();
 		public override string Name => "interact_object";
-
 		protected override string Description =>
-			"Will interact with an object, This should primarily be used with furniture";
-
+			"Will interact with an object, This should primarily be used with furniture. This will also allow you to add" +
+			" items to the object, this can be used with objects like furnaces and the various types of \"machines\"";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
-			Required = new List<string> { "object_tile_x","object_tile_y" },
+			Required = new List<string> { "object" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["object_tile_x"] = QJS.Type(JsonSchemaType.Integer),
-				["object_tile_y"] = QJS.Type(JsonSchemaType.Integer),
+				["object"] = QJS.Enum(GetSchema())
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out Object? resultData)
 		{
-			int? objectTileX = actionData.Data?.Value<int>("object_tile_x");
-			int? objectTileY = actionData.Data?.Value<int>("object_tile_y");
+			string? objString = actionData.Data?.Value<string>("object");
             
 			resultData = null;
-			if (objectTileX is null || objectTileY is null)
+			if (objString is null)
 			{
 				return ExecutionResult.Failure($"You have provided a null value.");
 			}
-			if (Main.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY) is null)
+
+			List<KeyValuePair<Vector2,Object>> objs = Objects.Where(obj => !obj.Value.isDebrisOrForage() && $"{obj.Key} {obj.Value.Name}" == objString).ToList();
+			if (objs.Count < 1) return ExecutionResult.Failure($"The value you provided is not available.");
+			Object obj = objs[0].Value;
+			if (Main.Bot.ObjectInteraction.GetObjectAtTile((int)obj.TileLocation.X, (int)obj.TileLocation.Y) is null)
 			{
 				return ExecutionResult.Failure($"There is no object at the provided tile.");
 			}
 
-			if (!RangeCheck.InRange(new Point(objectTileX.Value, objectTileY.Value)))
+			if (!RangeCheck.InRange(obj.TileLocation.ToPoint()))
 			{
 				return ExecutionResult.Failure($"This object is not within range of you.");
 			}
-			resultData = Main.Bot.ObjectInteraction.GetObjectAtTile((int)objectTileX, (int)objectTileY);
+			resultData = Main.Bot.ObjectInteraction.GetObjectAtTile((int)obj.TileLocation.X, (int)obj.TileLocation.Y);
 			return ExecutionResult.Success();
 		}
 
@@ -55,7 +59,24 @@ public static class WorldObjectActions
 		{
 			if (resultData is null) return;
             
+			Logger.Info($"interacting with object: {resultData.Name}");
+			if (resultData.GetMachineData() is not null && (resultData.heldObject.Value is null || 
+			                                                (resultData.GetMachineData().AllowLoadWhenFull && resultData.heldObject.Value is not null)))
+			{
+				Main.Bot.Player.AddItemToObject(resultData, Main.Bot._farmer.ActiveItem);
+				RegisterMainGameActions.RegisterPostAction();
+				return;
+			}
 			Main.Bot.ObjectInteraction.InteractWithObject(resultData);
+			RegisterMainGameActions.RegisterPostAction();
+		}
+
+		public static List<string> GetSchema()
+		{
+			return Objects
+				.Where(obj => (obj.Value.heldObject.Value is not null && obj.Value.GetMachineData().AllowLoadWhenFull) ||
+				              (obj.Value.heldObject.Value is null && obj.Value.GetMachineData() is not null) || obj.Value.isActionable(Main.Bot._farmer)) // would like to use IsActionable but that is only tiles that change the cursor not something like a furnace :(.
+				.Select(obj => $"{obj.Key} {obj.Value.Name}").ToList();
 		}
 	}
 
@@ -103,6 +124,68 @@ public static class WorldObjectActions
 		{
 			Main.Bot.ObjectInteraction.DoActionTile(resultData);
 			RegisterMainGameActions.RegisterPostAction();
+		}
+	}
+
+	public class InteractWithTile : NeuroAction<Point>
+	{
+		public override string Name => "interact_with_tile";
+		protected override string Description =>
+			"Interact with a specified tile that is different from normal tiles, this should commonly be used for troughs in animal houses";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "tile" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["tile"] = QJS.Enum(GetSchema().Select(point => point.ToString()).ToList())
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out Point resultData)
+		{
+			string? point = actionData.Data?.Value<string>("tile");
+
+			resultData = new();
+			if (string.IsNullOrEmpty(point))
+			{
+				return ExecutionResult.Failure($"The tile you provided was not valid.");
+			}
+
+			int index = GetSchema().Select(p => p.ToString()).ToList().IndexOf(point);
+
+			if (index == -1)
+			{
+				return ExecutionResult.Failure($"You provided an invalid value.");
+			}
+			
+			if (!RangeCheck.InRange(GetSchema()[index]))
+			{
+				return ExecutionResult.Failure($"This tile is not within range of you, you should try to walk up to it.");
+			}
+			resultData = GetSchema()[index];
+			return ExecutionResult.Success();
+		}
+
+		protected override void Execute(Point resultData)
+		{
+			Main.Bot._currentLocation.checkAction(new Location(resultData.X,resultData.Y),Game1.viewport,Main.Bot._farmer);
+			RegisterMainGameActions.RegisterPostAction();
+		}
+
+		public static List<Point> GetSchema()
+		{
+			List<Point> tiles = new();
+			for (int x = 0; x < Main.Bot._currentLocation.Map.DisplayWidth / 64; x++)
+			{
+				for (int y = 0; y < Main.Bot._currentLocation.Map.DisplayHeight / 64; y++)
+				{
+					if (Main.Bot._currentLocation.isActionableTile(x,y,Main.Bot._farmer)) Logger.Info($"{x},{y} is an actionable tile");
+					if (Main.Bot._currentLocation.doesTileHaveProperty(x, y, "Trough", "Back") == null || Main.Bot._currentLocation.Objects.ContainsKey(new Vector2(x,y))) continue;
+					
+					tiles.Add(new Point(x,y));
+				}
+			}
+			return tiles;
 		}
 	}
 }

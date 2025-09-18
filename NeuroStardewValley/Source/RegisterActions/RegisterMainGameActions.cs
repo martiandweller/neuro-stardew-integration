@@ -3,6 +3,7 @@ using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.Actions.ObjectActions;
+using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewModdingAPI;
@@ -16,16 +17,14 @@ namespace NeuroStardewValley.Source.RegisterActions;
 
 public static class RegisterMainGameActions
 {
-	public static void RegisterActions(ActionWindow window,bool checkCanMove = true)
+	#region AddActions
+
+	public static void RegisterActions(ActionWindow window)
 	{
 		window.AddAction(new PathFindingActions.Pathfinding()).AddAction(new PathFindingActions.PathFindToExit())
 			.AddAction(new PathFindingActions.GoToCharacter());
 
-		// if (Context.CanPlayerMove)
-		// {
-		// }
-		
-		if (Game1.currentLocation.furniture.Count > 0 || Game1.currentLocation.Objects.Length > 0)
+		if (Main.Bot._currentLocation.furniture.Count > 0 || WorldObjectActions.InteractWithObject.GetSchema().Count > 0)
 		{
 			window.AddAction(new WorldObjectActions.InteractWithObject());
 		}
@@ -56,8 +55,7 @@ public static class RegisterMainGameActions
 		}
 
 		window.AddAction(new InventoryActions.OpenInventory())
-			.AddAction(new ToolBarActions.ChangeSelectedToolbarSlot())
-			.AddAction(new ToolBarActions.ChangeCurrentToolbar());
+			.AddAction(new InventoryActions.ChangeSelectedToolbarSlot());
 	}
 
 	public static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null,GameLocation? location = null)
@@ -160,8 +158,15 @@ public static class RegisterMainGameActions
 				}
 
 				break;
+			case AnimalHouse:
+				if (WorldObjectActions.InteractWithTile.GetSchema().Count < 1) break;
+
+				window.AddAction(new WorldObjectActions.InteractWithTile());
+				break;
 		}
 	}
+
+	#endregion
 
 	public static void RegisterPostAction(BotWarpedEventArgs? e = null,int afterSeconds = 0,string query = "",string state = "",bool? ephemeral = null)
 	{
@@ -169,13 +174,23 @@ public static class RegisterMainGameActions
 		
 		Logger.Info($"register actions again.");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
-		RegisterActions(window,false);
-		RegisterToolActions(window,e,Game1.currentLocation);
-		RegisterLocationActions(window,Game1.currentLocation);
+		RegisterActions(window);
+		RegisterToolActions(window,e,Main.Bot._currentLocation);
+		RegisterLocationActions(window,Main.Bot._currentLocation);
 		if (afterSeconds != 0 || query == "" || state == "" || ephemeral != null)
 		{
-			Logger.Info($"ephemeral: {ephemeral is not null && ephemeral.Value}  {ephemeral}");
-			window.SetForce(afterSeconds, query, state, ephemeral is not null && ephemeral.Value);
+			if (query == "")
+			{
+				query = $"You are at {Main.Bot._currentLocation.Name}," +
+				        $" The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
+				        $" These are the Items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)}" +
+				        $" if you want more information about them you should open your inventory.";
+			}
+			if (state == "")
+			{
+				state = string.Join("\n",WarpUtilities.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer,50));
+			}
+			window.SetForce(afterSeconds, query, state, ephemeral is null || ephemeral.Value);
 		}
 		window.Register();
 	}
@@ -184,9 +199,9 @@ public static class RegisterMainGameActions
 	{
 		ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
 		actionWindow.SetForce(0,query,state,ephemeral);
-		RegisterActions(actionWindow,false);
-		RegisterToolActions(actionWindow,null,Game1.currentLocation);
-		RegisterLocationActions(actionWindow,Game1.currentLocation);
+		RegisterActions(actionWindow);
+		RegisterToolActions(actionWindow,null,Main.Bot._currentLocation);
+		RegisterLocationActions(actionWindow,Main.Bot._currentLocation);
 		actionWindow.Register();
 	}
 }
