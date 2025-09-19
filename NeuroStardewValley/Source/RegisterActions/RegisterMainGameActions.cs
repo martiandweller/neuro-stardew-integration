@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
@@ -159,7 +160,18 @@ public static class RegisterMainGameActions
 
 				break;
 			case AnimalHouse:
-				if (WorldObjectActions.InteractWithTile.GetSchema().Count < 1) break;
+				List<Point> troughTiles = WorldObjectActions.InteractWithTile.GetSchema();
+				if (troughTiles.Count < 1) break;
+				NeuroSDKCsharp.Messages.Outgoing.Context.Send($"There are the locations of the troughs: {string.Join(" ",troughTiles)}");
+
+				window.AddAction(new WorldObjectActions.InteractWithTile());
+				break;
+			case MineShaft:
+				List<Point> ladderTile = WorldObjectActions.InteractWithTile.GetSchema();
+				if (ladderTile.Count < 1) break;
+				NeuroSDKCsharp.Messages.Outgoing.Context.Send($"These are the locations of the ladders," +
+				                                              $" you may need to destroy the object over them to use them." +
+				                                              $" {string.Join(" ",ladderTile)}");
 
 				window.AddAction(new WorldObjectActions.InteractWithTile());
 				break;
@@ -184,7 +196,7 @@ public static class RegisterMainGameActions
 				query = $"You are at {Main.Bot._currentLocation.Name}," +
 				        $" The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
 				        $" These are the Items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)}" +
-				        $" if you want more information about them you should open your inventory.";
+				        $"\nIf you want more information about your items should open your inventory.";
 			}
 			if (state == "")
 			{

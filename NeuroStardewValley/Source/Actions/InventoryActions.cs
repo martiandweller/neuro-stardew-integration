@@ -29,7 +29,6 @@ namespace NeuroStardewValley.Source.Actions;
         protected override void Execute()
         {
             Main.Bot.PlayerInformation.OpenInventory();
-            RegisterInventoryActions();
         }
     }
     public class ExitInventory : NeuroAction
@@ -512,7 +511,7 @@ namespace NeuroStardewValley.Source.Actions;
 
     #endregion
     
-    private static void RegisterInventoryActions()
+    public static void RegisterInventoryActions()
     {
         ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
         actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())

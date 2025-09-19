@@ -39,28 +39,30 @@ public static class MainGameLoopEvents
 		RegisterMainGameActions.RegisterPostAction(e, 0,
 			$"You are at {e.NewLocation.Name} from {e.OldLocation.Name}, The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
 			$" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)} " +
-			$" if you want more information about them you should open your inventory.");
+			$"\nIf you want more information about your items should open your inventory.");
 	}
 
 	public static void OnMenuChanged(object? sender, BotMenuChangedEventArgs e)
 	{
 		Logger.Info($"current menu: {e.NewMenu}");
-		if (Game1.player.isInBed.Value)
+		switch (e.OldMenu)
 		{
-			return; // we don't need to send any actions at this point
+			// handled by caughtFish event
+			case BobberBar:
+			// we need to check if old is dialogue box to stop issues with changing menus while standing in bed
+			case DialogueBox when Game1.player.isInBed.Value:
+				return;
 		}
 
-		if (e.OldMenu is BobberBar) // handled by caughtFish event
-		{
-			return;
-		}
-		
 		switch (e.NewMenu)
 		{
 			case DialogueBox dialogueBox:
 				Logger.Info($"add new dialogue box");
 				Main.Bot.Dialogue.CurrentDialogueBox = dialogueBox;
 				RegisterDialogueActions.RegisterActions();
+				break;
+			case GameMenu:
+				InventoryActions.RegisterInventoryActions();
 				break;
 			case ShopMenu shopMenu:
 				Main.Bot.Shop.OpenShop(shopMenu); // this should be handled by OpenShopUi
@@ -158,6 +160,10 @@ public static class MainGameLoopEvents
 			case MineElevatorMenu mineElevatorMenu:
 				Main.Bot.ElevatorMenu.SetMenu(mineElevatorMenu);
 				ElevatorMenuActions.RegisterAction();
+				break;
+			default:
+				Context.Send(string.Format(ResultStrings.InvalidClickableMenu,$"{e.NewMenu}"));
+				e.NewMenu.exitThisMenu();
 				break;
 		}
 		

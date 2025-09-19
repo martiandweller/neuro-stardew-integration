@@ -21,7 +21,7 @@ public static class InventoryContext
 			contextString = string.Concat(contextString, $" Quality: {QualityStrings[item.Quality]}");
 		}
 
-		if (includeIndex && item is Tool tool)
+		if (includeAttachments && item is Tool tool)
 		{
 			contextString += $" Allowed attachment amount: {tool.AttachmentSlotsCount} Equipped attachments: ";
 			var attachments = tool.attachments.Where(obj => obj is not null && !string.IsNullOrEmpty(obj.Name))

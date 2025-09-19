@@ -6,6 +6,7 @@ using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley;
+using StardewValley.Locations;
 using xTile.Dimensions;
 using Object = StardewValley.Object;
 
@@ -131,7 +132,8 @@ public static class WorldObjectActions
 	{
 		public override string Name => "interact_with_tile";
 		protected override string Description =>
-			"Interact with a specified tile that is different from normal tiles, this should commonly be used for troughs in animal houses";
+			"Interact with a specified tile that is different from normal tiles, this would commonly be used for troughs" +
+			". in animal houses or interacting with the ladders in the mines";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -168,23 +170,46 @@ public static class WorldObjectActions
 
 		protected override void Execute(Point resultData)
 		{
+			// currently just stops from sending if mine ladder
+			bool registerAction = Main.Bot._currentLocation.getTileIndexAt(resultData.X, resultData.Y, "Buildings") != 173;
 			Main.Bot._currentLocation.checkAction(new Location(resultData.X,resultData.Y),Game1.viewport,Main.Bot._farmer);
-			RegisterMainGameActions.RegisterPostAction();
+			if (registerAction) RegisterMainGameActions.RegisterPostAction();
 		}
 
 		public static List<Point> GetSchema()
 		{
 			List<Point> tiles = new();
-			for (int x = 0; x < Main.Bot._currentLocation.Map.DisplayWidth / 64; x++)
+
+			switch (Main.Bot._currentLocation)
 			{
-				for (int y = 0; y < Main.Bot._currentLocation.Map.DisplayHeight / 64; y++)
-				{
-					if (Main.Bot._currentLocation.isActionableTile(x,y,Main.Bot._farmer)) Logger.Info($"{x},{y} is an actionable tile");
-					if (Main.Bot._currentLocation.doesTileHaveProperty(x, y, "Trough", "Back") == null || Main.Bot._currentLocation.Objects.ContainsKey(new Vector2(x,y))) continue;
-					
-					tiles.Add(new Point(x,y));
-				}
+				case AnimalHouse animalHouse:
+					for (int x = 0; x < Main.Bot._currentLocation.Map.DisplayWidth / 64; x++)
+					{
+						for (int y = 0; y < Main.Bot._currentLocation.Map.DisplayHeight / 64; y++)
+						{
+							if (animalHouse.doesTileHaveProperty(x, y, "Trough", "Back") == null ||
+							    Main.Bot._currentLocation.Objects.ContainsKey(new Vector2(x, y))) continue;
+
+							tiles.Add(new Point(x, y));
+						}
+					}
+
+					break;
+				case MineShaft mineShaft:
+					for (int x = 0; x < mineShaft.Map.DisplayWidth / 64; x++)
+					{
+						for (int y = 0; y < mineShaft.Map.DisplayHeight / 64; y++)
+						{
+							if (mineShaft.getTileIndexAt(x,y, "Buildings") != 173)
+								continue; // tile index for ladders
+
+							tiles.Add(new Point(x, y));
+						}
+					}
+
+					break;
 			}
+			
 			return tiles;
 		}
 	}

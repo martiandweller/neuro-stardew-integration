@@ -163,21 +163,25 @@ public static class PathFindingActions
         private async Task ExecuteFunctions(Goal goal)
         {
             Logger.Warning($"async execute functions");
+            GameLocation oldLocation = Main.Bot._currentLocation;
             Vector2 vec2 = goal.VectorLocation.ToVector2() * 64;
             var buildings = Main.Bot._currentLocation.buildings
                 .Where(building => building.GetBoundingBox().Contains(vec2)).ToList();
+            Building? building = null;
             if (buildings.Count > 0)
             {
-                Building building = buildings[0];
-                Point door = building.getPointForHumanDoor();
-                await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(door.X,door.Y), _destructive);
-                Main.Bot.Building.UseHumanDoor(building);
-                RegisterMainGameActions.RegisterPostAction();
-                return;
+                building = buildings[0];
+                Point point = building.getPointForHumanDoor();
+                goal = new Goal.GetToTile(point.X, point.Y);
             }
-            
+
             await Main.Bot.Pathfinding.Goto(goal, _destructive);
-            RegisterMainGameActions.RegisterPostAction();
+            
+            if (building is not null) Main.Bot.Building.UseHumanDoor(building);
+            if (Main.Bot._currentLocation.Equals(oldLocation))
+            {
+                RegisterMainGameActions.RegisterPostAction(); 
+            }
         }
     }
 

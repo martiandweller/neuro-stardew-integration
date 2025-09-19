@@ -20,8 +20,9 @@ public static class WarpUtilities
     public static List<string> GetTilesInLocation(GameLocation location, Character? startTile = null,int radius = 0)
     {
         string str = radius == 0 ? "" : $"closest {radius} ";
-        List<string> tileList = new() {$"These are the {str}tiles they are sent in the format of X,Y with a \\n separating each tile." +
-                                       " If a tile has an action you can try to use it with the interact_with_tile action"};
+        List<string> tileList = new() {$"These are the {str}tiles in this location, they are sent in the format of X,Y with a \\n separating each tile." +
+                                       " If a tile has an action you can try to use it with the interact_with_tile action." +
+                                       " If a tile is \"block\" that means it has collisions."};
         HashSet<Building> sentBuildings = new();
         WaterTiles.WaterTileData[,] waterTileData = {};
         if (location.waterTiles is not null)
@@ -126,10 +127,10 @@ public static class WarpUtilities
                         tileList.Add(contextString);
                         break;
                     case ResourceClump resourceClump:
-                        tileList.Add($"{resourceClump.modData.Name} is at tile: {x},{y}");
+                        tileList.Add($"{resourceClump.modData.Name} is at: {x},{y}");
                         break;
                     case TerrainFeature terrainFeature:
-                        tileList.Add($"{terrainFeature.modData.Name} is at tile: {x},{y}");
+                        tileList.Add($"{terrainFeature.modData.Name} is at: {x},{y}");
                         break;
                 }
             }
