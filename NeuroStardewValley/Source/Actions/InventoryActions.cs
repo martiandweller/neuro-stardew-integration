@@ -6,6 +6,7 @@ using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.ContextStrings;
 using StardewValley;
 using StardewValley.Inventories;
+using StardewValley.Menus;
 using StardewValley.Objects;
 using StardewValley.Objects.Trinkets;
 using Object = StardewValley.Object;
@@ -138,6 +139,90 @@ namespace NeuroStardewValley.Source.Actions;
             }
 
             return item;
+        }
+    }
+    private class RemoveItem : NeuroAction<KeyValuePair<Item,int>>
+    {
+        private IEnumerable<string> Options => new[] { "drop", "bin" };
+        private string _selectedOption = "";
+        public override string Name => "remove_item";
+        protected override string Description => "remove an item from your inventory, this can be done by either dropping it or putting it in the bin.";
+        protected override JsonSchema Schema => new()
+        {
+            Type = JsonSchemaType.Object,
+            Required = new List<string> { "item", "amount","option" },
+            Properties = new Dictionary<string, JsonSchema>
+            {
+                ["item"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(i => i is not null && i.canBeTrashed()).Select(i => Main.Bot.Inventory.Inventory.IndexOf(i)).ToList()),
+                ["amount"] = QJS.Type(JsonSchemaType.Integer),
+                ["option"] = QJS.Enum(Options)
+            }
+        };
+        protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<Item,int> resultData)
+        {
+            string? selectedIndex = actionData.Data?.Value<string>("item");
+            int? selectedAmount = actionData.Data?.Value<int>("amount");
+            string? selectedOption = actionData.Data?.Value<string>("option");
+
+            resultData = new();
+            if (selectedIndex is null || selectedAmount is null || selectedOption is null)
+            {
+                return ExecutionResult.Failure($"you provided a null value");
+            }
+
+            if (!Options.Contains(selectedOption))
+            {
+                return ExecutionResult.Failure($"You provided an invalid option.");
+            }
+
+            Item? item = null;
+            for (int i = 0; i < Main.Bot.Inventory.MaxInventory; i++)
+            {
+                if (Main.Bot.Inventory.Inventory[i] is not null && i == int.Parse(selectedIndex))
+                {
+                    item = Main.Bot.Inventory.Inventory[i];
+                }
+            }
+
+            if (item is null)
+            {
+                return ExecutionResult.Failure($"The item you provided does not exist");
+            }
+
+            if (selectedAmount > item.Stack || selectedAmount < 0)
+            {
+                return ExecutionResult.Failure($"You have selected more or too little items then are available.");
+            }
+            resultData = new(item,(int)selectedAmount);
+            _selectedOption = selectedOption;
+            return ExecutionResult.Success($"You are binning {selectedAmount} {item.Name}");
+        }
+
+        protected override void Execute(KeyValuePair<Item,int> resultData)
+        {
+            GameMenu? menu = Game1.activeClickableMenu as GameMenu;
+            InventoryPage? page = menu?.GetCurrentPage() as InventoryPage;
+            if (page is null) return;
+            
+            Main.Bot.Inventory.setPage(page);
+            
+            int index = Main.Bot.Inventory.Inventory.IndexOf(resultData.Key);
+            Main.Bot.Inventory.SelectSingleCursorItem(index,true);
+            for (int i = 0; i < resultData.Value - 1; i++)
+            {
+                Logger.Info($"clicking");
+                Main.Bot.Inventory.SelectSingleCursorItem(index);
+            }
+            
+            if (_selectedOption == "bin")
+            {
+                Main.Bot.Inventory.ClickBin();
+            }
+            else
+            {
+                Main.Bot.Inventory.ClickOutOfBounds();
+            }
+            RegisterInventoryActions();
         }
     }
     private class InteractWithTrinkets : NeuroAction<Dictionary<string,string>>
@@ -400,7 +485,7 @@ namespace NeuroStardewValley.Source.Actions;
         }
     }
     
-    public class RemoveItem : NeuroAction<Item>
+    public class RemoveFromItem : NeuroAction<Item>
     {
         public override string Name => "remove_attached_item";
         protected override string Description => "Remove the item attached to another item." +
@@ -515,7 +600,7 @@ namespace NeuroStardewValley.Source.Actions;
     {
         ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
         actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())
-            .AddAction(new ExitInventory()).AddAction(new AttachItem()).AddAction(new RemoveItem()).AddAction(new CraftingActions.SetCraftingPage());
+            .AddAction(new ExitInventory()).AddAction(new AttachItem()).AddAction(new RemoveFromItem()).AddAction(new CraftingActions.SetCraftingPage()).AddAction(new RemoveItem());
 
         string nameList = InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true, true);
         List<string> itemList = PrepareItemStringList(Main.Bot.Inventory.GetEquippedClothing()).ToList();

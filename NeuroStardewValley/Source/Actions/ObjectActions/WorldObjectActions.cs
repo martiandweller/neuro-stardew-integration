@@ -83,7 +83,7 @@ public static class WorldObjectActions
 
 	public class InteractWithActionTile : NeuroAction<Point>
 	{
-		private static List<Point> Tiles => WarpUtilities.ActionableTiles.ToList();
+		private static List<Point> ActionTiles => WarpUtilities.ActionableTiles.ToList();
 		public override string Name => "interact_with_tile";
 		protected override string Description => "Interact with a tile that has an action on it.";
 		protected override JsonSchema Schema => new()
@@ -92,7 +92,7 @@ public static class WorldObjectActions
 			Required = new List<string> { "tile" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["tile"] = QJS.Enum(Tiles.Select(tile => tile.ToString()).ToList())
+				["tile"] = QJS.Enum(ActionTiles.Select(tile => tile.ToString()).ToList())
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out Point resultData)
@@ -105,9 +105,9 @@ public static class WorldObjectActions
 				return ExecutionResult.Failure($"You provided a null or empty value to tile");
 			}
 
-			Point tile = Tiles[Tiles.Select(tile => tile.ToString()).ToList().IndexOf(tileString)];
+			Point tile = ActionTiles[ActionTiles.Select(tile => tile.ToString()).ToList().IndexOf(tileString)];
 
-			if (!Tiles.Contains(tile) || !Main.Bot._currentLocation.isActionableTile(tile.X, tile.Y, Main.Bot._farmer))
+			if (!ActionTiles.Contains(tile) || !Main.Bot._currentLocation.isActionableTile(tile.X, tile.Y, Main.Bot._farmer))
 			{
 				return ExecutionResult.Failure($"The tile you provided is not a valid tile, you should try another."); 
 			}
@@ -123,7 +123,7 @@ public static class WorldObjectActions
 
 		protected override void Execute(Point resultData)
 		{
-			Main.Bot.ObjectInteraction.DoActionTile(resultData);
+			Main.Bot.ActionTiles.DoActionTile(resultData);
 			RegisterMainGameActions.RegisterPostAction();
 		}
 	}

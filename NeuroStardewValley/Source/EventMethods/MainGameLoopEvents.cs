@@ -162,8 +162,10 @@ public static class MainGameLoopEvents
 				ElevatorMenuActions.RegisterAction();
 				break;
 			default:
+				// ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+				if (e.NewMenu == null) return;
 				Context.Send(string.Format(ResultStrings.InvalidClickableMenu,$"{e.NewMenu}"));
-				e.NewMenu.exitThisMenu();
+				e.NewMenu.exitThisMenu(false);
 				break;
 		}
 		

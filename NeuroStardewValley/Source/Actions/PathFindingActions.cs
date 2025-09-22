@@ -107,10 +107,6 @@ public static class PathFindingActions
 
             Logger.Info($"data: {pointStr}");
             goal = null;
-            if (!Game1.currentLocation.Equals(Main.Bot._currentLocation))
-            {
-                return ExecutionResult.ModFailure($"This action has been called in a different location than it was registered. This is most likely an issue with the integration");
-            }
             
             if (pointStr is null || destructive is null)
             {
@@ -134,6 +130,15 @@ public static class PathFindingActions
                 return ExecutionResult.Failure($"The value was either less than 0 or greater than the size of the map. If you were provided this position by the game, it is an issue with the mod.");
             }
 
+            // if exit point is part of building
+            if (Utility.tileWithinRadiusOfPlayer(exitPoint.X, exitPoint.Y, 1, Main.Bot._farmer)
+                && !WarpUtilities.GetWarpsAsPoint(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation))
+                    .ContainsKey(exitPoint))
+            {
+                goal = new Goal.GoalPosition(exitPoint.X,exitPoint.Y);
+                return ExecutionResult.Success($"");
+            }
+            
             Main.Bot.Pathfinding.BuildCollisionMap();
             AlgorithmBase.IPathing pathing = new AStar.Pathing();
             if (Main.Bot.Pathfinding.IsBlocked(exitPoint.X, exitPoint.Y) && (bool)!destructive)
@@ -155,7 +160,6 @@ public static class PathFindingActions
         protected override void Execute(Goal? goal)
         {
             if (goal is null) return; // probably fine
-            Logger.Warning($"post execute null check");
 
             Task.Run(async () => await ExecuteFunctions(goal));
         }
@@ -174,14 +178,31 @@ public static class PathFindingActions
                 Point point = building.getPointForHumanDoor();
                 goal = new Goal.GetToTile(point.X, point.Y);
             }
-
-            await Main.Bot.Pathfinding.Goto(goal, _destructive);
             
-            if (building is not null) Main.Bot.Building.UseHumanDoor(building);
-            if (Main.Bot._currentLocation.Equals(oldLocation))
+            if (!Utility.tileWithinRadiusOfPlayer(goal.X, goal.Y, 1, Main.Bot._farmer))
             {
-                RegisterMainGameActions.RegisterPostAction(); 
+                await Main.Bot.Pathfinding.Goto(goal, _destructive);
+                
+                // building warps take a second to work, so no register
+                if (Main.Bot._currentLocation.Equals(oldLocation) && building is null)
+                {
+                    RegisterMainGameActions.RegisterPostAction();
+                }
             }
+
+            // pathfinding can't go within 1 tile of current position so we do this.
+            if (building is null)
+            {
+                List<Warp> warps = Main.Bot._currentLocation.warps.Where(warp => warp.X == goal.X && warp.Y == goal.Y)
+                    .ToList();
+                if (!warps.Any()) return;
+                var warp = warps[0];
+
+                Main.Bot._farmer.warpFarmer(warp);
+                return;
+            }
+            
+            Main.Bot.Building.UseHumanDoor(building);
         }
     }
 
