@@ -36,18 +36,18 @@ public static class LessImportantEvents
 		switch (e.ChatKind) // magic number are from the game not me :(
 		{
 			case 0: // normal public message
-				query =
-					$"In Stardew Valley, {e.PlayerName} has said {e.Message} in public chat. You can use the action to talk back to them if you want";
+				query = $"In Stardew Valley, {e.PlayerName} has said {e.Message} in public chat." +
+				        $" You can use the action to talk back to them if you want";
 				break;
 			case 1:
 				return;
 			case 2: // notification
-				query =
-					$"In Stardew Valley, {e.PlayerName} has said {e.Message} in public chat. You can use the action to talk back to them if you want";
+				query = $"In Stardew Valley, {e.PlayerName} has said {e.Message} in public chat." +
+				        $" You can use the action to talk back to them if you want";
 				break;
 			case 3: // private
-				query =
-					$"In Stardew Valley, {e.PlayerName} has said {e.Message} to you in a private message. You can use the action to talk back to them if you want";
+				query = $"In Stardew Valley, {e.PlayerName} has said {e.Message} to you in a private message." +
+				        $" You can use the action to talk back to them if you want";
 				break;
 			default:
 				return;

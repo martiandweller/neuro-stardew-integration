@@ -23,7 +23,7 @@ public static class RegisterMainGameActions
 	public static void RegisterActions(ActionWindow window)
 	{
 		window.AddAction(new PathFindingActions.Pathfinding()).AddAction(new PathFindingActions.PathFindToExit())
-			.AddAction(new PathFindingActions.GoToCharacter());
+			.AddAction(new PathFindingActions.GoToCharacter()).AddAction(new WorldObjectActions.PlaceObjects());
 
 		if (Main.Bot._currentLocation.furniture.Count > 0 || WorldObjectActions.InteractWithObject.GetSchema().Count > 0)
 		{

@@ -14,6 +14,53 @@ namespace NeuroStardewValley.Source.Actions.ObjectActions;
 
 public static class WorldObjectActions
 {
+	public class PlaceObjects : NeuroAction<KeyValuePair<Object, int>>
+	{
+		public override string Name => "place_objects";
+		protected override string Description => "place objects";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "object","radius" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["object"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable()).Select(item => item.Name)),
+				["radius"] = QJS.Type(JsonSchemaType.Integer)
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<Object, int> resultData)
+		{
+			string? objString = actionData.Data?.Value<string>("object");
+			int? radius = actionData.Data?.Value<int>("radius");
+
+			resultData = new();
+			if (objString is null || radius is null)
+			{
+				return ExecutionResult.Failure($"");
+			}
+
+			int index = Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable())
+				.Select(item => item.Name).ToList().IndexOf(objString);
+			if (index == -1)
+			{
+				return ExecutionResult.Failure($"");
+			}
+
+			Item obj = Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable()).ToList()[index];
+			resultData = new((Object)obj,(int)radius);
+			return ExecutionResult.Success();
+		}
+
+		protected override void Execute(KeyValuePair<Object, int> resultData)
+		{
+			Task.Run(async () =>
+			{
+				await Main.Bot.Tool.PlaceObjectsInRadius(Main.Bot._farmer.TilePoint, resultData.Key, resultData.Value);
+				RegisterMainGameActions.RegisterPostAction();
+			});
+		}
+	}
+	
 	public class InteractWithObject : NeuroAction<Object>
 	{
 		private static readonly List<KeyValuePair<Vector2, Object>> Objects = Main.Bot._currentLocation.Objects.Pairs.ToList();
