@@ -30,7 +30,7 @@ public static class RegisterMainGameActions
 			window.AddAction(new WorldObjectActions.InteractWithObject());
 		}
 
-		if (WarpUtilities.ActionableTiles.Count > 0)
+		if (TileContext.ActionableTiles.Count > 0)
 		{
 			window.AddAction(new WorldObjectActions.InteractWithActionTile());
 		}
@@ -200,7 +200,7 @@ public static class RegisterMainGameActions
 			}
 			if (state == "")
 			{
-				state = string.Join("\n",WarpUtilities.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer,50));
+				state = string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer,50));
 			}
 			window.SetForce(afterSeconds, query, state, ephemeral is null || ephemeral.Value);
 		}

@@ -96,12 +96,10 @@ public static class LessImportantEvents
 		if (e.QuantityChanged.Any())
 		{
 			using var enumerator = e.QuantityChanged.GetEnumerator();
-			enumerator.MoveNext();
 			while (enumerator.MoveNext())
 			{
-				contextString +=
-					$"Modified {enumerator.Current.Item.Name}'s stack amount from {enumerator.Current.OldSize} to {enumerator.Current.NewSize}.";
-				contextString += $"\n";
+				contextString += $"\nModified {enumerator.Current.Item.Name}'s stack amount from " +
+				                 $"{enumerator.Current.OldSize} to {enumerator.Current.NewSize}.";
 			}
 		}
 

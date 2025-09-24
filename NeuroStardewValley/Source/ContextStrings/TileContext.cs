@@ -1,14 +1,15 @@
 using Microsoft.Xna.Framework;
 using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Objects;
 using StardewValley.TerrainFeatures;
 using Object = StardewValley.Object;
 
-namespace NeuroStardewValley.Source.Utilities;
+namespace NeuroStardewValley.Source.ContextStrings;
 
-public static class WarpUtilities
+public static class TileContext
 {
     public static readonly HashSet<Point> ActionableTiles = new();
     /// <summary>
@@ -127,10 +128,17 @@ public static class WarpUtilities
                         tileList.Add(contextString);
                         break;
                     case ResourceClump resourceClump:
-                        tileList.Add($"{resourceClump.modData.Name} is at: {x},{y}");
+                        // substring will always get "ResourceClump" as object name is not a part of modData
+                        int start = resourceClump.modData.Name.IndexOf('(');
+                        string subStr = resourceClump.modData.Name.Substring(start + 1,
+                            resourceClump.modData.Name.IndexOf(')') - start);
+                        tileList.Add($"{subStr} is at: {x},{y}");
                         break;
                     case TerrainFeature terrainFeature:
-                        tileList.Add($"{terrainFeature.modData.Name} is at: {x},{y}");
+                        int startIndex = terrainFeature.modData.Name.IndexOf('(');
+                        string substring = terrainFeature.modData.Name.Substring(startIndex + 1,
+                            terrainFeature.modData.Name.IndexOf(')') - startIndex);
+                        tileList.Add($"{substring} is at: {x},{y}");
                         break;
                 }
             }
@@ -155,16 +163,15 @@ public static class WarpUtilities
         
         foreach (var resourceClump in location.resourceClumps)
         {
-            if (resourceClump.getBoundingBox().Contains(tile))
+            if (resourceClump.getBoundingBox().Contains(tile.ToVector2() * 64))
             {
                 return resourceClump;
             }
         }
 
-        foreach (var dict in location.terrainFeatures)
+        foreach (var dict in location.terrainFeatures.Where(dict => dict.ContainsKey(tile.ToVector2())))
         {
-            if (!dict.ContainsKey(tile.ToVector2())) continue;
-            if (dict[tile.ToVector2()].getBoundingBox().Contains(tile))
+            if (dict[tile.ToVector2()].getBoundingBox().Contains(tile.ToVector2() * 64))
             {
                 return dict[tile.ToVector2()];
             }

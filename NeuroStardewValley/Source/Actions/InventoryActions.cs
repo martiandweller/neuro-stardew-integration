@@ -434,16 +434,16 @@ namespace NeuroStardewValley.Source.Actions;
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
-            Required = new List<string> { "item", "attached_item" },
+            Required = new List<string> { "item_to_attach", "attached_item" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["item"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory)), // item to attach
+                ["item_to_attach"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory)), // item to attach
                 ["attached_item"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory)) // item we attach to
             }
         };
         protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<Item, Item> resultData)
         {
-            int? item = actionData.Data?.Value<int>("item");
+            int? item = actionData.Data?.Value<int>("item_to_attach");
             int? attachToItem = actionData.Data?.Value<int>("attached_item");
 
             resultData = new();
@@ -600,7 +600,14 @@ namespace NeuroStardewValley.Source.Actions;
     {
         ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
         actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())
-            .AddAction(new ExitInventory()).AddAction(new AttachItem()).AddAction(new RemoveFromItem()).AddAction(new CraftingActions.SetCraftingPage()).AddAction(new RemoveItem());
+            .AddAction(new ExitInventory()).AddAction(new CraftingActions.SetCraftingPage()).AddAction(new RemoveItem());
+        
+        bool attach = Main.Bot.Inventory.Inventory.Any(item => item is Tool tool && tool.AttachmentSlotsCount > 0);
+        if (attach) actionWindow.AddAction(new AttachItem());
+
+        bool remove = Main.Bot.Inventory.Inventory.Any(item => 
+            item is Tool tool && tool.attachments.Any(att => att is not null));
+        if (remove) actionWindow.AddAction(new RemoveFromItem());
 
         string nameList = InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true, true);
         List<string> itemList = PrepareItemStringList(Main.Bot.Inventory.GetEquippedClothing()).ToList();
@@ -608,7 +615,7 @@ namespace NeuroStardewValley.Source.Actions;
             .Where(trinket => trinket is not null).Select(trinket => trinket.Name).ToList();
         
         string state = $"These are the items in your inventory: {nameList}." +
-                       $"\nThese are the items clothes you have equipped {string.Concat(itemList)}.";
+                       $"\nThese are the clothes you have equipped {string.Concat(itemList)}.";
         if (trinkets.Count > 0)
         {
             state += $"\nThis is the trinket you have equipped currently: {string.Concat(trinkets)}";

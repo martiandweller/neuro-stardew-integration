@@ -3,10 +3,12 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Locations;
+using StardewValley.TerrainFeatures;
 using xTile.Dimensions;
 using Object = StardewValley.Object;
 
@@ -17,7 +19,7 @@ public static class WorldObjectActions
 	public class PlaceObjects : NeuroAction<KeyValuePair<Object, int>>
 	{
 		public override string Name => "place_objects";
-		protected override string Description => "place objects";
+		protected override string Description => "place objects in a radius around yourself, as an example, this can be used to repopulate farmland with seeds.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -38,16 +40,26 @@ public static class WorldObjectActions
 			{
 				return ExecutionResult.Failure($"");
 			}
-
+			
+			if (radius > 30 || radius < 2) return ExecutionResult.Failure($"The radius can only be between 30 and 2.");
+			
 			int index = Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable())
 				.Select(item => item.Name).ToList().IndexOf(objString);
-			if (index == -1)
-			{
-				return ExecutionResult.Failure($"");
-			}
+			if (index == -1) return ExecutionResult.Failure($"The object you specified does not exist in your inventory.");
+			
+			Object obj = (Object)Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable()).ToList()[index];
 
-			Item obj = Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable()).ToList()[index];
-			resultData = new((Object)obj,(int)radius);
+			if (obj is null) return ExecutionResult.Failure($"The object you specified does not exist.");
+			
+			if (obj.Name != objString) return ExecutionResult.Failure($"The object you specified does not exist in your inventory.");
+			
+			// This one should not happen as we only send placeable items
+			if (!obj.isPlaceable()) return ExecutionResult.Failure($"The object you specified is not placeable.");
+			
+			// TODO: check top of later fixes for reason for this
+			if (!obj.isPassable()) return ExecutionResult.Failure($"This object cannot be placed as it is not passable.");
+			
+			resultData = new(obj,(int)radius);
 			return ExecutionResult.Success();
 		}
 
@@ -61,12 +73,14 @@ public static class WorldObjectActions
 		}
 	}
 	
+	// TODO: add terrain feature interaction too this
 	public class InteractWithObject : NeuroAction<Object>
 	{
-		private static readonly List<KeyValuePair<Vector2, Object>> Objects = Main.Bot._currentLocation.Objects.Pairs.ToList();
+		private static List<KeyValuePair<Vector2, Object>> Objects => Main.Bot._currentLocation.Objects.Pairs.ToList();
+		private static List<TerrainFeature> Features => Main.Bot._currentLocation.terrainFeatures.Values.ToList();
 		public override string Name => "interact_object";
 		protected override string Description =>
-			"Will interact with an object, This should primarily be used with furniture. This will also allow you to add" +
+			"Will interact with an object, This should primarily be used with furniture or harvesting plants. This will also allow you to add" +
 			" items to the object, this can be used with objects like furnaces and the various types of \"machines\"";
 		protected override JsonSchema Schema => new()
 		{
@@ -121,16 +135,22 @@ public static class WorldObjectActions
 
 		public static List<string> GetSchema()
 		{
-			return Objects
+			// essentially just gets all actionable objects
+			List<string> objectNames = Objects
 				.Where(obj => (obj.Value.heldObject.Value is not null && obj.Value.GetMachineData().AllowLoadWhenFull) ||
 				              (obj.Value.heldObject.Value is null && obj.Value.GetMachineData() is not null) || obj.Value.isActionable(Main.Bot._farmer)) // would like to use IsActionable but that is only tiles that change the cursor not something like a furnace :(.
 				.Select(obj => $"{obj.Key} {obj.Value.Name}").ToList();
+			Logger.Info($"feature count: {Features.Count}    {Main.Bot._currentLocation.terrainFeatures.Count()}    {Main.Bot._currentLocation.terrainFeatures.Values.Count()}   {Main.Bot._currentLocation.terrainFeatures.Keys.Count()}");
+			
+			// List<string> featureNames = Features.Select(feature => feature.modData.Name).ToList();
+			// objectNames.AddRange(featureNames);
+			return objectNames;
 		}
 	}
 
 	public class InteractWithActionTile : NeuroAction<Point>
 	{
-		private static List<Point> ActionTiles => WarpUtilities.ActionableTiles.ToList();
+		private static List<Point> ActionTiles => TileContext.ActionableTiles.ToList();
 		public override string Name => "interact_with_tile";
 		protected override string Description => "Interact with a tile that has an action on it.";
 		protected override JsonSchema Schema => new()

@@ -25,11 +25,11 @@ public static class MainGameLoopEvents
 
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
 	{
-		WarpUtilities.ActionableTiles.Clear();
+		TileContext.ActionableTiles.Clear();
 		if (e.Player.passedOut) return;
 		if (Game1.eventUp) return;
-		string warps = WarpUtilities.GetWarpTiles(e.NewLocation,true);
-		string warpsString = !string.IsNullOrEmpty(warps) ? WarpUtilities.GetWarpTilesString(warps) : "There are no warps in this location";
+		string warps = TileContext.GetWarpTiles(e.NewLocation,true);
+		string warpsString = !string.IsNullOrEmpty(warps) ? TileContext.GetWarpTilesString(warps) : "There are no warps in this location";
 		
 		string characterContext = string.Concat(Main.Bot.Characters.GetCharactersInCurrentLocation(e.NewLocation)
 			.Select(kvp => $"{kvp.Value.Name} is at {kvp.Key} in this location").ToList());
@@ -284,10 +284,10 @@ public static class MainGameLoopEvents
 		                 $"{PlayerContext.GetAllCharactersLevel()}.\nAnd these are the levels of all your skills:" +
 		                 $" {PlayerContext.GetAllSkillLevel()}.";
 		
-		string warps = WarpUtilities.GetWarpTiles(Game1.currentLocation);
-		string warpString = !string.IsNullOrEmpty(warps) ? WarpUtilities.GetWarpTilesString(warps) : "There are no warps in this location";
+		string warps = TileContext.GetWarpTiles(Game1.currentLocation);
+		string warpString = !string.IsNullOrEmpty(warps) ? TileContext.GetWarpTilesString(warps) : "There are no warps in this location";
 		contextString += $"These are the warps here: {warpString}\n";
-		contextString += string.Join("\n",WarpUtilities.GetTilesInLocation(Game1.currentLocation));
+		contextString += string.Join("\n",TileContext.GetTilesInLocation(Game1.currentLocation));
 		
 		return contextString;
 	}

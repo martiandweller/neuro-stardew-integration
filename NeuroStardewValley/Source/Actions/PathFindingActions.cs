@@ -3,6 +3,7 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
+using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Algorithms;
@@ -95,7 +96,7 @@ public static class PathFindingActions
             Required = new List<string> { "exit" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["exit"] = QJS.Enum(WarpUtilities.GetWarpTilesStrings(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation,true))),
+                ["exit"] = QJS.Enum(TileContext.GetWarpTilesStrings(TileContext.GetWarpTiles(Main.Bot._currentLocation,true))),
                 ["destructive"] = QJS.Type(JsonSchemaType.Boolean)
             }
         };
@@ -118,7 +119,7 @@ public static class PathFindingActions
 
             Point exitPoint = new Point(int.Parse(coords[0]), int.Parse(coords[1]));
 
-            if (!WarpUtilities.GetWarpsAsPoint(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation,true)).ContainsKey(exitPoint))
+            if (!TileContext.GetWarpsAsPoint(TileContext.GetWarpTiles(Main.Bot._currentLocation,true)).ContainsKey(exitPoint))
             { 
                 return ExecutionResult.Failure($"The provided tile is not an exit");
             }
@@ -132,7 +133,7 @@ public static class PathFindingActions
 
             // if exit point is part of building
             if (Utility.tileWithinRadiusOfPlayer(exitPoint.X, exitPoint.Y, 1, Main.Bot._farmer)
-                && !WarpUtilities.GetWarpsAsPoint(WarpUtilities.GetWarpTiles(Main.Bot._currentLocation))
+                && !TileContext.GetWarpsAsPoint(TileContext.GetWarpTiles(Main.Bot._currentLocation))
                     .ContainsKey(exitPoint))
             {
                 goal = new Goal.GoalPosition(exitPoint.X,exitPoint.Y);
