@@ -59,12 +59,13 @@ public static class TileContext
                     tileList.Add($"Water: {x},{y}");
                     continue;
                 }
+                object? obj = GetTileType(location, new Point(x, y));
 
                 if (!Game1.currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
-                        false, Game1.player, true,false,false,true))
+                        false, Game1.player, true,false,false,true)
+                    && obj is null)
                     continue;
 
-                object? obj = GetTileType(location, new Point(x, y));
                 if (obj is null)
                 {
                     string tileString = $"Block: {x},{y}";
@@ -131,14 +132,28 @@ public static class TileContext
                         // substring will always get "ResourceClump" as object name is not a part of modData
                         int start = resourceClump.modData.Name.IndexOf('(');
                         string subStr = resourceClump.modData.Name.Substring(start + 1,
-                            resourceClump.modData.Name.IndexOf(')') - start);
+                            resourceClump.modData.Name.IndexOf(')') - start - 1);
                         tileList.Add($"{subStr} is at: {x},{y}");
                         break;
                     case TerrainFeature terrainFeature:
-                        int startIndex = terrainFeature.modData.Name.IndexOf('(');
-                        string substring = terrainFeature.modData.Name.Substring(startIndex + 1,
-                            terrainFeature.modData.Name.IndexOf(')') - startIndex);
-                        tileList.Add($"{substring} is at: {x},{y}");
+                        switch (terrainFeature)
+                        {
+                            case HoeDirt dirt:
+                                string context = $"{dirt.Tile}: empty dirt";
+                                if (dirt.crop is not null)
+                                {
+                                    Item item = ItemRegistry.Create(dirt.crop.indexOfHarvest.Value);
+                                    context = $"{dirt.Tile}: {item.Name} fully grown: {dirt.crop.fullyGrown.Value}";
+                                }
+                                tileList.Add(context);
+                                break;
+                            default:
+                                int startIndex = terrainFeature.modData.Name.IndexOf('(');
+                                string substring = terrainFeature.modData.Name.Substring(startIndex + 1,
+                                    terrainFeature.modData.Name.IndexOf(')') - startIndex - 1);
+                                tileList.Add($"{substring} is at: {x},{y}");
+                                break;
+                        }
                         break;
                 }
             }
@@ -146,37 +161,33 @@ public static class TileContext
         return tileList;
     }
     
-    private static object? GetTileType(GameLocation location,Point tile)
+    public static object? GetTileType(GameLocation location,Point tile)
     {
         if (location.Objects.ContainsKey(tile.ToVector2()))
         {
             return location.Objects[tile.ToVector2()];
         }
 
-        foreach (var building in location.buildings)
+        foreach (var building in location.buildings.Where(building => building.occupiesTile(tile.ToVector2())))
         {
-            if (building.occupiesTile(tile.ToVector2()))
+            return building;
+        }
+        
+        foreach (var resourceClump in location.resourceClumps.Where(resourceClump => resourceClump.getBoundingBox()
+                     .Contains(tile.ToVector2() * 64) || resourceClump.Tile == tile.ToVector2()))
+        {
+            return resourceClump;
+        }
+
+        // this does not contain HoeDirt
+        if (location.terrainFeatures.TryGetValue(tile.ToVector2(), out var feature))
+        {
+            if (feature.getBoundingBox().Contains(tile.ToVector2() * 64) || feature.Tile == tile.ToVector2())
             {
-                return building;
+                return feature;
             }
         }
         
-        foreach (var resourceClump in location.resourceClumps)
-        {
-            if (resourceClump.getBoundingBox().Contains(tile.ToVector2() * 64))
-            {
-                return resourceClump;
-            }
-        }
-
-        foreach (var dict in location.terrainFeatures.Where(dict => dict.ContainsKey(tile.ToVector2())))
-        {
-            if (dict[tile.ToVector2()].getBoundingBox().Contains(tile.ToVector2() * 64))
-            {
-                return dict[tile.ToVector2()];
-            }
-        }
-
         return null;
     }
     
@@ -189,7 +200,7 @@ public static class TileContext
         return warps;
     }
 
-    public static string GetBuildingWarps(GameLocation location)
+    private static string GetBuildingWarps(GameLocation location)
     {
         string warps = "";
         foreach (var building in location.buildings)

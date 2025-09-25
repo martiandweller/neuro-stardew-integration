@@ -161,16 +161,20 @@ public static class MainGameLoopEvents
 				Main.Bot.ElevatorMenu.SetMenu(mineElevatorMenu);
 				ElevatorMenuActions.RegisterAction();
 				break;
+			case NamingMenu namingMenu: // works for naming horses and placing signs
+				Main.Bot.NamingMenu.setUI(namingMenu);
+				NamingMenuActions.RegisterActions();
+				break;
 			default:
 				// ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-				if (e.NewMenu == null) return;
+				if (e.NewMenu == null) break;
 				Context.Send(string.Format(ResultStrings.InvalidClickableMenu,$"{e.NewMenu}"));
 				e.NewMenu.exitThisMenu(false);
 				break;
 		}
 		
 		// ugly but it gets rid of warning and double send at start of game and other double sends
-		if (e is { NewMenu: null } and {OldMenu:not TitleMenu and not LevelUpMenu and not MineElevatorMenu})
+		if (e is { NewMenu: null } and {OldMenu:not TitleMenu or not LevelUpMenu or not MineElevatorMenu})
 		{
 			Logger.Info($"old menu: {e.OldMenu.GetType()}");
 			RegisterMainGameActions.RegisterPostAction();

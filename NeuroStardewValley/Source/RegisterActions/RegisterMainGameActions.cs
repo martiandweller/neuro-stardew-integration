@@ -25,7 +25,7 @@ public static class RegisterMainGameActions
 		window.AddAction(new PathFindingActions.Pathfinding()).AddAction(new PathFindingActions.PathFindToExit())
 			.AddAction(new PathFindingActions.GoToCharacter()).AddAction(new WorldObjectActions.PlaceObjects());
 
-		if (Main.Bot._currentLocation.furniture.Count > 0 || WorldObjectActions.InteractWithObject.GetSchema().Count > 0)
+		if (Main.Bot._currentLocation.Objects.Length > 0)
 		{
 			window.AddAction(new WorldObjectActions.InteractWithObject());
 		}

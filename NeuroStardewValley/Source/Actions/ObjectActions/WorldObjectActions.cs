@@ -6,7 +6,9 @@ using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
+using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
+using StardewValley.Buildings;
 using StardewValley.Locations;
 using StardewValley.TerrainFeatures;
 using xTile.Dimensions;
@@ -73,78 +75,94 @@ public static class WorldObjectActions
 		}
 	}
 	
-	// TODO: add terrain feature interaction too this
-	public class InteractWithObject : NeuroAction<Object>
+	public class InteractWithObject : NeuroAction<Point>
 	{
-		private static List<KeyValuePair<Vector2, Object>> Objects => Main.Bot._currentLocation.Objects.Pairs.ToList();
-		private static List<TerrainFeature> Features => Main.Bot._currentLocation.terrainFeatures.Values.ToList();
+		private bool _useHeld;
 		public override string Name => "interact_object";
 		protected override string Description =>
 			"Will interact with an object, This should primarily be used with furniture or harvesting plants. This will also allow you to add" +
-			" items to the object, this can be used with objects like furnaces and the various types of \"machines\"";
+			" items to the object, this can be used with objects like furnaces and the various types of \"machines\"." +
+			" If use_held_item is true it may priorities certain actions e.g. filling a machine or placing a tapper on a tree.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
-			Required = new List<string> { "object" },
+			Required = new List<string> { "object_x","object_y" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["object"] = QJS.Enum(GetSchema())
+				["object_x"] = QJS.Type(JsonSchemaType.Integer),
+				["object_y"] = QJS.Type(JsonSchemaType.Integer),
+				["use_held_item"] = QJS.Type(JsonSchemaType.Boolean)
 			}
 		};
-		protected override ExecutionResult Validate(ActionData actionData, out Object? resultData)
+		protected override ExecutionResult Validate(ActionData actionData, out Point resultData)
 		{
-			string? objString = actionData.Data?.Value<string>("object");
-            
-			resultData = null;
-			if (objString is null)
+			int? objX = actionData.Data?.Value<int>("object_x");
+			int? objY = actionData.Data?.Value<int>("object_y");
+			bool? useHeld = actionData.Data?.Value<bool>("use_held_item");
+			
+			resultData = new();
+			if (objX is null || objY is null || useHeld is null)
 			{
 				return ExecutionResult.Failure($"You have provided a null value.");
 			}
 
-			List<KeyValuePair<Vector2,Object>> objs = Objects.Where(obj => !obj.Value.isDebrisOrForage() && $"{obj.Key} {obj.Value.Name}" == objString).ToList();
-			if (objs.Count < 1) return ExecutionResult.Failure($"The value you provided is not available.");
-			Object obj = objs[0].Value;
-			if (Main.Bot.ObjectInteraction.GetObjectAtTile((int)obj.TileLocation.X, (int)obj.TileLocation.Y) is null)
+			if ((bool)useHeld && Main.Bot._farmer.ActiveItem is null)
 			{
-				return ExecutionResult.Failure($"There is no object at the provided tile.");
+				return ExecutionResult.Failure($"You are not holding anything so you cannot use the held item.");
 			}
 
-			if (!RangeCheck.InRange(obj.TileLocation.ToPoint()))
+			Point point = new Point((int)objX, (int)objY);
+			object? obj = TileContext.GetTileType(Main.Bot._currentLocation, point);
+			if (obj is null or Building)
+			{
+				return ExecutionResult.Failure($"There is no object valid at the tile you provided.");
+			}
+			
+			if (!RangeCheck.InRange(point))
 			{
 				return ExecutionResult.Failure($"This object is not within range of you.");
 			}
-			resultData = Main.Bot.ObjectInteraction.GetObjectAtTile((int)obj.TileLocation.X, (int)obj.TileLocation.Y);
+
+			_useHeld = (bool)useHeld;
+			resultData = point;
 			return ExecutionResult.Success();
 		}
 
-		protected override void Execute(Object? resultData)
+		protected override void Execute(Point resultData)
 		{
-			if (resultData is null) return;
-            
-			Logger.Info($"interacting with object: {resultData.Name}");
-			if (resultData.GetMachineData() is not null && (resultData.heldObject.Value is null || 
-			                                                (resultData.GetMachineData().AllowLoadWhenFull && resultData.heldObject.Value is not null)))
+			object? o = TileContext.GetTileType(Main.Bot._currentLocation, resultData);
+			if (o is null or Building)
 			{
-				Main.Bot.Player.AddItemToObject(resultData, Main.Bot._farmer.ActiveItem);
-				RegisterMainGameActions.RegisterPostAction();
 				return;
 			}
-			Main.Bot.ObjectInteraction.InteractWithObject(resultData);
-			RegisterMainGameActions.RegisterPostAction();
-		}
 
-		public static List<string> GetSchema()
-		{
-			// essentially just gets all actionable objects
-			List<string> objectNames = Objects
-				.Where(obj => (obj.Value.heldObject.Value is not null && obj.Value.GetMachineData().AllowLoadWhenFull) ||
-				              (obj.Value.heldObject.Value is null && obj.Value.GetMachineData() is not null) || obj.Value.isActionable(Main.Bot._farmer)) // would like to use IsActionable but that is only tiles that change the cursor not something like a furnace :(.
-				.Select(obj => $"{obj.Key} {obj.Value.Name}").ToList();
-			Logger.Info($"feature count: {Features.Count}    {Main.Bot._currentLocation.terrainFeatures.Count()}    {Main.Bot._currentLocation.terrainFeatures.Values.Count()}   {Main.Bot._currentLocation.terrainFeatures.Keys.Count()}");
+			Logger.Info($"interacting with {resultData}   {o}");
+			switch (o)
+			{
+				case Object obj:
+					if (obj.GetMachineData() is not null && (obj.heldObject.Value is null || 
+						(obj.GetMachineData().AllowLoadWhenFull && obj.heldObject.Value is not null)) && _useHeld)
+					{
+						Main.Bot.Player.AddItemToObject(obj, Main.Bot._farmer.ActiveItem);
+						break;
+					}
+
+					Main.Bot.ObjectInteraction.InteractWithObject(obj);
+					break;
+				case TerrainFeature feature:
+					if (_useHeld)
+					{
+						Graph.IsInNeighbours(Main.Bot._farmer.TilePoint, resultData, out var direction,4);
+						Main.Bot.Tool.UseTool(direction);
+					}
+					Main.Bot.ObjectInteraction.InteractWithTerrainFeature(feature, resultData.ToVector2());
+					break;
+				default:
+					Logger.Error($"InteractWithObject execute result data was not a valid class");
+					break;
+			}
 			
-			// List<string> featureNames = Features.Select(feature => feature.modData.Name).ToList();
-			// objectNames.AddRange(featureNames);
-			return objectNames;
+			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
 
