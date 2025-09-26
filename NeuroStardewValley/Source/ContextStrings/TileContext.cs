@@ -59,8 +59,8 @@ public static class TileContext
                     tileList.Add($"Water: {x},{y}");
                     continue;
                 }
-                object? obj = GetTileType(location, new Point(x, y));
-
+                object? obj = TileUtilities.GetTileType(location, new Point(x, y));
+                
                 if (!Game1.currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
                         false, Game1.player, true,false,false,true)
                     && obj is null)
@@ -94,7 +94,7 @@ public static class TileContext
                                 continue;
                         }
                         tileString += $": {string.Join(" ", action)}";
-                        Logger.Info($"tile: {x},{y}  length: {action.Length}  action: {string.Concat(action.ToList())}");                            
+                        Logger.Info($"tile: {x},{y}  length: {action.Length}  action: {string.Join(" ", action)}");
                     }
                     tileList.Add(tileString);
                     continue;
@@ -159,36 +159,6 @@ public static class TileContext
             }
         }
         return tileList;
-    }
-    
-    public static object? GetTileType(GameLocation location,Point tile)
-    {
-        if (location.Objects.ContainsKey(tile.ToVector2()))
-        {
-            return location.Objects[tile.ToVector2()];
-        }
-
-        foreach (var building in location.buildings.Where(building => building.occupiesTile(tile.ToVector2())))
-        {
-            return building;
-        }
-        
-        foreach (var resourceClump in location.resourceClumps.Where(resourceClump => resourceClump.getBoundingBox()
-                     .Contains(tile.ToVector2() * 64) || resourceClump.Tile == tile.ToVector2()))
-        {
-            return resourceClump;
-        }
-
-        // this does not contain HoeDirt
-        if (location.terrainFeatures.TryGetValue(tile.ToVector2(), out var feature))
-        {
-            if (feature.getBoundingBox().Contains(tile.ToVector2() * 64) || feature.Tile == tile.ToVector2())
-            {
-                return feature;
-            }
-        }
-        
-        return null;
     }
     
     public static string GetWarpTiles(GameLocation location,bool addBuildings = false)

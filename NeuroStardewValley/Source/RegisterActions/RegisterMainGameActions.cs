@@ -5,7 +5,6 @@ using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.Actions.ObjectActions;
 using NeuroStardewValley.Source.ContextStrings;
-using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewModdingAPI;
 using StardewValley;
@@ -23,7 +22,8 @@ public static class RegisterMainGameActions
 	public static void RegisterActions(ActionWindow window)
 	{
 		window.AddAction(new PathFindingActions.Pathfinding()).AddAction(new PathFindingActions.PathFindToExit())
-			.AddAction(new PathFindingActions.GoToCharacter()).AddAction(new WorldObjectActions.PlaceObjects());
+			.AddAction(new PathFindingActions.GoToCharacter()).AddAction(new WorldObjectActions.PlaceObjects())
+			.AddAction(new WorldObjectActions.PlaceObject());
 
 		if (Main.Bot._currentLocation.Objects.Length > 0)
 		{

@@ -1,5 +1,4 @@
 using Microsoft.Xna.Framework;
-using NeuroStardewValley.Debug;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 
@@ -39,5 +38,34 @@ public static class TileUtilities
 		bool result = Graph.IsInNeighbours(tile, neighbour, out var d,directions);
 		direction = d;
 		return result;
+	}
+	
+	public static object? GetTileType(GameLocation location,Point tile)
+	{
+		if (location.Objects.ContainsKey(tile.ToVector2()))
+		{
+			return location.Objects[tile.ToVector2()];
+		}
+
+		foreach (var building in location.buildings.Where(building => building.occupiesTile(tile.ToVector2())))
+		{
+			return building;
+		}
+        
+		foreach (var resourceClump in location.resourceClumps.Where(resourceClump => resourceClump.getBoundingBox()
+			         .Contains(tile.ToVector2() * 64) || resourceClump.Tile == tile.ToVector2()))
+		{
+			return resourceClump;
+		}
+
+		if (location.terrainFeatures.TryGetValue(tile.ToVector2(), out var feature))
+		{
+			if (feature.getBoundingBox().Contains(tile.ToVector2() * 64) || feature.Tile == tile.ToVector2())
+			{
+				return feature;
+			}
+		}
+        
+		return null;
 	}
 }

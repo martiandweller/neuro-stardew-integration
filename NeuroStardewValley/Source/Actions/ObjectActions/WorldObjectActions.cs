@@ -7,17 +7,86 @@ using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
+using StardewBotFramework.Source.Modules.Pathfinding.GroupTiles;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Locations;
 using StardewValley.TerrainFeatures;
 using xTile.Dimensions;
+using Context = NeuroSDKCsharp.Messages.Outgoing.Context;
 using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Actions.ObjectActions;
 
 public static class WorldObjectActions
 {
+	public class PlaceObject : NeuroAction<KeyValuePair<Object, Point>>
+	{
+		public override string Name => "place_object";
+		protected override string Description => "Place a singular object in your inventory somewhere in the world." +
+		                                         " This will also change the currently selected item.";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "object", "tile_x", "tile_y" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["object"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable())
+					.Select(item => item.Name)),
+				["tile_x"] = QJS.Type(JsonSchemaType.Integer),
+				["tile_y"] = QJS.Type(JsonSchemaType.Integer)
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<Object, Point> resultData)
+		{
+			string? objString = actionData.Data?.Value<string>("object");
+			int? tileX = actionData.Data?.Value<int>("tile_x");
+			int? tileY = actionData.Data?.Value<int>("tile_y");
+			
+			resultData = new();
+			if (objString is null || tileX is null || tileY is null)
+			{
+				return ExecutionResult.Failure($"You cannot provided a null value.");
+			}
+
+			Point point = new Point((int)tileX, (int)tileY);
+			if (!TileUtilities.IsValidTile(point, out var reason)) return ExecutionResult.Failure(reason);
+			
+			int index = Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable())
+				.Select(item => item.Name).ToList().IndexOf(objString);
+			if (index == -1) return ExecutionResult.Failure($"The object you specified does not exist in your inventory.");
+			
+			Object obj = (Object)Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable()).ToList()[index];
+
+			if (obj is null) return ExecutionResult.Failure($"The object you specified does not exist.");
+			
+			if (obj.Name != objString) return ExecutionResult.Failure($"The object you specified does not exist in your inventory.");
+			
+			// This one should not happen as we only send placeable items
+			if (!obj.isPlaceable()) return ExecutionResult.Failure($"The object you specified is not placeable.");
+			
+			resultData = new(obj,point);
+			return ExecutionResult.Success($"Placing {obj.Name} at {point}");
+		}
+
+		protected override void Execute(KeyValuePair<Object, Point> resultData)
+		{
+			var placeTile = new PlaceTile(resultData.Value,Main.Bot._currentLocation,itemToPlace: resultData.Key);
+
+			Task.Run(async () =>
+			{
+				await Main.Bot.Tool.PlaceObjectsAtTiles(new List<PlaceTile> { placeTile },false);
+				if (TileUtilities.GetTileType(Main.Bot._currentLocation, resultData.Value) != resultData.Key)
+				{
+					Context.Send($"The object you selected to place may not have been placed where you wanted" +
+					             $" it to be, you should check to see if there is anything blocked it or blocking your" +
+					             $" way from it.",true);
+				}
+				RegisterMainGameActions.RegisterPostAction();
+			});
+		}
+	}
+	
 	public class PlaceObjects : NeuroAction<KeyValuePair<Object, int>>
 	{
 		public override string Name => "place_objects";
@@ -40,7 +109,7 @@ public static class WorldObjectActions
 			resultData = new();
 			if (objString is null || radius is null)
 			{
-				return ExecutionResult.Failure($"");
+				return ExecutionResult.Failure($"You cannot provide a null value.");
 			}
 			
 			if (radius > 30 || radius < 2) return ExecutionResult.Failure($"The radius can only be between 30 and 2.");
@@ -62,7 +131,7 @@ public static class WorldObjectActions
 			if (!obj.isPassable()) return ExecutionResult.Failure($"This object cannot be placed as it is not passable.");
 			
 			resultData = new(obj,(int)radius);
-			return ExecutionResult.Success();
+			return ExecutionResult.Success($"Placing {obj.Name} in a radius of {radius} around you");
 		}
 
 		protected override void Execute(KeyValuePair<Object, int> resultData)
@@ -112,7 +181,7 @@ public static class WorldObjectActions
 			}
 
 			Point point = new Point((int)objX, (int)objY);
-			object? obj = TileContext.GetTileType(Main.Bot._currentLocation, point);
+			object? obj = TileUtilities.GetTileType(Main.Bot._currentLocation, point);
 			if (obj is null or Building)
 			{
 				return ExecutionResult.Failure($"There is no object valid at the tile you provided.");
@@ -130,7 +199,7 @@ public static class WorldObjectActions
 
 		protected override void Execute(Point resultData)
 		{
-			object? o = TileContext.GetTileType(Main.Bot._currentLocation, resultData);
+			object? o = (Main.Bot._currentLocation, resultData);
 			if (o is null or Building)
 			{
 				return;
@@ -165,11 +234,11 @@ public static class WorldObjectActions
 			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
-
+	
 	public class InteractWithActionTile : NeuroAction<Point>
 	{
 		private static List<Point> ActionTiles => TileContext.ActionableTiles.ToList();
-		public override string Name => "interact_with_tile";
+		public override string Name => "interact_with_action_tile";
 		protected override string Description => "Interact with a tile that has an action on it.";
 		protected override JsonSchema Schema => new()
 		{
@@ -213,6 +282,7 @@ public static class WorldObjectActions
 		}
 	}
 
+	// this is for tiles that can have a unique property
 	public class InteractWithTile : NeuroAction<Point>
 	{
 		public override string Name => "interact_with_tile";

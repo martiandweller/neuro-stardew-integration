@@ -88,7 +88,7 @@ public static class CarpenterActions
 			
 			if (Main.Bot.FarmBuilding._carpenterMenu.CanBuildCurrentBlueprint())
 			{
-				return ExecutionResult.Success($"building {Main.Bot.FarmBuilding.BlueprintEntry.DisplayName}");
+				return ExecutionResult.Success($"building {Main.Bot.FarmBuilding.BlueprintEntry?.DisplayName}");
 			}
 			return ExecutionResult.Failure($"You cannot build this blueprint.");
 		}
@@ -132,9 +132,14 @@ public static class CarpenterActions
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
+			if (Main.Bot.FarmBuilding._carpenterMenu is null)
+			{
+				return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,"Main.Bot.FarmBuilding._carpenterMenu"));
+			}
+			if (Main.Bot.FarmBuilding.BlueprintEntry is null) return ExecutionResult.Failure($"There is not a blueprint entry currently.");
 			if (!Main.Bot.FarmBuilding._carpenterMenu!.CanBuildCurrentBlueprint())
 			{
-				return ExecutionResult.Failure($"You cannot build the: {Main.Bot.FarmBuilding.BlueprintEntry.DisplayName}");
+				return ExecutionResult.Failure($"You cannot build the: {Main.Bot.FarmBuilding.BlueprintEntry?.DisplayName}");
 			}
 			return ExecutionResult.Success();
 		}
@@ -281,7 +286,7 @@ public static class PlaceBuildingActions
 				return ExecutionResult.Failure($"You have provided an invalid value in building");
 			}
 			
-			if (building.buildingType.Value == Main.Bot.FarmBuilding.BlueprintEntry.UpgradeFrom)
+			if (building.buildingType.Value == Main.Bot.FarmBuilding.BlueprintEntry?.UpgradeFrom)
 			{
 				resultData = building;
 				return ExecutionResult.Success($"selected: {StringUtilities.TokenizeBuildingName(building)}"); 
