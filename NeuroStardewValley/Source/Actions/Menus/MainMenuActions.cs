@@ -13,17 +13,17 @@ public static class MainMenuActions
 {
     public class CreateCharacter : NeuroAction<Dictionary<string, string?>>
     {
-        private static bool CanCreateCharacter => Main.CanCreateCharacter;
+        private static bool AllowCreateCharacter => Main.AllowCreateCharacter;
 
-        private static Dictionary<string, bool> EnabledCharacterOptions => Main.EnabledCharacterOptions;
+        private static Dictionary<string, bool> EnabledCharacterOptions => Main.Config.CharacterCreationOptions;
     
-        private static Dictionary<string, string> DefaultCharacterOptions => Main.DefaultCharacterOptions;
+        private static Dictionary<string, string> DefaultCharacterOptions => Main.Config.CharacterCreationDefault;
         
         public override string Name
         {
             get 
             {
-                if (CanCreateCharacter)
+                if (AllowCreateCharacter)
                 {
                     return "create_character";
                 }
@@ -34,7 +34,7 @@ public static class MainMenuActions
         protected override string Description {
             get
             {
-                if (CanCreateCharacter)
+                if (AllowCreateCharacter)
                 {
                     return "Create a character, this character can be anything or anyone as long you can make it. This will not be able to be changed in the future so be careful.";
                 }
@@ -52,7 +52,7 @@ public static class MainMenuActions
         protected override ExecutionResult Validate(ActionData actionData, out Dictionary<string,string?> data)
         {
             data = new();
-            if (!CanCreateCharacter)
+            if (!AllowCreateCharacter)
             {
                 return ExecutionResult.Success();
             }
@@ -95,7 +95,7 @@ public static class MainMenuActions
 
         protected override void Execute(Dictionary<string,string?>? data)
         {
-            if (!CanCreateCharacter)
+            if (!AllowCreateCharacter)
             {
                 Main.Bot.CharacterCreation.StartGame();
                 return;
@@ -177,7 +177,7 @@ public static class MainMenuActions
             
             Main.Bot.CharacterCreation.SetCreator((CharacterCustomization)TitleMenu.subMenu);
             Main.Bot.CharacterCreation.SkipIntro();
-            if (!CanCreateCharacter)
+            if (!AllowCreateCharacter)
             {
                 foreach (var kvp in DefaultCharacterOptions)
                 {
@@ -403,5 +403,15 @@ public static class MainMenuActions
             }
             
         }
+    }
+
+    public static void RegisterAction()
+    {
+        ActionWindow window = ActionWindow.Create(Main.GameInstance)
+            .AddAction(new CreateCharacter()).SetForce(2,
+                "You are now creating a character, you will not be able to change this later.",
+                "You should create a character with the provided action, it is recommended to make the character look like you.");
+            
+        window.Register();
     }
 }

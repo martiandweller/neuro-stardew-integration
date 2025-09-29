@@ -3,9 +3,7 @@ using Microsoft.Xna.Framework.Input;
 using StardewBotFramework.Source;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
-using NeuroSDKCsharp.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
-using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.EventMethods;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
@@ -25,15 +23,9 @@ internal sealed class Main : Mod
     public static StardewClient Bot = null!;
 
     public static ModConfig Config = null!;
-    private static string? _uriString;
     
-    public static bool CanCreateCharacter;
+    public static bool AllowCreateCharacter;
 
-    private static int _configSaveSlot;
-
-    public static Dictionary<string, bool> EnabledCharacterOptions = new();
-    
-    public static Dictionary<string, string> DefaultCharacterOptions = new();
 
     private static bool _hasSentCharacter;
     
@@ -42,18 +34,14 @@ internal sealed class Main : Mod
         Bot = new StardewClient(helper, ModManifest, Monitor, helper.Multiplayer);
 
         Config = Helper.ReadConfig<ModConfig>();
-        _uriString = Config.WebsocketUri;
-        CanCreateCharacter = Config.AllowCharacterCreation;
-        _configSaveSlot = Config.SaveSlot;
+        AllowCreateCharacter = Config.AllowCharacterCreation;
         
-        EnabledCharacterOptions = Config.CharacterCreationOptions;
-        DefaultCharacterOptions = Config.CharacterCreationDefault;
-
         Logger.SetMonitor(Monitor);
 
+        #region Events
+
         helper.Events.GameLoop.GameLaunched += GameLaunched;
-        helper.Events.GameLoop.UpdateTicking += UpdateTicking;
-        helper.Events.Display.MenuChanged += OneTimeEvents.CharacterCreatorMenu;
+        helper.Events.GameLoop.UpdateTicking += Update;
         Bot.GameEvents.DayStarted += MainGameLoopEvents.OnDayStarted;
         Bot.GameEvents.DayEnded += MainGameLoopEvents.OnDayEnded;
         Bot.GameEvents.BotWarped += MainGameLoopEvents.OnWarped;
@@ -77,43 +65,42 @@ internal sealed class Main : Mod
         Bot.GameEvents.BotTerrainFeatureChanged += WorldEvents.TerrainFeatureChanged;
         Bot.GameEvents.BotLargeTerrainFeatureChanged += WorldEvents.LargeTerrainFeatureChanged;
         Bot.GameEvents.BotLocationFurnitureChanged += WorldEvents.LocationFurnitureChanged;
-
-        CharacterController.FailedPathFinding += OneTimeEvents.FailedCharacterController;
         
+        CharacterController.FailedPathFinding += OneTimeEvents.FailedCharacterController;
+
+        #endregion
+
         if (Config.Debug)
         {
             helper.Events.Display.Rendered += StardewBotFramework.Debug.DrawFoundTiles.OnRenderPathNode;
-            helper.Events.Input.ButtonPressed += InputOnButtonPressed;
+            helper.Events.Input.ButtonPressed += InputOnButtonPressed;   
         }
     }
 
     private void InputOnButtonPressed(object? sender, ButtonPressedEventArgs e)
     {
-        if (e.Button == SButton.B)
+        switch (e.Button)
         {
-            Game1.activeClickableMenu = new CarpenterMenu("Robin");
-        }
-
-        if (e.Button == SButton.U)
-        {
-            Logger.Info($"tile: {Game1.currentCursorTile}");
-        }
-
-        if (e.Button == SButton.I)
-        {
-            Logger.Info($"pixel tile: {(Game1.currentCursorTile.X * Game1.tileSize)}  {(Game1.currentCursorTile.Y * Game1.tileSize)}");
-        }
-
-        if (e.Button == SButton.G)
-        {
-            Game1.player.setSkillLevel("Farming", 10);
-        }
-
-        if (e.Button == SButton.Y)
-        {
-            foreach (var building in Game1.getFarm().buildings)
+            case SButton.B:
+                Game1.activeClickableMenu = new CarpenterMenu("Robin");
+                break;
+            case SButton.U:
+                Logger.Info($"tile: {Game1.currentCursorTile}");
+                break;
+            case SButton.I:
+                Logger.Info($"pixel tile: {(Game1.currentCursorTile.X * Game1.tileSize)}  {(Game1.currentCursorTile.Y * Game1.tileSize)}");
+                break;
+            case SButton.G:
+                Game1.player.setSkillLevel("Farming", 10);
+                break;
+            case SButton.Y:
             {
-                Logger.Info($"building: {building.humanDoor.Value}");
+                foreach (var building in Game1.getFarm().buildings)
+                {
+                    Logger.Info($"building: {building.humanDoor.Value}");
+                }
+
+                break;
             }
         }
 
@@ -131,7 +118,7 @@ internal sealed class Main : Mod
         {
             MouseState mouseState = Game1.input.GetMouseState();
             Logger.Info($"mouse state: {mouseState}");
-            Logger.Info($"{new Vector2((int)((Utility.ModifyCoordinateFromUIScale(mouseState.X) + (float)Game1.viewport.X) / 64f), (int)((Utility.ModifyCoordinateFromUIScale(mouseState.Y) + (float)Game1.viewport.Y) / 64f))}");
+            Logger.Info($"{new Vector2((int)((Utility.ModifyCoordinateFromUIScale(mouseState.X) + Game1.viewport.X) / 64f), (int)((Utility.ModifyCoordinateFromUIScale(mouseState.Y) + Game1.viewport.Y) / 64f))}");
         }
 
         if (e.Button == SButton.R)
@@ -176,8 +163,8 @@ internal sealed class Main : Mod
     {
         try
         {
-            if (string.IsNullOrEmpty(_uriString)) throw new Exception($"UriString was not set correctly");
-            NeuroSDKCsharp.SdkSetup.Initialize(GameInstance,"Stardew Valley",_uriString);
+            if (string.IsNullOrEmpty(Config.WebsocketUri)) throw new Exception($"UriString was not set correctly");
+            NeuroSDKCsharp.SdkSetup.Initialize(GameInstance,"Stardew Valley",Config.WebsocketUri);
         }
         catch (Exception exception)
         {
@@ -186,38 +173,33 @@ internal sealed class Main : Mod
         }
     }
     
-    private void UpdateTicking(object? sender, UpdateTickingEventArgs e)
+    private void Update(object? sender, UpdateTickingEventArgs e)
     {
-        if (Game1.activeClickableMenu is TitleMenu)
-        {
-            Bot.MainMenuNavigation.SetTitleMenu((TitleMenu)Game1.activeClickableMenu);
-
-            if (!CanCreateCharacter)
-            {
-                Bot.MainMenuNavigation.GotoLoad();
-
-                if (TitleMenu.subMenu is LoadGameMenu)
-                {
-                    Bot.LoadMenu.SetLoadMenu((LoadGameMenu)TitleMenu.subMenu);
-                    if (!Bot.LoadMenu.Loading) Bot.LoadMenu.LoadSlot(_configSaveSlot);
-                }
-            }
+        if (Game1.activeClickableMenu is not TitleMenu) return;
         
-            if (!_hasSentCharacter && CanCreateCharacter)
+        Bot.MainMenuNavigation.SetTitleMenu((TitleMenu)Game1.activeClickableMenu);
+
+        // load game 
+        if (!AllowCreateCharacter)
+        {
+            Bot.MainMenuNavigation.GotoLoad();
+
+            if (TitleMenu.subMenu is LoadGameMenu)
             {
-                Bot.MainMenuNavigation.GotoCreateNewCharacter();
-            
-                if (TitleMenu.subMenu is CharacterCustomization)
-                {
-                    _hasSentCharacter = true;
-                    Bot.CharacterCreation.SetCreator((CharacterCustomization)TitleMenu.subMenu);
-                    ActionWindow window = ActionWindow.Create(GameInstance)
-                        .SetForce(2, "You should create your character, you will not be able to change this later.", "You are now in the character creator menu.")
-                        .AddAction(new MainMenuActions.CreateCharacter());
-                    window.Register();
-                }
+                Bot.LoadMenu.SetLoadMenu((LoadGameMenu)TitleMenu.subMenu);
+                if (!Bot.LoadMenu.Loading) Bot.LoadMenu.LoadSlot(Config.SaveSlot);
             }
         }
+
+        if (_hasSentCharacter || !AllowCreateCharacter) return;
+        
+        Bot.MainMenuNavigation.GotoCreateNewCharacter();
+
+        if (TitleMenu.subMenu is not CharacterCustomization) return;
+        
+        _hasSentCharacter = true;
+        Bot.CharacterCreation.SetCreator((CharacterCustomization)TitleMenu.subMenu);
+        MainMenuActions.RegisterAction();
     }
 
 }

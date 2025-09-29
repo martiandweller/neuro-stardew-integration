@@ -74,7 +74,7 @@ public static class LetterActions
 	private class CloseMenu : NeuroAction
 	{
 		public override string Name => "exit_letter";
-		protected override string Description => "Exit this letter";
+		protected override string Description => "Exit this letter, this still may accept the quest or order for you automatically.";
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
@@ -95,12 +95,12 @@ public static class LetterActions
 			window.AddAction(new TakeItems());
 		}
 
-		if (Main.Bot.LetterViewer.HasQuest is not null && Main.Bot.LetterViewer.HasQuest.Value)
+		if (Main.Bot.LetterViewer.HasQuest)
 		{
 			window.AddAction(new AcceptQuest());
 		}
 		window.AddAction(new CloseMenu());
-		window.SetForce(0, $"You have opened a letter, it has either a quest or special order in it.", $"{LetterContext.GetLetterContext()}");
+		window.SetForce(0, $"You have opened a letter, it has either a quest or special order in it.", $"{LetterContext.GetFullLetterString()}");
 		window.Register();
 	}
 }

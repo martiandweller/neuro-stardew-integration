@@ -227,7 +227,7 @@ public static class TileContext
         foreach (var kvp in warpLocation)
         {
             Logger.Info($"key: {kvp.Key.ToString()}  value: {kvp.Value}");
-            s.Add($"{kvp.Key.X},{kvp.Key.Y}");
+            s.Add($"{kvp.Value}: {kvp.Key.X},{kvp.Key.Y}");
         }
 
         return s;

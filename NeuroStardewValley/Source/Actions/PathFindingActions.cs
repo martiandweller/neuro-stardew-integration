@@ -88,8 +88,8 @@ public static class PathFindingActions
     {
         private bool _destructive;
         public override string Name => "move_to_exit";
-        protected override string Description =>
-            "This will move the character to the provided tile to go to an exit";
+        protected override string Description => "This will move the character to the provided tile to go to an exit, " +
+                                                 "the provided coordinates are sent as X and Y in that order.";
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
@@ -115,7 +115,8 @@ public static class PathFindingActions
                 return ExecutionResult.Failure($"A value you gave was null");
             }
             
-            string[] coords = pointStr.Split(',');
+            string[] splitName = pointStr.Split(":");
+            string[] coords = splitName[1].Split(',');
 
             Point exitPoint = new Point(int.Parse(coords[0]), int.Parse(coords[1]));
 
@@ -137,16 +138,16 @@ public static class PathFindingActions
                     .ContainsKey(exitPoint))
             {
                 goal = new Goal.GoalPosition(exitPoint.X,exitPoint.Y);
-                return ExecutionResult.Success($"");
+                return ExecutionResult.Success($"Entering {exitPoint}");
             }
             
             Main.Bot.Pathfinding.BuildCollisionMap();
-            AlgorithmBase.IPathing pathing = new AStar.Pathing();
             if (Main.Bot.Pathfinding.IsBlocked(exitPoint.X, exitPoint.Y) && (bool)!destructive)
             {
                 return ExecutionResult.Failure("You gave a position that is blocked. Maybe try something else!");
             }
 
+            AlgorithmBase.IPathing pathing = new AStar.Pathing();
             if (pathing.FindPath(new PathNode(Main.Bot._farmer.TilePoint.X, Main.Bot._farmer.TilePoint.Y, null),
                     new Goal.GoalPosition(exitPoint.X, exitPoint.Y), Game1.currentLocation, 10000,_destructive).Result.Count == 0)
             {
@@ -155,7 +156,7 @@ public static class PathFindingActions
 
             goal = new Goal.GoalPosition(exitPoint.X,exitPoint.Y);
             _destructive = (bool)destructive;
-            return ExecutionResult.Success();
+            return ExecutionResult.Success($"Going to {goal.VectorLocation}");
         }
 
         protected override void Execute(Goal? goal)
@@ -210,14 +211,17 @@ public static class PathFindingActions
     public class GoToCharacter : NeuroAction<KeyValuePair<NPC,bool>>
     {
         public override string Name => "go_to_character";
-        protected override string Description => "Go to a character that is in this location.";
+        protected override string Description => "Go to a character that is in this location, if you interact with the " +
+                                                 "character it will most likely try to talk to the character," +
+                                                 " unless they cannot be talked to or you are holding something that can be gifted.";
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
             Required = new List<string> { "character","interact" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["character"] = QJS.Enum(Game1.currentLocation.characters.Select(npc => npc.Name).ToList()),
+                ["character"] = QJS.Enum(Main.Bot._currentLocation.characters.Where(npc => !npc.IsMonster)
+                    .Select(npc => $"{npc.Name}").ToList()),
                 ["interact"] = QJS.Type(JsonSchemaType.Boolean)
             }
         };
@@ -232,13 +236,13 @@ public static class PathFindingActions
                 ExecutionResult.Failure($"You provided either an empty or null string");
             }
 
-            int index = Game1.currentLocation.characters.Select(npc => npc.Name).ToList().IndexOf(charName!);
+            int index = Main.Bot._currentLocation.characters.Select(npc => npc.Name).ToList().IndexOf(charName!);
             if (index == -1)
             {
                 return ExecutionResult.Failure($"The value you provided was invalid.");
             }
             
-            resultData = new(Game1.currentLocation.characters[index],interact!.Value);
+            resultData = new(Main.Bot._currentLocation.characters[index],interact!.Value);
             return ExecutionResult.Success();
         }
 
@@ -251,7 +255,7 @@ public static class PathFindingActions
                 {
                     Main.Bot.Characters.InteractWithCharacter(resultData.Key);
                 }
-                RegisterMainGameActions.RegisterPostAction(); // should not get registered if character starts talking
+                RegisterMainGameActions.RegisterPostAction(); // this should not run if character starts talking
             });
         }
     }

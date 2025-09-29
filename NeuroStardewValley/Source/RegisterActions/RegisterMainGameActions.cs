@@ -22,12 +22,21 @@ public static class RegisterMainGameActions
 	public static void RegisterActions(ActionWindow window)
 	{
 		window.AddAction(new PathFindingActions.Pathfinding()).AddAction(new PathFindingActions.PathFindToExit())
-			.AddAction(new PathFindingActions.GoToCharacter()).AddAction(new WorldObjectActions.PlaceObjects())
-			.AddAction(new WorldObjectActions.PlaceObject());
+			.AddAction(new WorldObjectActions.PlaceObjects()).AddAction(new WorldObjectActions.PlaceObject());
 
 		if (Main.Bot._currentLocation.Objects.Length > 0)
 		{
 			window.AddAction(new WorldObjectActions.InteractWithObject());
+		}
+
+		if (Game1.currentLocation.characters.Any(monster => monster.IsMonster))
+		{
+			window.AddAction(new PathFindingActions.AttackMonster());
+		}
+		
+		if (Main.Bot._currentLocation.characters.Any(character => !character.IsMonster))
+		{
+			window.AddAction(new PathFindingActions.GoToCharacter());
 		}
 
 		if (TileContext.ActionableTiles.Count > 0)
@@ -39,12 +48,7 @@ public static class RegisterMainGameActions
 		{
 			window.AddAction(new BuildingActions.InteractWithBuilding());
 		}
-
-		if (Game1.currentLocation.characters.Any(monster => monster.IsMonster))
-		{
-			window.AddAction(new PathFindingActions.AttackMonster());
-		}
-
+		
 		if (Game1.player.CurrentItem is not null)
 		{
 			window.AddAction(new ToolActions.UseItem());
@@ -196,24 +200,14 @@ public static class RegisterMainGameActions
 				query = $"You are at {Main.Bot._currentLocation.Name}," +
 				        $" The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
 				        $" These are the Items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)}" +
-				        $"\nIf you want more information about your items should open your inventory.";
+				        $"\nIf you want more information about your items you should open your inventory.";
 			}
 			if (state == "")
 			{
-				state = string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer,50));
+				state = string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer,Main.Config.TileContextRadius));
 			}
 			window.SetForce(afterSeconds, query, state, ephemeral is null || ephemeral.Value);
 		}
 		window.Register();
-	}
-	
-	public static void LoadGameActions(string query = "",string state = "",bool ephemeral = false)
-	{
-		ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
-		actionWindow.SetForce(0,query,state,ephemeral);
-		RegisterActions(actionWindow);
-		RegisterToolActions(actionWindow,null,Main.Bot._currentLocation);
-		RegisterLocationActions(actionWindow,Main.Bot._currentLocation);
-		actionWindow.Register();
 	}
 }

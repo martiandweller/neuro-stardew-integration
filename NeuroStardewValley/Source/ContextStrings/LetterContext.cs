@@ -3,10 +3,10 @@ namespace NeuroStardewValley.Source.ContextStrings;
 
 public static class LetterContext
 {
-	public static string GetLetterContext()
+	public static string GetFullLetterString()
 	{
 		string letterText = FormatLetterString(string.Concat(Main.Bot.LetterViewer.GetMessage()));
-		string context = $"this is what the letter says \"{letterText}\"";
+		string context = $"This is what the letter says \"{letterText}\"";
 		if (Main.Bot.LetterViewer.recipeLearned != "")
 		{
 			context += $" You learned a recipe from this letter! It is for: {Main.Bot.LetterViewer.recipeLearned}";
@@ -20,11 +20,12 @@ public static class LetterContext
 		return context;
 	}
 
-	public static string GetStringContext(string message,bool includeChecks = true)
+	public static string GetStringContext(string message,bool addExtraContext = true, int page = -1)
 	{
 		string letterText = FormatLetterString(message);
-		string context = $"this is what the letter says \"{letterText}\"";
-		if (!includeChecks)
+		string context = $"This is what {0} says \"{letterText}\"";
+		context = page != -1 ? string.Format(context, $"page: {page} of this letter") : string.Format(context, "the letter");
+		if (!addExtraContext)
 		{
 			return context;
 		}

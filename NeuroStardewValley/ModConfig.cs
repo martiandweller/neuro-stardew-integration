@@ -2,11 +2,12 @@ namespace NeuroStardewValley;
 
 public class ModConfig
 {
-    public bool Debug { get; set; } // this allows for many debug features to be used, many triggerable through hotkeys.
+    public bool Debug { get; set; } // this allows for many debug features to be used, many triggerable through hotkeys. Default = false
     public string WebsocketUri { get; set; }
-    public bool AllowCharacterCreation { get; set; } // Allow Neuro to create her own character
-    public int SaveSlot { get; set; } // save slot to use
-    public int StaminaSendInterval { get; set; } // The amount of hours between each stamina context, sent every hour divisible by four would be 400  
+    public bool AllowCharacterCreation { get; set; } // Allow Neuro to create her own character. Default = false
+    public int SaveSlot { get; set; } // save slot to use. Default = 0
+    public int TileContextRadius { get; set; } // The radius of tiles to send as context. Default = 50
+    public int StaminaSendInterval { get; set; } // The amount of in-game hours between each stamina context, sent every hour divisible by four would be 400. Default = 400
     public Dictionary<string, bool> CharacterCreationOptions { get; set; }
     public Dictionary<string, string> CharacterCreationDefault { get; set; }
 
@@ -17,6 +18,7 @@ public class ModConfig
         WebsocketUri = "ws://localhost:8000/ws/";
         AllowCharacterCreation = false;
         SaveSlot = 0;
+        TileContextRadius = 50;
         StaminaSendInterval = 400;
         
         CharacterCreationOptions = new()

@@ -26,8 +26,7 @@ public static class MainGameLoopEvents
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
 	{
 		TileContext.ActionableTiles.Clear();
-		if (e.Player.passedOut) return;
-		if (Game1.eventUp) return;
+		if (e.Player.passedOut || Game1.eventUp) return;
 		string warps = TileContext.GetWarpTiles(e.NewLocation,true);
 		string warpsString = !string.IsNullOrEmpty(warps) ? TileContext.GetWarpTilesString(warps) : "There are no warps in this location";
 		
@@ -56,6 +55,10 @@ public static class MainGameLoopEvents
 
 		switch (e.NewMenu)
 		{
+			case CharacterCustomization customization:
+				Main.Bot.CharacterCreation.SetCreator(customization);
+				MainMenuActions.RegisterAction();
+				break;
 			case DialogueBox dialogueBox:
 				Logger.Info($"add new dialogue box");
 				Main.Bot.Dialogue.CurrentDialogueBox = dialogueBox;
@@ -129,12 +132,12 @@ public static class MainGameLoopEvents
 				{
 					Task.Run(async () =>
 					{
-						for (int i = 0; i < Main.Bot.LetterViewer.GetMessage().Count; i++)
+						for (int i = 0; i <= Main.Bot.LetterViewer.GetMessage().Count; i++)
 						{
 							string message = LetterContext.GetStringContext(Main.Bot.LetterViewer.GetMessage()[i],
-								i == Main.Bot.LetterViewer.GetMessage().Count - 1); // only send on last page
-							Context.Send(message);
-							await Task.Delay(7500);
+									i == Main.Bot.LetterViewer.GetMessage().Count - 1,i + 1); // only send extra on last page
+							Context.Send($"{message}");
+							await Task.Delay(9000); // surely 9 seconds per page is enough :Glueless:
 							if (i != Main.Bot.LetterViewer.GetMessage().Count - 1)
 							{
 								Main.Bot.LetterViewer.NextPage();
@@ -269,29 +272,20 @@ public static class MainGameLoopEvents
 		string time = StringUtilities.FormatTimeString();
 		if (sendQuests) QuestContext.SendContext();
 		Main.Bot.Time.GetTodayFestivalData(out _, out _, out int startTime, out int endTime);
-		string contextString = $"the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.";
+		string passedOut = Game1.player.passedOut
+			? "A new day has started, you are in your farm-house after you passed out, "
+			: "A new day has started, you are in your farm-house,"; 
+		string contextString = $"{passedOut} the current day is {SDate.Now().DayOfWeek} {SDate.Now().Day} of {SDate.Now().Season} in year {SDate.Now().Year} at time: {time}.";
+		
 		if (Main.Bot.Time.IsFestival())
 		{
-			contextString = $"{contextString} There is a festival today! It is located at {Game1.whereIsTodaysFest}, it will start at {startTime} and end at {endTime}," +
+			contextString += $" There is a festival today! It is located at {Game1.whereIsTodaysFest}, it will start at {startTime} and end at {endTime}," +
 			                $" but you should try to go there as soon as possible so you can fully experience it.";
-		}
-		if (Game1.player.passedOut)
-		{
-			contextString = $" A new day has started. You are in your farm-house after you were knocked out, {contextString}";
-		}
-		else
-		{
-			contextString = $" A new day has started. You are in your farm-house, {contextString}";
 		}
 		
 		contextString += $" This is the level of your relationship with all the characters you have interacted with: " +
 		                 $"{PlayerContext.GetAllCharactersLevel()}.\nAnd these are the levels of all your skills:" +
 		                 $" {PlayerContext.GetAllSkillLevel()}.";
-		
-		string warps = TileContext.GetWarpTiles(Game1.currentLocation);
-		string warpString = !string.IsNullOrEmpty(warps) ? TileContext.GetWarpTilesString(warps) : "There are no warps in this location";
-		contextString += $"These are the warps here: {warpString}\n";
-		contextString += string.Join("\n",TileContext.GetTilesInLocation(Game1.currentLocation));
 		
 		return contextString;
 	}
