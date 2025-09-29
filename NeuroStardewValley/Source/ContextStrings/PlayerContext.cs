@@ -8,7 +8,10 @@ public static class PlayerContext
 		string charString = "";
 		foreach (var social in Main.Bot.PlayerInformation.RelationshipLevel())
 		{
-			charString = string.Concat(charString, $"\n{social.DisplayName} heart level: {social.HeartLevel}");
+			string contextString = $"\n{social.DisplayName}: heart level: {social.HeartLevel}";
+			if (social.IsRoommateForCurrentPlayer()) contextString += $", is your roommate";
+			if (social.IsDatable) contextString += $", is dating you";
+			charString = string.Concat(charString, contextString);
 		}
 
 		return charString;

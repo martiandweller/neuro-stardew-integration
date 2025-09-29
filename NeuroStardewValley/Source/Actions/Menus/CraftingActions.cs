@@ -26,7 +26,7 @@ public class CraftingActions
 			RegisterActions();
 		}
 	}
-	public class CraftItem : NeuroAction<KeyValuePair<CraftingRecipe,int>>
+	private class CraftItem : NeuroAction<KeyValuePair<CraftingRecipe,int>>
 	{
 		public override string Name => "craft_item";
 		protected override string Description => "Craft item.";
@@ -139,7 +139,7 @@ public class CraftingActions
 		}
 	}
 
-	public class ExitMenu : NeuroAction
+	private class ExitMenu : NeuroAction
 	{
 		public override string Name => "exit_menu";
 		protected override string Description => "Exit the crafting menu.";
@@ -156,15 +156,15 @@ public class CraftingActions
 		}
 	}
 
-	public static void RegisterActions()
+	private static void RegisterActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		window.AddAction(new CraftItem()).AddAction(new ExitMenu());
-		window.SetForce(0, "You are in the crafting page.", $"These are the items available to craft: {CraftingContext()}");
+		window.SetForce(0, "You are in the crafting page.", $"These are the items available to craft: {CanCraftContext()}");
 		window.Register();
 	}
 
-	private static string CraftingContext()
+	private static string CanCraftContext()
 	{
 		if (Main.Bot.CraftingMenu.Menu is null) return "";
 		var recipes = Main.Bot.CraftingMenu.GetAllItems();

@@ -42,4 +42,9 @@ public static class QuestContext
 		string questString = GetQuestsStrings();
 		Context.Send(questString);
 	}
+
+	public static string GetQuestTitles()
+	{
+		return Main.Bot.QuestLog.Quests.Aggregate("", (current, quest) => string.Concat(current, $"\n{quest.questTitle}"));
+	}
 }

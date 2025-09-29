@@ -169,8 +169,7 @@ public static class MainGameLoopEvents
 				NamingMenuActions.RegisterActions();
 				break;
 			default:
-				// ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-				if (e.NewMenu == null) break;
+				if (e.NewMenu is null or QuestLog) break;
 				Context.Send(string.Format(ResultStrings.InvalidClickableMenu,$"{e.NewMenu}"));
 				e.NewMenu.exitThisMenu(false);
 				break;
@@ -270,7 +269,8 @@ public static class MainGameLoopEvents
 	public static string NewDayContext(bool sendQuests = true)
 	{
 		string time = StringUtilities.FormatTimeString();
-		if (sendQuests) QuestContext.SendContext();
+		if (sendQuests) Context.Send($"These are the title's of the quests that are available, " +
+		                             $"you can see more about them in your quest log.{QuestContext.GetQuestTitles()}");
 		Main.Bot.Time.GetTodayFestivalData(out _, out _, out int startTime, out int endTime);
 		string passedOut = Game1.player.passedOut
 			? "A new day has started, you are in your farm-house after you passed out, "

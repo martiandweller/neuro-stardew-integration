@@ -19,12 +19,10 @@ public static class PathFindingActions
     public class Pathfinding : NeuroAction<Goal?>
     {
         private bool _destructive;
-
+        
         public override string Name => "move_character";
-
         protected override string Description =>
             "This will move the character to the provided tile location in the world.";
-
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
