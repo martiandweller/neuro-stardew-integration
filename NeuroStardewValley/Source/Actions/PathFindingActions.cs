@@ -182,12 +182,9 @@ public static class PathFindingActions
             if (!Utility.tileWithinRadiusOfPlayer(goal.X, goal.Y, 1, Main.Bot._farmer))
             {
                 await Main.Bot.Pathfinding.Goto(goal, _destructive);
-                
-                // building warps take a second to work, so no register
-                if (Main.Bot._currentLocation.Equals(oldLocation) && building is null)
-                {
-                    RegisterMainGameActions.RegisterPostAction();
-                }
+
+                // probably don't need to do lower checks if these are different
+                if (!Main.Bot._currentLocation.Equals(oldLocation)) return;
             }
 
             // pathfinding can't go within 1 tile of current position so we do this.
@@ -199,6 +196,13 @@ public static class PathFindingActions
                 var warp = warps[0];
 
                 Main.Bot._farmer.warpFarmer(warp);
+                
+                // warps can take a second to register sometimes
+                await Task.Delay(3000);
+                if (Main.Bot._currentLocation.Equals(oldLocation))
+                {
+                    RegisterMainGameActions.RegisterPostAction();
+                }
                 return;
             }
             

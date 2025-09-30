@@ -13,7 +13,7 @@ public static class MainMenuActions
 {
     public class CreateCharacter : NeuroAction<Dictionary<string, string?>>
     {
-        private static bool AllowCreateCharacter => Main.AllowCreateCharacter;
+        private static bool AllowCreateCharacter => Main.Config.AllowCharacterCreation;
 
         private static Dictionary<string, bool> EnabledCharacterOptions => Main.Config.CharacterCreationOptions;
     

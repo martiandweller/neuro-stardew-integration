@@ -600,7 +600,7 @@ namespace NeuroStardewValley.Source.Actions;
     {
         ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
         actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())
-            .AddAction(new ExitInventory()).AddAction(new CraftingActions.SetCraftingPage()).AddAction(new RemoveItem());
+            .AddAction(new ExitInventory()).AddAction(new CraftingActions.GoToCrafting()).AddAction(new RemoveItem());
         
         bool attach = Main.Bot.Inventory.Inventory.Any(item => item is Tool tool && tool.AttachmentSlotsCount > 0);
         if (attach) actionWindow.AddAction(new AttachItem());

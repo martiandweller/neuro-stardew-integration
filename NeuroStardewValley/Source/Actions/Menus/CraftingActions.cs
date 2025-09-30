@@ -10,9 +10,9 @@ namespace NeuroStardewValley.Source.Actions.Menus;
 
 public class CraftingActions
 {
-	public class SetCraftingPage : NeuroAction
+	public class GoToCrafting : NeuroAction
 	{
-		public override string Name => "set_crafting_page";
+		public override string Name => "go_to_crafting";
 		protected override string Description => "Move to the crafting page";
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)

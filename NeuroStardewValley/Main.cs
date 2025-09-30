@@ -5,6 +5,7 @@ using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.EventMethods;
+using NeuroStardewValley.Source.RegisterActions;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Menus;
@@ -24,20 +25,21 @@ internal sealed class Main : Mod
 
     public static ModConfig Config = null!;
     
-    public static bool AllowCreateCharacter;
-
-
-    private static bool _hasSentCharacter;
-    
     public override void Entry(IModHelper helper)
     {
+        Logger.SetMonitor(Monitor);
         Bot = new StardewClient(helper, ModManifest, Monitor, helper.Multiplayer);
 
-        Config = Helper.ReadConfig<ModConfig>();
-        AllowCreateCharacter = Config.AllowCharacterCreation;
+        try
+        {
+            Config = Helper.ReadConfig<ModConfig>();
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"The config.json file for the neuro integration was set incorrectly\n {e}");
+            return;
+        }
         
-        Logger.SetMonitor(Monitor);
-
         #region Events
 
         helper.Events.GameLoop.GameLaunched += GameLaunched;
@@ -84,78 +86,45 @@ internal sealed class Main : Mod
             case SButton.B:
                 Game1.activeClickableMenu = new CarpenterMenu("Robin");
                 break;
-            case SButton.U:
-                Logger.Info($"tile: {Game1.currentCursorTile}");
-                break;
             case SButton.I:
-                Logger.Info($"pixel tile: {(Game1.currentCursorTile.X * Game1.tileSize)}  {(Game1.currentCursorTile.Y * Game1.tileSize)}");
-                break;
-            case SButton.G:
-                Game1.player.setSkillLevel("Farming", 10);
+                Logger.Info(
+                    $"pixel tile: {(Game1.currentCursorTile.X * Game1.tileSize)}  {(Game1.currentCursorTile.Y * Game1.tileSize)}");
                 break;
             case SButton.Y:
-            {
                 foreach (var building in Game1.getFarm().buildings)
                 {
                     Logger.Info($"building: {building.humanDoor.Value}");
                 }
+                
 
                 break;
-            }
-        }
-
-        if (e.Button == SButton.G)
-        {
-            Game1.player.Position = Game1.currentCursorTile * 64;
-        }
-
-        if (e.Button == SButton.X)
-        {
-            Bot.FishingBar.Fish(100);
-        }
-
-        if (e.Button == SButton.H)
-        {
-            MouseState mouseState = Game1.input.GetMouseState();
-            Logger.Info($"mouse state: {mouseState}");
-            Logger.Info($"{new Vector2((int)((Utility.ModifyCoordinateFromUIScale(mouseState.X) + Game1.viewport.X) / 64f), (int)((Utility.ModifyCoordinateFromUIScale(mouseState.Y) + Game1.viewport.Y) / 64f))}");
-        }
-
-        if (e.Button == SButton.R)
-        {
-            foreach (var building in Game1.currentLocation.buildings)
-            {
-                building.FinishConstruction();
-                Logger.Info($"{building.GetIndoors()}    {building.GetIndoorsName()}    {building.GetIndoorsType()}");
-            }
-        }
-
-        if (e.Button == SButton.U)
-        {
-            bool result = Bot._currentLocation.isActionableTile((int)Game1.currentCursorTile.X, (int)Game1.currentCursorTile.Y,
-                Game1.player);
-            Logger.Warning($"is action: {result}");
-        }
-
-        if (e.Button == SButton.Y)
-        {
-            foreach (var objDict in Bot._currentLocation.Objects)
-            {
-                foreach (var kvp in objDict)
+            case SButton.G:
+                Game1.player.Position = Game1.currentCursorTile * 64;
+                break;
+            case SButton.X:
+                Bot.FishingBar.Fish(100);
+                break;
+            case SButton.H:
+                MouseState mouseState = Game1.input.GetMouseState();
+                Logger.Info($"mouse state: {mouseState}");
+                Logger.Info(
+                    $"{new Vector2((int)((Utility.ModifyCoordinateFromUIScale(mouseState.X) + Game1.viewport.X) / 64f), (int)((Utility.ModifyCoordinateFromUIScale(mouseState.Y) + Game1.viewport.Y) / 64f))}");
+                break;
+            case SButton.R:
+                foreach (var building in Game1.currentLocation.buildings)
                 {
-                    Logger.Info($"object kvp: {kvp.Key}    {kvp.Value.Name}");
+                    building.FinishConstruction();
+                    Logger.Info(
+                        $"{building.GetIndoors()}    {building.GetIndoorsName()}    {building.GetIndoorsType()}");
                 }
-            }
 
-            foreach (var dict in Bot._currentLocation.terrainFeatures)
-            {
-                foreach (var kvp in dict)
-                {
-                    Logger.Info($"features: {kvp.Key}  {kvp.Value.modData.Name}");
-                }
-            }
-
-            Logger.Info($"current location: {Bot._currentLocation}");
+                break;
+            case SButton.U:
+                bool result = Bot._currentLocation.isActionableTile((int)Game1.currentCursorTile.X,
+                    (int)Game1.currentCursorTile.Y,
+                    Game1.player);
+                Logger.Warning($"is action: {result}");
+                break;
         }
     }
 
@@ -173,14 +142,41 @@ internal sealed class Main : Mod
         }
     }
     
+    private static bool _hasSentCharacter;
+    
+    private int _registerTimer;
+    private Vector2 _lastPlayerPos;
     private void Update(object? sender, UpdateTickingEventArgs e)
     {
+        // this is for if neuro has been frozen for too long
+        Vector2 newPos = Bot._farmer.Position;
+        // this covers most stuff like EventUp and current menu not null
+        if (Context.IsPlayerFree && Config.RegisterIfPausedForLong)
+        {
+            if (_lastPlayerPos == newPos)
+            {
+                _registerTimer += Game1.currentGameTime.ElapsedGameTime.Milliseconds;
+            }
+            else
+            {
+                _registerTimer = 0;
+            }
+
+            _lastPlayerPos = newPos;
+        }
+
+        if (_registerTimer >= Config.TimeUntilRegisterAgain)
+        {
+            _registerTimer = 0;
+            RegisterMainGameActions.RegisterPostAction();
+        }
+        
         if (Game1.activeClickableMenu is not TitleMenu) return;
         
         Bot.MainMenuNavigation.SetTitleMenu((TitleMenu)Game1.activeClickableMenu);
 
         // load game 
-        if (!AllowCreateCharacter)
+        if (!Config.AllowCharacterCreation)
         {
             Bot.MainMenuNavigation.GotoLoad();
 
@@ -191,7 +187,7 @@ internal sealed class Main : Mod
             }
         }
 
-        if (_hasSentCharacter || !AllowCreateCharacter) return;
+        if (_hasSentCharacter || !Config.AllowCharacterCreation) return;
         
         Bot.MainMenuNavigation.GotoCreateNewCharacter();
 

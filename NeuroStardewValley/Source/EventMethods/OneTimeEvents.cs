@@ -3,6 +3,7 @@ using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
+using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewModdingAPI.Events;
 using StardewValley;
 
@@ -51,11 +52,11 @@ public static class OneTimeEvents
 		Context.Send(context);
 	}
 	
-	public static void FailedCharacterController(object? sender, EventArgs e)
+	public static void FailedCharacterController(object? sender, CharacterController.FailureReason e)
 	{
-		Context.Send($"The character controller failed, you should mention this so it can get fixed." +
+		Context.Send($"The character controller failed due to {e}, you should mention this so it can get fixed." +
 		             $" You should also do something different from what you were doing before.");
 		if (Main.Config.Debug) Game1.addHUDMessage(new HUDMessage("Pathfinding failed :("));
-		RegisterMainGameActions.RegisterPostAction();
+		// most of the action should re-register on their own
 	}
 }

@@ -135,12 +135,12 @@ public static class QuestLogActions
 			}
 
 			resultData = index;
-			return ExecutionResult.Success();
+			return ExecutionResult.Success($"You have added {Main.Bot.QuestLog.Quests[resultData].questTitle} to your context.");
 		}
 
 		protected override void Execute(int resultData)
 		{
-			Context.Send(QuestContext.GetSingleQuest(Main.Bot.QuestLog.Quests[resultData]),true);
+			Context.Send($"{QuestContext.GetSingleQuest(Main.Bot.QuestLog.Quests[resultData])}",true);
 			RegisterActions();
 		}
 	}
@@ -149,7 +149,9 @@ public static class QuestLogActions
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		window.AddAction(new GetQuestReward()).AddAction(new CloseLog()).AddAction(new SaveContext());
-		window.SetForce(0, "You are now in the quest log.", QuestContext.GetQuestsStrings(),true);
+		window.SetForce(0, "You are now in the quest log.",
+			$"if you want to complete a quest, you should add it to your context and complete the objective. " +
+			$"{QuestContext.GetQuestsStrings()}",true);
 		window.Register();
 	}
 }

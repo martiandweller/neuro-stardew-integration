@@ -22,6 +22,10 @@ public static class QuestContext
 		{
 			questString = string.Concat(questString, $"This quest has been completed, you should get your reward from it.");
 		}
+		else
+		{
+			questString = string.Concat(questString, $"You have not completed this quest yet.");
+		}
 
 		return string.Concat(questString, quest.IsTimedQuest() ? $" Time left: {quest.GetDaysLeft()}" : $" There is no time limit on this quest.");
 	}
