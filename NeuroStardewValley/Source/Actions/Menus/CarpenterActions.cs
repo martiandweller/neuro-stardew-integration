@@ -2,23 +2,24 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.GameData.Buildings;
 using StardewValley.Menus;
-using StardewValley.TokenizableStrings;
 using Logger = NeuroStardewValley.Debug.Logger;
 
 namespace NeuroStardewValley.Source.Actions.Menus;
+
 
 public static class CarpenterActions
 {
 	public class ChangeBuildingBlueprint : NeuroAction<CarpenterMenu.BlueprintEntry>
 	{
 		public override string Name => "change_building";
-		protected override string Description => "Change the currently selected building";
+		protected override string Description => "Change the currently selected building out of what is available, just because you can select it does not mean you can do anything with it.";
 
 		protected override JsonSchema Schema => new()
 		{
@@ -122,6 +123,7 @@ public static class CarpenterActions
 		protected override void Execute()
 		{
 			Main.Bot.FarmBuilding.InteractWithButton(Main.Bot.FarmBuilding._carpenterMenu!.demolishButton);
+			PlaceBuildingActions.RegisterPlaceBuilding(true);
 		}
 	}
 
@@ -153,9 +155,9 @@ public static class CarpenterActions
 
 	public class ChangeBuildingSkin : NeuroAction<BuildingSkinMenu.SkinEntry>
 	{
-		public override string Name => "change_building_look";
-		protected override string Description => "Change how this building looks.";
-		protected override JsonSchema? Schema => new()
+		public override string Name => "change_building_skin";
+		protected override string Description => "Change how the currently selected building looks, this will not change the cost of making the building.";
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "skin" },
@@ -179,12 +181,14 @@ public static class CarpenterActions
 				return ExecutionResult.Failure($"The skin you provided is not a valid option");
 			}
 			
-			foreach (var skin in Main.Bot.FarmBuilding.GetBuildingSkins())
+			foreach (var skin in Main.Bot.FarmBuilding.GetBuildingSkins().Where(skin => skin.Index.ToString() == selectedSkin))
 			{
-				if (skin.Index.ToString() == selectedSkin)
-				{
-					resultData = skin;
-				}
+				resultData = skin;
+			}
+
+			if (resultData is null)
+			{
+				return ExecutionResult.Failure($"The skin you selected could not be selected.");
 			}
 			return ExecutionResult.Success($"using the skin: {selectedSkin}");
 		}
@@ -207,6 +211,7 @@ public static class CarpenterActions
 			return strings;
 		}
 	}
+
 }
 
 public static class PlaceBuildingActions
@@ -214,7 +219,7 @@ public static class PlaceBuildingActions
 	private class PlaceBuilding : NeuroAction<Point>
 	{
 		public override string Name => "place_building";
-		protected override string Description => "Place building at the specified location.";
+		protected override string Description => "Place building at the specified location, you should make sure the specified tile or it's neighbours will not block this building.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -259,7 +264,8 @@ public static class PlaceBuildingActions
 	private class SelectBuilding : NeuroAction<Building>
 	{
 		public override string Name => "select_building";
-		protected override string Description => "Select a building to either upgrade,destroy or move.";
+		protected override string Description => $"Select a building to {Main.Bot.FarmBuilding._carpenterMenu?.Action}." +
+		                                         $" The building you select should be of the same type you selected in the last menu.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -355,15 +361,14 @@ public static class PlaceBuildingActions
 		}
 	}
 
-	public static void RegisterPlaceBuilding(bool upgrade = false)
+	public static void RegisterPlaceBuilding(bool select = false)
 	{
-		// This stops from running SelectBuilding schema too early leading to no buildings
-		while (Game1.IsFading() || Main.Bot.FarmBuilding._carpenterMenu?.Action == CarpenterMenu.CarpentryAction.None)
-		{
-			continue;
-		}
+		// This stops from running SelectBuilding schema too early leading to incorrect schema
+		var task = Task.Run(async () => await Task.Delay(5000));
+		task.Wait();
+		
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
-		if (upgrade)
+		if (select)
 		{
 			window.AddAction(new SelectBuilding());
 		}
@@ -372,7 +377,8 @@ public static class PlaceBuildingActions
 			window.AddAction(new PlaceBuilding());
 		}
 		window.AddAction(new CancelPlacingBuilding());
-		window.SetForce(5, "", "");
+		// TODO: Instead of sending whole map, maybe allow her to "query" a tile and send the closest 10-20 tiles around as the state of the next force action.
+		window.SetForce(5, $"You are now in {Main.Bot._currentLocation.DisplayName}", $"{string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation))}",true);
 		window.Register();
 	}
 }

@@ -3,7 +3,6 @@ using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source.ContextStrings;
-using NeuroStardewValley.Source.RegisterActions;
 using StardewValley;
 using StardewValley.Menus;
 
@@ -14,7 +13,7 @@ public static class QuestLogActions
 	public class OpenLog : NeuroAction
 	{
 		public override string Name => "open_quest_log";
-		protected override string Description => "See all of your current quests and accept their rewards";
+		protected override string Description => "See all of your current quests and accept their rewards if they are completed.";
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
@@ -31,10 +30,8 @@ public static class QuestLogActions
 	private class GetQuestReward : NeuroAction<int>
 	{
 		public override string Name => "get_reward";
-
 		protected override string Description =>
 			"Get the reward for a quest, this will only work if the quest has been completed and has a reward.";
-
 		protected override JsonSchema Schema => new JsonSchema()
 		{
 			Type = JsonSchemaType.Object,
@@ -100,14 +97,14 @@ public static class QuestLogActions
 		protected override void Execute()
 		{
 			Main.Bot.QuestLog.CloseLog();
-			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
 
 	private class SaveContext : NeuroAction<int>
 	{
 		public override string Name => "save_in_context";
-		protected override string Description => "You should call this if you want to save a specific quest in your context. You should do this you want to complete a quest.";
+		protected override string Description => "You should call this if you want to save a specific quest in your" +
+		                                         " context. An example of using this is if you want to complete a quest.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -151,7 +148,7 @@ public static class QuestLogActions
 		window.AddAction(new GetQuestReward()).AddAction(new CloseLog()).AddAction(new SaveContext());
 		window.SetForce(0, "You are now in the quest log.",
 			$"if you want to complete a quest, you should add it to your context and complete the objective. " +
-			$"{QuestContext.GetQuestsStrings()}",true);
+			$"These are all of the quests you currently have {QuestContext.GetQuestsStrings()}.",true);
 		window.Register();
 	}
 }

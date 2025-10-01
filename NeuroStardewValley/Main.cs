@@ -96,7 +96,6 @@ internal sealed class Main : Mod
                     Logger.Info($"building: {building.humanDoor.Value}");
                 }
                 
-
                 break;
             case SButton.G:
                 Game1.player.Position = Game1.currentCursorTile * 64;

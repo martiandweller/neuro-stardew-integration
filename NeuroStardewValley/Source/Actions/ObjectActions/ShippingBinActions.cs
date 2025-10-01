@@ -2,10 +2,7 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
-using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.ContextStrings;
-using NeuroStardewValley.Source.RegisterActions;
-using NeuroStardewValley.Source.Utilities;
 using Newtonsoft.Json.Linq;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
@@ -19,11 +16,17 @@ public static class ShippingBinActions
 	public static void RegisterBinActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
-		window.AddAction(new ExitBin()).AddAction(new SellItems())
-			.SetForce(0,"You have opened the nearest shipping bin, you can use this to sell items." + 
-			            " This should be your main source of making money", 
-				$"These are the items you can ship: {InventoryContext.GetShippableString(Main.Bot.Inventory.Inventory)}",true)
-			.Register();
+		window.AddAction(new ExitBin()).AddAction(new SellItems());
+		string state =
+			$"These are the items you can ship: {InventoryContext.GetShippableString(Main.Bot.Inventory.Inventory)}"; 
+		if (Game1.getFarm().lastItemShipped is not null)
+		{
+			window.AddAction(new GrabLastInsertedItem());
+			Item lastItem = Game1.getFarm().lastItemShipped;
+			state += $"\nYou last shipped {lastItem.Stack} {lastItem.Name}s";
+		}
+		window.SetForce(0,"You have opened the nearest shipping bin, you can use this to sell items." + 
+		            " This should be your main source of making money", state,true).Register();
 	}
 	
 	public class GoToNearestShippingBin : NeuroAction<ShippingBin>
@@ -137,8 +140,8 @@ public static class ShippingBinActions
 	public class SellItems : NeuroAction<List<int>>
 	{
 		public override string Name => "sell_items";
-		protected override string Description => "Add items in your inventory to be sold.";
-
+		protected override string Description => "Add items from your inventory to be sold, If there is already an item " +
+		                                         "in the shipping bin it will replace your ability to grab it with the new item.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -203,6 +206,29 @@ public static class ShippingBinActions
 			}
 			Main.Bot.ShippingBinInteraction.ShipMultipleItems(items.ToArray());
 			RegisterBinActions();
+		}
+	}
+
+	public class GrabLastInsertedItem : NeuroAction
+	{
+		public override string Name => "grab_last_item";
+		protected override string Description => "Grab the last item inserted into this shipping bin, it will be placed" +
+		                                         " in the first empty slot in your inventory.";
+		protected override JsonSchema Schema => new();
+		protected override ExecutionResult Validate(ActionData actionData)
+		{
+			Item? lastInsertedItem = Main.Bot.ShippingBinInteraction.GetLastItem(); 
+			if (lastInsertedItem is null)
+			{
+				return ExecutionResult.Failure($"No item has been inserted into the bin yet");
+			}
+
+			return ExecutionResult.Success($"Getting the {lastInsertedItem.Name}");
+		}
+
+		protected override void Execute()
+		{
+			Main.Bot.ShippingBinInteraction.GrabLastItem();
 		}
 	}
 

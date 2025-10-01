@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework.Graphics;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
@@ -27,7 +26,7 @@ public static class ChatActions
         public override string Name => "reply_to_chat";
         protected override string Description => "This allows you to reply to the last chat, if you do not want to reply you should send No reply";
 
-        protected override JsonSchema? Schema => new()
+        protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
             Required = new List<string> { "action","message" },

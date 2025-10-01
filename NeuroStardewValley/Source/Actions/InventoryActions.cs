@@ -20,7 +20,7 @@ namespace NeuroStardewValley.Source.Actions;
     public class OpenInventory : NeuroAction
     {
         public override string Name => "open_inventory";
-        protected override string Description => "Open your inventory and allow altering the placement of items, this will also stop time.";
+        protected override string Description => "Open your inventory allowing the altering of items, this will also allow for you to craft items. being in the inventory or crafting items stop time.";
         protected override JsonSchema Schema => new();
         protected override ExecutionResult Validate(ActionData actionData)
         {
@@ -32,10 +32,10 @@ namespace NeuroStardewValley.Source.Actions;
             Main.Bot.PlayerInformation.OpenInventory();
         }
     }
-    public class ExitInventory : NeuroAction
+    private class ExitInventory : NeuroAction
     {
         public override string Name => "close_inventory";
-        protected override string Description => "Close your inventory and go back to playing the game, this will make time tick again.";
+        protected override string Description => "Close your inventory and go back to playing the game, this will make time start going again.";
         protected override JsonSchema Schema => new();
         protected override ExecutionResult Validate(ActionData actionData)
         {
@@ -56,7 +56,7 @@ namespace NeuroStardewValley.Source.Actions;
     {
         private int _position;
         public override string Name => "move_item";
-        protected override string Description => $"Move an item in inventory, you have {Main.Bot.Inventory.MaxInventory} places in your inventory";
+        protected override string Description => $"Move an item in inventory, you have {Main.Bot.Inventory.MaxInventory} slots in your inventory";
 
         protected override JsonSchema Schema => new ()
         {
@@ -430,7 +430,7 @@ namespace NeuroStardewValley.Source.Actions;
         public override string Name => "attach_item";
 
         protected override string Description =>
-            "Attach an item to another, this is most commonly used with bait and fishing rods.";
+            "Attach an item to another, a common use of this attaching bait on fishing rods.";
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,

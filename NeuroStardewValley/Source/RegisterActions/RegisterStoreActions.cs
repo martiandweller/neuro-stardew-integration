@@ -89,35 +89,23 @@ public static class RegisterStoreActions
 		
 		if (Main.Bot.FarmBuilding.Building.CanBeReskinned())
 		{
-			if (Main.Bot.FarmBuilding._buildingSkinMenu is null || Main.Bot.FarmBuilding._carpenterMenu.currentBuilding != Main.Bot.FarmBuilding._buildingSkinMenu.Building)
-			{
-				Logger.Warning($"SETTING BUILDING UI");
-				Main.Bot.FarmBuilding.SetBuildingUI(new BuildingSkinMenu(Main.Bot.FarmBuilding.Building, true));
-			}
+			Main.Bot.FarmBuilding.SetBuildingUI(new BuildingSkinMenu(Main.Bot.FarmBuilding.Building, true));
 			window.AddAction(new CarpenterActions.ChangeBuildingSkin());	
 		}
 
 		string state = "These are the possible buildings that you can either build, upgrade or demolish: ";
 		foreach (var entry in Main.Bot.FarmBuilding._carpenterMenu!.Blueprints)
 		{
-			state += $"\n{entry.DisplayName} time to build: {entry.BuildDays} days  cost to build: {entry.BuildCost}g";
+			state += $"\n-Building name: {entry.DisplayName}\n-- Time to build: {entry.BuildDays} days\n-- Cost to build: {entry.BuildCost}g";
 			if (entry.BuildMaterials is null) continue;
-			state += $" materials to build: ";
-			for (int i = 0; i < entry.BuildMaterials.Count; i++)
+			state += $"\n-- Materials to build: ";
+			foreach (var material in entry.BuildMaterials)
 			{
-				BuildingMaterial material = entry.BuildMaterials[i];
 				Item item = ItemRegistry.Create(material.Id);
-				state += $" {item.Name} amount: {material.Amount}";
-				if (i >= entry.BuildMaterials.Count - 1)
-				{
-					state += $".";
-					continue;
-				}
-
-				state += $",";
+				state += $"\n--- {item.Name} amount: {material.Amount}";
 			}
 		}
-		window.SetForce(0, $"You are now in the carpenter menu", state);
+		window.SetForce(0, $"You are now in the carpenter menu", state,true);
 		
 		window.Register();
 	}

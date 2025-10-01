@@ -54,9 +54,14 @@ public static class OneTimeEvents
 	
 	public static void FailedCharacterController(object? sender, CharacterController.FailureReason e)
 	{
+		if (Main.Config.Debug) Game1.addHUDMessage(new HUDMessage($"Pathfinding failed :( from {e}"));
+		if (e == CharacterController.FailureReason.NoCharacter)
+		{
+			Context.Send($"The character you were either following or attacking left this location.");
+			return;
+		}
 		Context.Send($"The character controller failed due to {e}, you should mention this so it can get fixed." +
 		             $" You should also do something different from what you were doing before.");
-		if (Main.Config.Debug) Game1.addHUDMessage(new HUDMessage("Pathfinding failed :("));
 		// most of the action should re-register on their own
 	}
 }

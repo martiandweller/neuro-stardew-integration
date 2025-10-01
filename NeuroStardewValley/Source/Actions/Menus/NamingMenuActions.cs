@@ -80,9 +80,9 @@ public class NamingMenuActions
 		
 		if (Main.Bot.NamingMenu.Menu is TitleTextInputMenu textInputMenu) state = $"{textInputMenu.title}";
 
-		if (Main.Bot.NamingMenu.Menu.textBox.Text != "")
-			state += $" The current text is {Main.Bot.NamingMenu.Menu.textBox.Text}";
-		window.SetForce(0, $"You are now interacting with a menu to input text.", state);
+		if (Main.Bot.NamingMenu.Menu.textBox.Text != "") state += $" The current text is {Main.Bot.NamingMenu.Menu.textBox.Text}";
+		window.SetForce(0, $"You are now interacting with a menu that has the title " +
+		                   $"\"{Main.Bot.NamingMenu.Menu.title}\", you should enter text to fit this.", state);
 		window.Register();
 	}
 }

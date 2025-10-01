@@ -64,8 +64,16 @@ public static class MainGameLoopEvents
 				Main.Bot.Dialogue.CurrentDialogueBox = dialogueBox;
 				RegisterDialogueActions.RegisterActions();
 				break;
-			case GameMenu:
-				InventoryActions.RegisterInventoryActions();
+			case GameMenu menu:
+				switch (menu.GetCurrentPage())
+				{
+					case InventoryPage:
+						InventoryActions.RegisterInventoryActions();
+						break;
+					case CraftingPage:
+						CraftingActions.RegisterActions();
+						break;
+				}
 				break;
 			case ShopMenu shopMenu:
 				Main.Bot.Shop.OpenShop(shopMenu); // this should be handled by OpenShopUi

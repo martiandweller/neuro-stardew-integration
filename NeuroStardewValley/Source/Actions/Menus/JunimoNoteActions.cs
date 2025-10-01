@@ -3,18 +3,17 @@ using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.ContextStrings;
-using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Menus;
 
 namespace NeuroStardewValley.Source.Actions.Menus;
 
-public class JunimoNoteActions
+public static class JunimoNoteActions
 {
-	public class SelectBundle : NeuroAction<Bundle>
+	private class SelectBundle : NeuroAction<Bundle>
 	{
 		public override string Name => "select_bundle";
-		protected override string Description => "Select a bundle to open.";
+		protected override string Description => "Select a bundle to open from the options.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -50,10 +49,10 @@ public class JunimoNoteActions
 		}
 	}
 
-	public class ExitBundle : NeuroAction
+	private class ExitBundle : NeuroAction
 	{
 		public override string Name => "exit_bundle";
-		protected override string Description => "Exit this bundle";
+		protected override string Description => "Exit this bundle to see the others.";
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
@@ -75,7 +74,7 @@ public class JunimoNoteActions
 	public class AddItem : NeuroAction<Item>
 	{
 		public override string Name => "add_item";
-		protected override string Description => "Add item to this bundle";
+		protected override string Description => "Add an item to this bundle.";
 
 		protected override JsonSchema Schema => new()
 		{
@@ -95,7 +94,7 @@ public class JunimoNoteActions
 			{
 				return ExecutionResult.Failure($"You have provided a null value that is not allowed");
 			}
-
+			
 			Item? i = Main.Bot.JunimoNote.Menu.inventory.actualInventory.ToList().Find(i => i.Name == item);
 			if (i is null)
 			{
@@ -137,7 +136,7 @@ public class JunimoNoteActions
 		{
 			IEnumerable<Item> items = Main.Bot.JunimoNote.Menu.inventory.actualInventory.Where(item => item is not null &&
 				Main.Bot.JunimoNote.Menu.currentPageBundle.ingredients.Exists(desc => !desc.completed && ItemRegistry.Create(desc.id).Name == item.Name && desc.id == item.ItemId));
-
+			
 			List<string> itemString = new();
 			using var enumerator = items.GetEnumerator();
 			while (enumerator.MoveNext())
@@ -176,20 +175,23 @@ public class JunimoNoteActions
 
 		if (Main.Bot.JunimoNote.Menu.currentPageBundle is null || !Main.Bot.JunimoNote.Menu.specificBundlePage || !Main.Bot.JunimoNote.Menu.backButton.visible)
 		{
+			string reward = Main.Bot.JunimoNote.Menu.getRewardNameForArea(Main.Bot.JunimoNote.Menu.whichArea);
 			window.AddAction(new SelectBundle()).AddAction(new ExitMenu());
-			window.SetForce(0, "You are now able to select a bundle", "");
+			window.SetForce(0, "You are now able to select a bundle, adding items to all of the bundles" +
+			                   " in this page will lead to completing this page and getting the reward.",
+				$"For completing this page you will get a {reward.Substring(8)}.");
 		}
 		else
 		{
-			string state = $"You don't have any of the items needed for this bundle.";
 			if (AddItem.GetSchema().Count > 0)
 			{
 				window.AddAction(new AddItem());
-				state = string.Concat(Main.Bot.JunimoNote.Menu.currentPageBundle.ingredients.Where(desc => !desc.completed)
-					.Select(desc => $"\n{ItemRegistry.Create(desc.id).Name} rarity: {InventoryContext.QualityStrings[ItemRegistry.Create(desc.id).Quality]} amount: {desc.stack}"));
 			}
+			string state = string.Concat(Main.Bot.JunimoNote.Menu.currentPageBundle.ingredients
+				.Where(desc => !desc.completed).Select(desc => 
+					$"\n-{ItemRegistry.Create(desc.id).Name}:\n-- Rarity: {InventoryContext.QualityStrings[ItemRegistry.Create(desc.id).Quality]}\n-- Amount: {desc.stack}"));
 			window.AddAction(new ExitMenu()).AddAction(new ExitBundle());
-			window.SetForce(0, "You can add items to this bundle", $"These are the items needed in the bundle: {state}",true);
+			window.SetForce(0, "This is an item you can add items to.", $"These are the items needed in the bundle: {state}");
 		}
 		
 		window.Register();

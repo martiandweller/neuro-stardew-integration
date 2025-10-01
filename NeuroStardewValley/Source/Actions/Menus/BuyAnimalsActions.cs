@@ -1,13 +1,10 @@
-using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source.Utilities;
-using StardewBotFramework.Source;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Menus;
-using StardewValley.TokenizableStrings;
 using Logger = NeuroStardewValley.Debug.Logger;
 
 namespace NeuroStardewValley.Source.Actions.Menus;
@@ -17,7 +14,7 @@ public static class BuyAnimalsActions
 	public class SelectAnimal : NeuroAction<ClickableTextureComponent>
 	{
 		public override string Name => "select_animal";
-		protected override string Description => "Select the animal to buy";
+		protected override string Description => "Select the animal you want to buy.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -88,7 +85,7 @@ public static class BuyAnimalsActions
 	public class SelectBuilding : NeuroAction<Building>
 	{
 		public override string Name => "select_building";
-		protected override string Description => "Select a building to put this animal in";
+		protected override string Description => "Select the building to put this animal in.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -148,7 +145,7 @@ public static class BuyAnimalsActions
 	public class NameAnimal : NeuroAction<string>
 	{
 		public override string Name => "name_animal";
-		protected override string Description => "Name this animal";
+		protected override string Description => "Select a name for this animal, you should try to avoid duplicates and long names.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -158,7 +155,7 @@ public static class BuyAnimalsActions
 				["name"] = new()
 				{
 					Type = JsonSchemaType.String,
-					MaxLength = 20, // Does not have defined text limit based on font size :)
+					MaxLength = 20, // Does not have defined text limit as is based on font size :)
 					MinLength = 1
 				}
 			}
@@ -198,7 +195,8 @@ public static class BuyAnimalsActions
 	public class RandomName : NeuroAction
 	{
 		public override string Name => "randomise_name";
-		protected override string Description => "Randomise the name of this animal, If you do not like the random name you will be able to change it.";
+		protected override string Description => "Randomise the name of this animal, If you do not like the random name" +
+		                                         " you will be able to change it.";
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
@@ -237,7 +235,7 @@ public static class BuyAnimalsActions
 		if (Main.Bot.AnimalMenu.Menu.onFarm && !Main.Bot.AnimalMenu.Menu.namingAnimal)
 		{
 			queryString = "You are selecting the building for the animal to be in.";
-			stateString = "";
+			stateString = $"These are the other animal in the valid buildings: {string.Join("\n",Main.Bot.AnimalMenu.GetAvailableBuildings().Select(FormatBuildingAnimals))}";
 			window.AddAction(new SelectBuilding()).AddAction(new ExitMenu());
 		}
 		else if (Main.Bot.AnimalMenu.Menu.onFarm)
@@ -261,5 +259,16 @@ public static class BuyAnimalsActions
 
 		window.SetForce(waitTime, queryString, stateString);
 		window.Register();
+	}
+
+	private static string FormatBuildingAnimals(Building building)
+	{
+		string animals = $"-{building.tileX.Value},{building.tileY.Value} {StringUtilities.TokenizeBuildingName(building)}";
+		foreach (var dict in building.GetIndoors().animals)
+		{
+			animals += string.Join("\n--",dict.Select(kvp => kvp.Value.displayType));
+		}
+
+		return animals;
 	}
 }

@@ -1,5 +1,6 @@
 using StardewValley;
 using StardewValley.Inventories;
+using StardewValley.Tools;
 
 namespace NeuroStardewValley.Source.ContextStrings;
 
@@ -19,6 +20,18 @@ public static class InventoryContext
 		if (item.Quality > 0)
 		{
 			contextString = string.Concat(contextString, $" Quality: {QualityStrings[item.Quality]}");
+		}
+
+		if (item is WateringCan can)
+		{
+			if (can.IsBottomless)
+			{
+				contextString += " Has infinite water";
+			}
+			else
+			{
+				contextString += $" Water left: {can.WaterLeft}, Max water {can.waterCanMax}";
+			}
 		}
 
 		if (includeAttachments && item is Tool tool)
@@ -53,14 +66,14 @@ public static class InventoryContext
 
 	public static string GetShippableString(IInventory inventory)
 	{
-		string contextString = "This is the start ";
+		string contextString = "";
 		foreach (var item in inventory)
 		{
 			if (item is null || !item.canBeShipped()) continue;
 			
 			contextString += $"\nIndex: {inventory.IndexOf(item)}";
 			contextString += $" Name: {item.Name}";
-			contextString +=$" Amount: {item.Stack}";
+			contextString += $" Amount: {item.Stack}";
 			if (item.Quality > 0)
 			{
 				contextString = string.Concat(contextString, $" Quality: {QualityStrings[item.Quality]}");

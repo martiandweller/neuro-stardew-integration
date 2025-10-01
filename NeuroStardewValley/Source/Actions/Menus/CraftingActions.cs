@@ -4,7 +4,6 @@ using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley;
-using StardewValley.Menus;
 
 namespace NeuroStardewValley.Source.Actions.Menus;
 
@@ -23,13 +22,12 @@ public class CraftingActions
 		protected override void Execute()
 		{
 			Main.Bot.CraftingMenu.SetPageUI();
-			RegisterActions();
 		}
 	}
 	private class CraftItem : NeuroAction<KeyValuePair<CraftingRecipe,int>>
 	{
 		public override string Name => "craft_item";
-		protected override string Description => "Craft item.";
+		protected override string Description => "Craft an item to be added to your inventory, it will be placed in the first empty slot.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -138,11 +136,10 @@ public class CraftingActions
 			return itemStrings;
 		}
 	}
-
 	private class ExitMenu : NeuroAction
 	{
 		public override string Name => "exit_menu";
-		protected override string Description => "Exit the crafting menu.";
+		protected override string Description => "Exit the crafting menu and start playing the game again.";
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
@@ -156,11 +153,18 @@ public class CraftingActions
 		}
 	}
 
-	private static void RegisterActions()
+	public static void RegisterActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
-		window.AddAction(new CraftItem()).AddAction(new ExitMenu());
-		window.SetForce(0, "You are in the crafting page.", $"These are the items available to craft: {CanCraftContext()}");
+		window.AddAction(new ExitMenu());
+		string state = $"There are no items available to craft.";
+		if (CanCraftContext().Length > 0)
+		{
+			state = $"These are the items available to craft: {CanCraftContext()}";
+			window.AddAction(new CraftItem());
+		}
+		
+		window.SetForce(0, "You are in the crafting page.", state);
 		window.Register();
 	}
 

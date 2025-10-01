@@ -10,8 +10,7 @@ public static class ElevatorMenuActions
 	public class SelectButton : NeuroAction<int>
 	{
 		public override string Name => "select_button";
-		protected override string Description => "Select a button to use in this elevator";
-
+		protected override string Description => "Select the floor to move to using a button.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -59,7 +58,7 @@ public static class ElevatorMenuActions
 		window.AddAction(new SelectButton());
 		window.SetForce(0, "You are interacting with the elevator.",
 			"The buttons represent the floor they will take you to. Generally you should go to the lowest floor," +
-			" unless you are searching for specific monster,item or ore.");
+			" unless you are searching for specific monster, item or ore.");
 		window.Register();
 	}
 }

@@ -197,9 +197,9 @@ public static class RegisterMainGameActions
 		{
 			if (query == "")
 			{
-				query = $"You are at {Main.Bot._currentLocation.Name}," +
+				query = $"You are at {Main.Bot._currentLocation.Name}, at the tile {Main.Bot.Player.BotTilePosition()}" +
 				        $" The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
-				        $" These are the Items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)}" +
+				        $" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)}" +
 				        $"\nIf you want more information about your items you should open your inventory.";
 			}
 			if (state == "")

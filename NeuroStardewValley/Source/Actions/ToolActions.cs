@@ -25,7 +25,7 @@ public static class ToolActions
 
         public override string Name => "use_item";
 
-        protected override string Description => "This will use the currently selected item in a specified direction or tile.";
+        protected override string Description => "This will use the currently selected item at either the specified direction or tile.";
 
         protected override JsonSchema Schema => new()
         {
@@ -70,7 +70,7 @@ public static class ToolActions
             }
             else
             {
-                ExecutionResult.Failure($"This combination of arguments is not allowed");
+                ExecutionResult.Failure($"You cannot use both direction and specify a tile position");
             }
 
             selectedItem = null;
@@ -141,7 +141,7 @@ public static class ToolActions
 	public class RefillWateringCan : NeuroAction
 	{
 		public override string Name => "refill_watering_can";
-		protected override string Description => "This will attempt to refill your watering can in the nearest water.";
+		protected override string Description => "This will attempt to refill your watering can at the nearest water.";
 		protected override JsonSchema Schema => new ();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
@@ -162,7 +162,8 @@ public static class ToolActions
 	public class DestroyObject : NeuroAction<Point>
 	{
 		public override string Name => "destroy_object";
-		protected override string Description => "Destroy an object at the provided position.";
+		protected override string Description => "Destroy an object at the provided position, if there is no object or the " +
+		                                         "object is not able to be destroyed this action will fail.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -224,7 +225,8 @@ public static class ToolActions
 	public class WaterFarmLand : NeuroAction<List<int>>
 	{
 		public override string Name => "water_farm_land";
-		protected override string Description => "This will water farm land in the provided region, the farmland will not be watered if it has already been and will automatically refill watering can." +
+		protected override string Description => "This will water farm land in the provided region, the farmland will not" +
+		                                         " be watered if it has already been and will automatically refill watering can." +
 		                                         " You should think of this as a rectangle containing the tiles you want to water.";
 		protected override JsonSchema Schema => new()
 		{
@@ -294,7 +296,7 @@ public static class ToolActions
 
 		protected override string Description =>
 			"Use the selected tool in a specified rectangle, if you want to water farmland you can do that with another action." +
-			"# You should use this if you want to create farmland.";
+			" You should use this if you want to create farmland or use another tool for a similar purpose.";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -377,8 +379,9 @@ public static class ToolActions
 	public class Fishing : NeuroAction<int>
 	{
 		public override string Name => "use_fishing_rod";
-		protected override string Description => "Power should be between 1 and 100 if the value provided does not adhere to that the value will be clamped." +
-		                                         " You must be looking towards water tiles to fish or it will not work.";
+		protected override string Description => "Use a fishing rod in your inventory to fish, power should be between 1" +
+		                                         " and 100 if the value provided does not adhere to that the value will " +
+		                                         "be clamped. You must be looking towards water tiles to fish or it will not work.";
 
 		protected override JsonSchema Schema => new()
 		{

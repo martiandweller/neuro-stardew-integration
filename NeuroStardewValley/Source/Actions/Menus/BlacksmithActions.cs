@@ -2,9 +2,7 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
-using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
-using StardewBotFramework.Source;
 using StardewValley;
 using StardewValley.Menus;
 
@@ -15,8 +13,8 @@ public static class BlacksmithActions
 	public class OpenGeode : NeuroAction<int>
 	{
 		public override string Name => "open_geode";
-		protected override string Description => "Will open the geode that you select from your inventory, The schema will only include indexes that contains a geode";
-		protected override JsonSchema? Schema => new()
+		protected override string Description => "Opens the geode that you select from your inventory.";
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "item_index" },
@@ -90,8 +88,8 @@ public static class BlacksmithActions
 	public class CloseMenu : NeuroAction
 	{
 		public override string Name => "close_menu";
-		protected override string Description => "Close the geode menu";
-		protected override JsonSchema? Schema => new();
+		protected override string Description => "Exit this menu.";
+		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
 			return ExecutionResult.Success();

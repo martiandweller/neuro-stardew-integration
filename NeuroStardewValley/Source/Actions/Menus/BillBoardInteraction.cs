@@ -11,7 +11,8 @@ public static class BillBoardInteraction
 	public class AcceptDailyQuest : NeuroAction
 	{
 		public override string Name => "accept_quest";
-		protected override string Description => "Accept this quest";
+		protected override string Description => "Accept this quest, if you accept this quest it will close the menu " +
+		                                         "automatically. If you want to look at the quest again, you can use the quest log.";
 		protected override JsonSchema? Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
