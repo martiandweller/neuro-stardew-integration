@@ -4,7 +4,6 @@ using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source.RegisterActions;
 using StardewValley;
 using StardewValley.Menus;
-using Context = NeuroSDKCsharp.Messages.Outgoing.Context;
 
 namespace NeuroStardewValley.Source.Actions;
 

@@ -204,7 +204,7 @@ public static class RegisterMainGameActions
 			}
 			if (state == "")
 			{
-				state = string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer,Main.Config.TileContextRadius));
+				state = string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer.TilePoint,Main.Config.TileContextRadius));
 			}
 			window.SetForce(afterSeconds, query, state, ephemeral is null || ephemeral.Value);
 		}

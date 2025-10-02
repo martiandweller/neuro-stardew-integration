@@ -9,7 +9,6 @@ using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.GameData.Buildings;
 using StardewValley.Menus;
-using Logger = NeuroStardewValley.Debug.Logger;
 
 namespace NeuroStardewValley.Source.Actions.Menus;
 
@@ -235,29 +234,28 @@ public static class PlaceBuildingActions
 			int? tileX = actionData.Data?.Value<int>("tile_x");
 			int? tileY = actionData.Data?.Value<int>("tile_y");
 
+			resultData = new();
 			if (tileX is null || tileY is null)
 			{
-				resultData = new();
 				return ExecutionResult.Failure($"You have provided a null value in tile_x or tile_y");
 			}
 
 			int x = (int)tileX;
 			int y = (int)tileY;
 
-			bool canBuild = Main.Bot.FarmBuilding.CreateBuilding(new Point(x,y)); // one day maybe replicate how it checks if you can build so this isn't in validate. A bit lazy for that rn.
-			if (!canBuild)
+			Main.Bot.FarmBuilding.SetSelectedTile(new Point(x,y));
+			if (!Main.Bot.FarmBuilding.CanPlaceBuilding(Main.Bot.FarmBuilding.Building))
 			{
-				resultData = new();
 				return ExecutionResult.Failure($"You cannot build at {x},{y}.");
 			}
-
+			
 			resultData = new (x,y);
 			return ExecutionResult.Success();
 		}
 
 		protected override void Execute(Point resultData) // This is run in validation
 		{
-			Logger.Info($"result data: {resultData}");
+			Main.Bot.FarmBuilding.CreateBuilding(resultData); // one day maybe replicate how it checks if you can build so this isn't in validate. A bit lazy for that rn.
 		}
 	}
 
@@ -343,6 +341,58 @@ public static class PlaceBuildingActions
 			return null;
 		}
 	}
+
+	private class CanBuildOnTile : NeuroAction<Point>
+	{
+		public override string Name => "check_can_build";
+		protected override string Description => $"Check if you can place a building at the specified tile, when you" +
+		                                         $" specify a radius it can only be between {MaxRadius} and {MinRadius}.";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "tile_x", "tile_y","radius" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["tile_x"] = QJS.Type(JsonSchemaType.Integer),
+				["tile_y"] = QJS.Type(JsonSchemaType.Integer),
+				["radius"] = QJS.Type(JsonSchemaType.Integer)
+			}
+		};
+		private int _radius;
+		private const int MaxRadius = 15;
+		private const int MinRadius = 1;
+		protected override ExecutionResult Validate(ActionData actionData, out Point resultData)
+		{
+			int? x = actionData.Data?.Value<int>("tile_x");
+			int? y = actionData.Data?.Value<int>("tile_y");
+			int? rad = actionData.Data?.Value<int>("radius");
+
+			resultData = new();
+			if (x is null || y is null || rad is null)
+			{
+				return ExecutionResult.Failure($"You cannot provide a null value");
+			}
+
+			if (!TileUtilities.IsValidTile(new Point((int)x, (int)y),out var reason,false,false))
+			{
+				return ExecutionResult.Failure($"You can not check here as: {reason}");
+			}
+
+			if (rad is > 15 or < 1)
+			{
+				return ExecutionResult.Failure($"The radius can only be between 15 and 1");
+			}
+
+			_radius = (int)rad;
+			resultData = new Point((int)x, (int)y);
+			return ExecutionResult.Success($"{string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,resultData,_radius))}");
+		}
+
+		protected override void Execute(Point resultData)
+		{
+			RegisterPlaceBuilding();
+		}
+	}
 	
 	private class CancelPlacingBuilding : NeuroAction
 	{
@@ -376,9 +426,19 @@ public static class PlaceBuildingActions
 		{
 			window.AddAction(new PlaceBuilding());
 		}
-		window.AddAction(new CancelPlacingBuilding());
-		// TODO: Instead of sending whole map, maybe allow her to "query" a tile and send the closest 10-20 tiles around as the state of the next force action.
-		window.SetForce(5, $"You are now in {Main.Bot._currentLocation.DisplayName}", $"{string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation))}",true);
+		window.AddAction(new CancelPlacingBuilding()).AddAction(new CanBuildOnTile());
+		string state = "";
+		for (int x = 0; x < Main.Bot._currentLocation.Map.DisplayWidth / Game1.tileSize; x++)
+		{
+			for (int y = 0; y < Main.Bot._currentLocation.Map.DisplayHeight / Game1.tileSize; y++)
+			{
+				string? str = TileContext.GetObjectContext(Main.Bot._currentLocation,x,y);
+				if (str is null || str.Contains("Litter")) continue; // only have important stuff like buildings
+				state += $"\n{str}";
+			}
+		}
+		
+		window.SetForce(5, $"You are now in {Main.Bot._currentLocation.DisplayName}", $"{state}",true);
 		window.Register();
 	}
 }

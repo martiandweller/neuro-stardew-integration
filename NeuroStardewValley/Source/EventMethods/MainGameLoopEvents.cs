@@ -36,7 +36,7 @@ public static class MainGameLoopEvents
 		Context.Send(warpsString, true);
 		Context.Send(characterContext,true);
 		RegisterMainGameActions.RegisterPostAction(e, 0,
-			$"You are at {e.NewLocation.Name} from {e.OldLocation.Name}, The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
+			$"You are at {e.NewLocation.DisplayName} from {e.OldLocation.DisplayName}, The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
 			$" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)} " +
 			$"\nIf you want more information about your items should open your inventory.");
 	}
@@ -51,6 +51,9 @@ public static class MainGameLoopEvents
 			// we need to check if old is dialogue box to stop issues with changing menus while standing in bed
 			case DialogueBox when Game1.player.isInBed.Value:
 				return;
+			case DialogueBox when e.NewMenu is not DialogueBox:
+				Main.Bot.Dialogue.CurrentDialogueBox = null;
+				break;
 		}
 
 		switch (e.NewMenu)
@@ -186,7 +189,7 @@ public static class MainGameLoopEvents
 		// ugly but it gets rid of warning and double send at start of game and other double sends
 		if (e is { NewMenu: null } and {OldMenu:not TitleMenu or not LevelUpMenu or not MineElevatorMenu})
 		{
-			Logger.Info($"old menu: {e.OldMenu.GetType()}");
+			Logger.Info($"Re-registering post action: old menu: {e.OldMenu.GetType()}  new: {e.NewMenu}");
 			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
