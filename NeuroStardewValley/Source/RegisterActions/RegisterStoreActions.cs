@@ -43,12 +43,12 @@ public static class RegisterStoreActions
 		{
 			ISalable itemISalable = items[i];
 			ItemStockInformation stockInformation = Main.Bot.Shop.StockInformation[itemISalable];
-			itemString += $"\n{i}: {itemISalable.Name}, description: {StringUtilities.FormatItemString(itemISalable.getDescription())} cost: {stockInformation.Price}";
+			itemString += $"\n{i}: {itemISalable.DisplayName}, description: {StringUtilities.FormatItemString(itemISalable.getDescription())} cost: {stockInformation.Price}";
 			Item item = ItemRegistry.Create(itemISalable.QualifiedItemId);
 			if (item is Tool && !string.IsNullOrEmpty(stockInformation.TradeItem))
 			{
 				Item upgradeItem = ItemRegistry.Create(stockInformation.TradeItem);
-				itemString += $" items needed for upgrade: {upgradeItem.Name} {stockInformation.TradeItemCount}";
+				itemString += $" items needed for upgrade: {upgradeItem.DisplayName} {stockInformation.TradeItemCount}";
 			}
 		}
 
@@ -61,7 +61,7 @@ public static class RegisterStoreActions
 
 			if (Main.Bot.Shop._currentShop.inventory.highlightMethod(item))
 			{
-				itemString += $"\n{item.Name} sell price: {item.sellToStorePrice()}";
+				itemString += $"\n{item.DisplayName} sell price: {item.sellToStorePrice()}";
 			}
 		}
 		window.SetForce(0, "You are in a shop", itemString);
@@ -102,7 +102,7 @@ public static class RegisterStoreActions
 			foreach (var material in entry.BuildMaterials)
 			{
 				Item item = ItemRegistry.Create(material.Id);
-				state += $"\n--- {item.Name} amount: {material.Amount}";
+				state += $"\n--- {item.DisplayName} amount: {material.Amount}";
 			}
 		}
 		window.SetForce(0, $"You are now in the carpenter menu", state,true);

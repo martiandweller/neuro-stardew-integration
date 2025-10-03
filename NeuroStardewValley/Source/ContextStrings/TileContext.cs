@@ -24,7 +24,6 @@ public static class TileContext
         List<string> tileList = new() {$"These are the {str}tiles in this location, they are sent in the format of X,Y with a \\n separating each tile." +
                                        " If a tile has an action you can try to use it with the interact_with_tile action." +
                                        " If a tile is \"block\" that means it has collisions."};
-        HashSet<Building> sentBuildings = new();
         WaterTiles.WaterTileData[,] waterTileData = {};
         if (location.waterTiles is not null)
         {
@@ -122,7 +121,7 @@ public static class TileContext
                     if (!chest.giftbox.Value) tileString += $", colour: {chest.getCategoryColor()}";
                     return tileString;
                 case Object objectValue:
-                    return $"Tile: {x},{y}, name: {objectValue.Name}, Type: {objectValue.Type}";
+                    return $"Tile: {x},{y}, name: {objectValue.DisplayName}, Type: {objectValue.Type}";
                 case Building building:
                     if (building.isActionableTile(x, y, Main.Bot._farmer))
                     {
@@ -152,7 +151,7 @@ public static class TileContext
                             if (dirt.crop is not null)
                             {
                                 Item item = ItemRegistry.Create(dirt.crop.indexOfHarvest.Value);
-                                context = $"{dirt.Tile}: {item.Name} fully grown: {dirt.crop.fullyGrown.Value}";
+                                context = $"{dirt.Tile}: {item.DisplayName} fully grown: {dirt.crop.fullyGrown.Value}";
                             }
                             return context;
                         default:

@@ -63,7 +63,7 @@ public static class LetterActions
 			List<string> schema = new();
 			foreach (var cc in Main.Bot.LetterViewer.Items)
 			{
-				schema.Add($"item name: {cc.item.Name} name: {cc.name}");
+				schema.Add($"item name: {cc.item.DisplayName} name: {cc.name}");
 			}
 
 			return schema;

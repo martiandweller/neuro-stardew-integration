@@ -179,7 +179,7 @@ public static class ItemGrabActions
 			}
 			resultData = Game1.player.Items[GetMenuItems(true).IndexOf(itemString)];
 
-			return ExecutionResult.Success($"Added: {resultData.Name} to the menu");
+			return ExecutionResult.Success($"Added: {resultData.DisplayName} to the menu");
 		}
 
 		protected override void Execute(Item? resultData)
@@ -212,13 +212,13 @@ public static class ItemGrabActions
 	private static List<string> GetMenuItems(bool inventory = false)
 	{
 		List<string> itemStrings = new();
-		List<Item> items = new();
+		List<Item?> items = new();
 		items.AddRange(inventory ? Game1.player.Items : Menu!.ItemsToGrabMenu.actualInventory);
 		foreach (var item in items)
 		{
 			if (item is null) continue;
 			
-			itemStrings.Add(item.Name);
+			itemStrings.Add(item.DisplayName);
 		}
 
 		return itemStrings;

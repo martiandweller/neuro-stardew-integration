@@ -79,7 +79,7 @@ public static class LessImportantEvents
 			while (enumerator.MoveNext())
 			{
 				item = enumerator.Current;
-				contextString += $"\nAdded {item.Stack} {item.Name} to your inventory";
+				contextString += $"\nAdded {item.Stack} {item.DisplayName} to your inventory";
 			}
 		}
 
@@ -89,7 +89,7 @@ public static class LessImportantEvents
 			while (enumerator.MoveNext())
 			{
 				item = enumerator.Current;
-				contextString += $"\nRemoved {item.Stack} {item.Name} from your inventory";
+				contextString += $"\nRemoved {item.Stack} {item.DisplayName} from your inventory";
 			}
 		}
 
@@ -98,7 +98,7 @@ public static class LessImportantEvents
 			using var enumerator = e.QuantityChanged.GetEnumerator();
 			while (enumerator.MoveNext())
 			{
-				contextString += $"\nModified {enumerator.Current.Item.Name}'s stack amount from " +
+				contextString += $"\nModified {enumerator.Current.Item.DisplayName}'s stack amount from " +
 				                 $"{enumerator.Current.OldSize} to {enumerator.Current.NewSize}.";
 			}
 		}

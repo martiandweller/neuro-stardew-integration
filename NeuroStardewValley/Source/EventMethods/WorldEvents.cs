@@ -84,7 +84,7 @@ public static class WorldEvents
 					contextString = String.Format(context, kvp.Value.Name);
 					break;
 				case Furniture furniture:
-					contextString = String.Format(context, furniture.Name);
+					contextString = String.Format(context, furniture.DisplayName);
 					break;
 				case LargeTerrainFeature largeTerrainFeature:
 					contextString = String.Format(context, largeTerrainFeature);

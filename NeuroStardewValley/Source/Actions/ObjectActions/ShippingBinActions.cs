@@ -23,7 +23,7 @@ public static class ShippingBinActions
 		{
 			window.AddAction(new GrabLastInsertedItem());
 			Item lastItem = Game1.getFarm().lastItemShipped;
-			state += $"\nYou last shipped {lastItem.Stack} {lastItem.Name}s";
+			state += $"\nYou last shipped {lastItem.Stack} {lastItem.DisplayName}s";
 		}
 		window.SetForce(0,"You have opened the nearest shipping bin, you can use this to sell items." + 
 		            " This should be your main source of making money", state,true).Register();
@@ -193,7 +193,7 @@ public static class ShippingBinActions
 			{
 				items.Add(Main.Bot.Inventory.Inventory[index]);	
 			}
-			return ExecutionResult.Success($"You have sold: {string.Concat(items.Select(item => $"\n{item.stack} {InventoryContext.QualityStrings[item.Quality]} {item.Name}").ToList())}.");
+			return ExecutionResult.Success($"You have sold: {string.Concat(items.Select(item => $"\n{item.stack} {InventoryContext.QualityStrings[item.Quality]} {item.DisplayName}").ToList())}.");
 		}
 
 		protected override void Execute(List<int>? resultData)
@@ -223,7 +223,7 @@ public static class ShippingBinActions
 				return ExecutionResult.Failure($"No item has been inserted into the bin yet");
 			}
 
-			return ExecutionResult.Success($"Getting the {lastInsertedItem.Name}");
+			return ExecutionResult.Success($"Getting the {lastInsertedItem.DisplayName}");
 		}
 
 		protected override void Execute()

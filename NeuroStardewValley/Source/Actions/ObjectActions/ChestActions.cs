@@ -192,7 +192,7 @@ public static class ChestActions
 			resultData.AddRange(array.Select(item => Main.Bot.Inventory.Inventory[item]));
 
 			List<string> itemNames = new();
-			resultData.ToList().ForEach(item => itemNames.Add(item.Name));
+			resultData.ToList().ForEach(item => itemNames.Add(item.DisplayName));
 			return ExecutionResult.Success($"You have added: {string.Concat(itemNames,"\n")} to the chest");
 		}
 
@@ -258,7 +258,7 @@ public static class ChestActions
 			resultData.AddRange(array.Select(item => Chest.Items[item]));
 
 			List<string> itemNames = new();
-			resultData.ToList().ForEach(item => itemNames.Add(item.Name));
+			resultData.ToList().ForEach(item => itemNames.Add(item.DisplayName));
 			return ExecutionResult.Success($"You have added: {string.Join("\n",itemNames)} to the chest");
 		}
 

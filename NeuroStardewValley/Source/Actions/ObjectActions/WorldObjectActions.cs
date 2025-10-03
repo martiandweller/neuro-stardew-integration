@@ -32,7 +32,7 @@ public static class WorldObjectActions
 			Properties = new Dictionary<string, JsonSchema>
 			{
 				["object"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable())
-					.Select(item => item.Name)),
+					.Select(item => item.DisplayName)),
 				["tile_x"] = QJS.Type(JsonSchemaType.Integer),
 				["tile_y"] = QJS.Type(JsonSchemaType.Integer)
 			}
@@ -53,7 +53,7 @@ public static class WorldObjectActions
 			if (!TileUtilities.IsValidTile(point, out var reason)) return ExecutionResult.Failure(reason);
 			
 			int index = Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable())
-				.Select(item => item.Name).ToList().IndexOf(objString);
+				.Select(item => item.DisplayName).ToList().IndexOf(objString);
 			if (index == -1) return ExecutionResult.Failure($"The object you specified does not exist in your inventory.");
 			
 			Object obj = (Object)Main.Bot.Inventory.Inventory.Where(item => item is not null && item.isPlaceable()).ToList()[index];
@@ -66,7 +66,7 @@ public static class WorldObjectActions
 			if (!obj.isPlaceable()) return ExecutionResult.Failure($"The object you specified is not placeable.");
 			
 			resultData = new(obj,point);
-			return ExecutionResult.Success($"Placing {obj.Name} at {point}");
+			return ExecutionResult.Success($"Placing {obj.DisplayName} at {point}");
 		}
 
 		protected override void Execute(KeyValuePair<Object, Point> resultData)

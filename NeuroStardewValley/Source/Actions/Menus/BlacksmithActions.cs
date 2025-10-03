@@ -64,7 +64,7 @@ public static class BlacksmithActions
 		{
 			await Task.Delay(3000); // magic number but it looks good so I don't card
 			GeodeMenu? menu = Game1.activeClickableMenu as GeodeMenu;
-			Context.Send($"You got a {menu?.geodeTreasure.Name} from the geode!");
+			Context.Send($"You got a {menu?.geodeTreasure.DisplayName} from the geode!");
 			RegisterStoreActions.RegisterBlacksmithActions();
 		}
 

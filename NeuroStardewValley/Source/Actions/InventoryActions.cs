@@ -113,7 +113,7 @@ namespace NeuroStardewValley.Source.Actions;
                 {
                     continue;
                 }
-                items.Add($"Item Name: {inventory[i].Name}, Item Amount: {inventory[i].stack}, Item Position: {i}");
+                items.Add($"Item Name: {inventory[i].DisplayName}, Item Amount: {inventory[i].stack}, Item Position: {i}");
             }
 
             return items;
@@ -195,7 +195,7 @@ namespace NeuroStardewValley.Source.Actions;
             }
             resultData = new(item,(int)selectedAmount);
             _selectedOption = selectedOption;
-            return ExecutionResult.Success($"You are binning {selectedAmount} {item.Name}");
+            return ExecutionResult.Success($"You are binning {selectedAmount} {item.DisplayName}");
         }
 
         protected override void Execute(KeyValuePair<Item,int> resultData)
@@ -466,7 +466,7 @@ namespace NeuroStardewValley.Source.Actions;
             }
             if (!tool.canThisBeAttached((Object)attachItem))
             {
-                return ExecutionResult.Failure($"{attachItem.Name} cannot be attached to {tool.Name}");
+                return ExecutionResult.Failure($"{attachItem.DisplayName} cannot be attached to {tool.DisplayName}");
             }
 
             if (tool.attachments.Count(obj => obj is not null) >= tool.AttachmentSlotsCount)
@@ -526,7 +526,7 @@ namespace NeuroStardewValley.Source.Actions;
             }
 
             resultData = tool;
-            return ExecutionResult.Success($"Removing the {tool.Name}'s attachment");
+            return ExecutionResult.Success($"Removing the {tool.DisplayName}'s attachment");
         }
 
         protected override void Execute(Item? resultData)
@@ -612,7 +612,7 @@ namespace NeuroStardewValley.Source.Actions;
         string nameList = InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true, true);
         List<string> itemList = PrepareItemStringList(Main.Bot.Inventory.GetEquippedClothing()).ToList();
         List<string> trinkets = Main.Bot.Inventory.GetCurrentEquippedTrinkets(Game1.player)
-            .Where(trinket => trinket is not null).Select(trinket => trinket.Name).ToList();
+            .Where(trinket => trinket is not null).Select(trinket => trinket.DisplayName).ToList();
         
         string state = $"These are the items in your inventory: {nameList}." +
                        $"\nThese are the clothes you have equipped {string.Concat(itemList)}.";
@@ -637,7 +637,7 @@ namespace NeuroStardewValley.Source.Actions;
             {
                 if (kvp.Value == enumerator.Current)
                 {
-                    itemString.Add($"\n{kvp.Key}: {enumerator.Current.Name}");
+                    itemString.Add($"\n{kvp.Key}: {enumerator.Current.DisplayName}");
                 }
             }
         }
@@ -647,7 +647,7 @@ namespace NeuroStardewValley.Source.Actions;
 
     private static IEnumerable<Item> PrepareItemStringList(Inventory items)
     {
-        IEnumerable<Item> list = items.Where(item => item is not null).Where(item => !string.IsNullOrEmpty(item.Name));
+        IEnumerable<Item> list = items.Where(item => item is not null).Where(item => !string.IsNullOrEmpty(item.DisplayName));
         return list;
     }
 }

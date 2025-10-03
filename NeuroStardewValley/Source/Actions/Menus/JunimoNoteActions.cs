@@ -95,7 +95,7 @@ public static class JunimoNoteActions
 				return ExecutionResult.Failure($"You have provided a null value that is not allowed");
 			}
 			
-			Item? i = Main.Bot.JunimoNote.Menu.inventory.actualInventory.ToList().Find(i => i.Name == item);
+			Item? i = Main.Bot.JunimoNote.Menu.inventory.actualInventory.ToList().Find(i => i.DisplayName == item);
 			if (i is null)
 			{
 				return ExecutionResult.Failure($"The item you provided does not exist.");
@@ -142,7 +142,7 @@ public static class JunimoNoteActions
 			while (enumerator.MoveNext())
 			{
 				if (enumerator.Current is null) continue;
-				itemString.Add($"{enumerator.Current.Name}");
+				itemString.Add($"{enumerator.Current.DisplayName}");
 			}
 
 			return itemString;

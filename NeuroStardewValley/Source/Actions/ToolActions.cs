@@ -33,7 +33,7 @@ public static class ToolActions
             Required = new List<string> { "item", "direction" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["item"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is not null).Select(item => item.Name).ToList()),
+                ["item"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is not null).Select(item => item.DisplayName).ToList()),
                 ["direction"] = QJS.Enum(_directions),
                 ["tile_x"] = QJS.Type(JsonSchemaType.Integer),
                 ["tile_y"] = QJS.Type(JsonSchemaType.Integer)
@@ -55,7 +55,7 @@ public static class ToolActions
                 return ExecutionResult.Failure($"You have not provided the item to use");
             }
 
-            string[] items = Main.Bot.Inventory.Inventory.Where(item1 => item1 is not null).Select(tool => tool.Name).ToArray();
+            string[] items = Main.Bot.Inventory.Inventory.Where(item1 => item1 is not null).Select(tool => tool.DisplayName).ToArray();
             if (!items.Contains(item)) ExecutionResult.Failure($"{item} is not a valid item");
 
             if (direction is not null && xStr is not null && yStr is not null)
@@ -303,7 +303,7 @@ public static class ToolActions
 			Required = new List<string> { "tool", "left_x", "top_y", "right_x", "bottom_y" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["tool"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is Tool).Select(tool => tool.Name)
+				["tool"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is Tool).Select(tool => tool.DisplayName)
 					.ToList()),
 				["left_x"] = QJS.Type(JsonSchemaType.Integer),
 				["top_y"] = QJS.Type(JsonSchemaType.Integer),
@@ -325,7 +325,7 @@ public static class ToolActions
 				return ExecutionResult.Failure("You did not provide a correct schema");
 			}
 
-			List<Item> items = Main.Bot.Inventory.Inventory.Where(item1 => item1 is Tool tool && tool.Name == toolName).ToList();
+			List<Item> items = Main.Bot.Inventory.Inventory.Where(item1 => item1 is Tool tool && tool.DisplayName == toolName).ToList();
 			if (items.Count < 1)
 			{
 				return ExecutionResult.Failure($"The value you provided as the tool name does not exist.");

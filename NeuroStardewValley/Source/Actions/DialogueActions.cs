@@ -2,6 +2,7 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Source.RegisterActions;
+using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Menus;
 
@@ -16,7 +17,17 @@ public static class DialogueActions
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
-			if (Game1.activeClickableMenu is not DialogueBox dialogueBox || dialogueBox.responses.Length > 0) return ExecutionResult.ModFailure($"There is no dialogue currently, this is most likely an issue with the mod.");
+			if (Game1.activeClickableMenu is not DialogueBox dialogueBox || dialogueBox.responses.Length > 0)
+				return ExecutionResult.ModFailure($"There is no dialogue currently, this is most likely an issue with the mod.");
+			
+			if (Main.Bot.Dialogue.CurrentDialogueBox is null) return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,$"Main.Bot.Dialogue.CurrentDialogueBox"));
+			
+			if (Main.Bot.Dialogue.CurrentDialogueBox.transitioning || Main.Bot.Dialogue.CurrentDialogueBox.safetyTimer > 0
+				|| Main.Bot.Dialogue.CurrentDialogueBox.characterIndexInDialogue < Main.Bot.Dialogue.CurrentDialogueBox.getCurrentString().Length - 1)
+			{
+				return ExecutionResult.Failure($"You have tried to run this action before the dialogue has finished appearing.");
+			}
+			
 			return ExecutionResult.Success();
 		}
 
@@ -60,6 +71,14 @@ public static class DialogueActions
 			if (!Enumerable.Range(0, possibleResponsesAmount).ToList().Contains(selectedResponse.Value))
 			{
 				return ExecutionResult.Failure($"You have given a value that is No a valid response index.");
+			}
+			
+			if (Main.Bot.Dialogue.CurrentDialogueBox is null) return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,$"Main.Bot.Dialogue.CurrentDialogueBox"));
+			
+			if (Main.Bot.Dialogue.CurrentDialogueBox.transitioning || Main.Bot.Dialogue.CurrentDialogueBox.safetyTimer > 0
+				|| Main.Bot.Dialogue.CurrentDialogueBox.characterIndexInDialogue < Main.Bot.Dialogue.CurrentDialogueBox.getCurrentString().Length - 1)
+			{
+				return ExecutionResult.Failure($"You have tried to run this action before the dialogue has finished appearing.");
 			}
 
 			resultData = selectedResponse.Value;

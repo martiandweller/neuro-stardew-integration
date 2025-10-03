@@ -74,7 +74,7 @@ public class CraftingActions
 			{
 				Item item = ItemRegistry.Create(kvp.Key, kvp.Value);
 				List<Item> items = Main.Bot.Inventory.Inventory.Where(i => i is not null && i.Name == item.Name).ToList();
-				if (items.Count < 1) return ExecutionResult.Failure($"You do not have the {item.Name} necessary to create this.");
+				if (items.Count < 1) return ExecutionResult.Failure($"You do not have the {item.DisplayName} necessary to create this.");
 				
 				int index = Main.Bot.Inventory.Inventory.IndexOf(items[0]);
 				int createAmount = Main.Bot.Inventory.Inventory[index].Stack / item.Stack;
@@ -182,7 +182,7 @@ public class CraftingActions
 				itemStrings += $"\n{kvp.Value.DisplayName}, Ingredients:";
 				foreach (var recipe in kvp.Value.recipeList)
 				{
-					itemStrings += $" {ItemRegistry.Create(recipe.Key).Name} amount: {recipe.Value}";
+					itemStrings += $" {ItemRegistry.Create(recipe.Key).DisplayName} amount: {recipe.Value}";
 				}
 			}
 		}
