@@ -11,6 +11,7 @@ public class ModConfig
     public int SaveSlot { get; set; } = 0; // save slot to use.
     public int TileContextRadius { get; set; } = 50; // The radius of tiles to send as context.
     public int StaminaSendInterval { get; set; } = 400; // The amount of in-game hours between each stamina context, sent every hour divisible by four would be 400.
+    public bool WaitTimeAction { get; set; } = true; // Allow Neuro to use an action that allows her wait for until a provided time.
     public Dictionary<string, bool> CharacterCreationOptions { get; set; } = new()
     {
         { "skin", true },

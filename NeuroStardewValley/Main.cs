@@ -6,6 +6,7 @@ using StardewModdingAPI.Events;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.EventMethods;
 using NeuroStardewValley.Source.RegisterActions;
+using StardewBotFramework.Source.Modules.Pathfinding.Algorithms;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Menus;
@@ -123,6 +124,23 @@ internal sealed class Main : Mod
                     (int)Game1.currentCursorTile.Y,
                     Game1.player);
                 Logger.Warning($"is action: {result}");
+                break;
+            case SButton.V:
+                for (int i = 0; i < 1000; i++)
+                {
+                    try
+                    {
+                        Task.Run(() => Bot.Pathfinding.BuildCollisionMap());
+                    }
+                    catch (Exception exception)
+                    {
+                        Logger.Info($"exception: {exception}");
+                        return;
+                    }
+                    
+                }
+                Logger.Info($"wait for collision map");
+
                 break;
         }
     }

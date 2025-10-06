@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using NeuroStardewValley.Debug;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Network;
@@ -74,6 +75,21 @@ public class StringUtilities
 		text = text.Insert(text.Length, padZeros);
 
 		return text;
+	}
+
+	public static int TimeStringToInt(string time)
+	{
+		var split = time.Split(':');
+
+		Logger.Info($"split length: {split.Length}   game time: {Game1.timeOfDay}  string: {Game1.getTimeOfDayString(Game1.timeOfDay)}");
+		if (split.Length != 2) return -1;
+		int hour = int.Parse(split[0]) * 100;
+		int minute = int.Parse(split[1]);
+		Logger.Info($"hour: {hour} minute: {minute}");
+		// 2600 as automatically falls asleep at 02:00 am
+		if (hour > 2600 || hour < 0 || minute > 60 || minute < 0) return -1;
+
+		return hour + minute;
 	}
 
 	public static string FormatBannerMessage(string message)

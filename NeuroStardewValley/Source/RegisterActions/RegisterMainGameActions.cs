@@ -24,6 +24,12 @@ public static class RegisterMainGameActions
 		window.AddAction(new PathFindingActions.Pathfinding()).AddAction(new PathFindingActions.PathFindToExit())
 			.AddAction(new WorldObjectActions.PlaceObjects()).AddAction(new WorldObjectActions.PlaceObject());
 
+		window.AddAction(new InteractAtTile());
+		if (Main.Config.WaitTimeAction)
+		{
+			window.AddAction(new WaitForTime());
+		}
+
 		if (Main.Bot._currentLocation.Objects.Length > 0)
 		{
 			window.AddAction(new WorldObjectActions.InteractWithObject());

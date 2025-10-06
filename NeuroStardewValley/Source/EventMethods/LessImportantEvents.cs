@@ -15,8 +15,14 @@ public static class LessImportantEvents
 		Context.Send($"Oh no you died! It was at {e.DeathLocation.Name} {e.DeathPoint}.");
 	}
 
+	public static int WaitingTime = -1;
 	public static void OnUiTimeChanged(object? sender, TimeEventArgs e)
 	{
+		if (Game1.timeOfDay == WaitingTime)
+		{
+			WaitingTime = -1;
+			RegisterMainGameActions.RegisterPostAction();
+		}
 		if (Game1.timeOfDay % 100 != 0)
 		{
 			return;
