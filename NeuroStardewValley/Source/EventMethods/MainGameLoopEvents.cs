@@ -29,6 +29,15 @@ public static class MainGameLoopEvents
 		if (e.Player.passedOut || Game1.eventUp) return;
 		string warps = TileContext.GetWarpTiles(e.NewLocation,true);
 		string warpsString = !string.IsNullOrEmpty(warps) ? TileContext.GetWarpTilesString(warps) : "There are no warps in this location";
+		var tiles = TileContext.GetObjectAmountInLocation(e.NewLocation);
+		Logger.Info($"tiles: {tiles.Count}");
+		string objectContext = $"These are the amount of each object in this location:";
+		foreach (var kvp in tiles)
+		{
+			Logger.Info($"kvp: {kvp.Key}  {kvp.Value}");
+			objectContext += $"\n{kvp.Key} amount: {kvp.Value}";
+		}
+		Logger.Info($"object context: {objectContext}");
 		
 		string characterContext = string.Concat(Main.Bot.Characters.GetCharactersInCurrentLocation(e.NewLocation)
 			.Select(kvp => $"{kvp.Value.Name} is at {kvp.Key} in this location").ToList());

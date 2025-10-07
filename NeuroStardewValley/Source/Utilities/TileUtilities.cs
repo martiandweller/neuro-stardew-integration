@@ -42,9 +42,12 @@ public static class TileUtilities
 	
 	public static object? GetTileType(GameLocation location,Point tile)
 	{
-		if (location.Objects.ContainsKey(tile.ToVector2()))
+		if (location.Objects.ContainsKey(tile.ToVector2()) ||
+		    location.furniture.Any(furn => furn.GetBoundingBox().Contains(new Rectangle(tile.X * 64,tile.Y * 64,64,64))))
 		{
-			return location.Objects[tile.ToVector2()];
+			location.Objects.TryGetValue(tile.ToVector2(),out var value);
+			return value ?? location.furniture.Where(furn =>
+				furn.GetBoundingBox().Contains(new Rectangle(tile.X * 64,tile.Y * 64,64,64))).ToList()[0];
 		}
 
 		foreach (var building in location.buildings.Where(building => building.occupiesTile(tile.ToVector2())))

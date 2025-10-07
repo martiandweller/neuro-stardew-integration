@@ -45,11 +45,11 @@ public class InteractAtTile : NeuroAction<Point>
 		}
 
 		Point point = new Point(tileX, tileY);
-		object o = (Main.Bot._currentLocation, point);
+		object? o = (Main.Bot._currentLocation, point);
 
-		Building building = Main.Bot._currentLocation.buildings
-			.FirstOrDefault(b => DoesBuildingContainTile(b,point),new Building());
-		if (Main.Bot._currentLocation.buildings.Contains(building))
+		Building? building = Main.Bot._currentLocation.buildings
+			.FirstOrDefault(b => b != null && DoesBuildingContainTile(b,point),null);
+		if (building != null && Main.Bot._currentLocation.buildings.Contains(building))
 		{
 			o = building;
 		}
@@ -62,11 +62,12 @@ public class InteractAtTile : NeuroAction<Point>
 			case Object:
 				result = ObjectValidation(tileX,tileY,useHeldItem,out reason);
 				break;
-			case Building:
+			case Building build:
 				Logger.Info($"interacting with building");
 				result = BuildingValidation(tileX,tileY,out reason);
 				break;
 			default:
+				o = null;
 				reason = "There is no available object at this tile";
 				result = false;
 				break;
@@ -74,7 +75,7 @@ public class InteractAtTile : NeuroAction<Point>
 		
 		// need to check if object is within boundary of building and is actionable
 		if ((ActionTiles.Any(tile => tile == point) || Main.Bot._currentLocation.isActionableTile(tileX, tileY, Main.Bot._farmer))
-		    && o is not Building)
+		    && o is null)
 		{
 			reason = $"Interacting with the tile at {tileX},{tileY}";
 			result = true;
@@ -100,7 +101,7 @@ public class InteractAtTile : NeuroAction<Point>
 			o = build;
 		}
 		
-		if (ActionTiles.Any(tile => tile != resultData) ||
+		if (ActionTiles.Any(tile => tile != resultData) && o is not Building ||
 			(o is Building b && !b.isActionableTile(resultData.X, resultData.Y, Main.Bot._farmer)))
 		{
 			o = resultData;
@@ -113,6 +114,7 @@ public class InteractAtTile : NeuroAction<Point>
 				ObjectExecution(resultData);
 				break;
 			case Building building:
+				Logger.Info($"building execution");
 				BuildingExecution(building, resultData);
 				break;
 			// action tile
@@ -191,6 +193,11 @@ public class InteractAtTile : NeuroAction<Point>
 		RegisterMainGameActions.RegisterPostAction();
 	}
 
+	private static BuildingActionTile? GetBuildingTile(Building building,Point point)
+	{
+		return building.GetData().ActionTiles.FirstOrDefault(tile => tile.Tile.X + building.tileX.Value == point.X && tile.Tile.Y + building.tileY.Value == point.Y);
+	}
+
 	private static bool BuildingValidation(int tileX, int tileY, out string reason)
 	{
 		Point point = new Point(tileX, tileY);
@@ -206,8 +213,14 @@ public class InteractAtTile : NeuroAction<Point>
 			reason = $"There is no building at {tileX},{tileY}";
 			return false;
 		}
-		
-		BuildingActionTile? tile = building.GetData().ActionTiles.FirstOrDefault(tile => tile.Tile == point);
+
+		foreach (var tiles in building.GetData().ActionTiles)
+		{
+			Logger.Info($"building tiles: {tiles.Tile}");
+		}
+
+		BuildingActionTile? tile = GetBuildingTile(building, point);
+			
 		if (tile is null)
 		{
 			reason = $"There is no action for {StringUtilities.TokenizeBuildingName(building)} at {tileX},{tileY}";
@@ -220,7 +233,14 @@ public class InteractAtTile : NeuroAction<Point>
 
 	private static void BuildingExecution(Building building,Point tile)
 	{
-		Main.Bot.Building.DoBuildingAction(building, tile.ToVector2());
+		var buildingTile = GetBuildingTile(building, tile);
+		if (buildingTile is null)
+		{
+			Logger.Info($"building tile is null");
+			return;
+		}
+		Logger.Info($"building tile: {buildingTile.Tile}  {buildingTile.Action}");
+		Main.Bot.Building.DoBuildingAction(building, buildingTile.Tile.ToVector2());
 		if (Game1.activeClickableMenu is null)
 		{
 			RegisterMainGameActions.RegisterPostAction();
@@ -229,8 +249,9 @@ public class InteractAtTile : NeuroAction<Point>
 
 	private static bool DoesBuildingContainTile(Building building,Point tile)
 	{
-		Rectangle rect = new Rectangle(building.tileX.Value * 64, building.tileY.Value * 64,
-			building.tilesWide.Value * 64, building.tilesHigh.Value * 64);
-		return rect.Contains(tile.ToVector2() * 64);
+		Point adjustedTile = new Point(tile.X - building.tileX.Value, tile.Y - building.tileY.Value);
+		List<BuildingActionTile> tiles = building.GetData().ActionTiles
+			.Where(buildingTile => buildingTile.Tile == adjustedTile).ToList();
+		return tiles.Count >= 1;
 	}
 }

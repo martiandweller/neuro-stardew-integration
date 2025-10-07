@@ -12,6 +12,10 @@ namespace NeuroStardewValley.Source.ContextStrings;
 public static class TileContext
 {
     public static readonly HashSet<Point> ActionableTiles = new();
+
+    private static GameLocation? _location;
+    private static WaterTiles.WaterTileData[,]? WaterTileData => _location?.waterTiles?.waterTiles;
+
     /// <summary>
     /// Get tiles in the specified location, to be used as context.
     /// </summary>
@@ -20,15 +24,11 @@ public static class TileContext
     /// <param name="radius">the radius of tiles.</param>
     public static List<string> GetTilesInLocation(GameLocation location, Point? startTile = null,int radius = 0)
     {
+        _location = location;
         string str = radius == 0 ? "" : $"closest {radius} ";
         List<string> tileList = new() {$"These are the {str}tiles in this location, they are sent in the format of X,Y with a \\n separating each tile." +
                                        " If a tile has an action you can try to use it with the interact_with_tile action." +
                                        " If a tile is \"block\" that means it has collisions."};
-        WaterTiles.WaterTileData[,] waterTileData = {};
-        if (location.waterTiles is not null)
-        {
-            waterTileData = location.waterTiles.waterTiles;
-        }
 
         Point tile = startTile ?? new Point();
         int minX = startTile is null ? 0 : tile.X - radius;
@@ -54,7 +54,7 @@ public static class TileContext
                 Rectangle rect = new Rectangle(x * Game1.tileSize, y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
                 if (startTile is not null && !rangeRect.Intersects(rect)) continue; // is outside of range
 
-                if (x < waterTileData.GetLength(0) && y < waterTileData.GetLength(1) && waterTileData[x, y].isWater)
+                if (x < WaterTileData?.GetLength(0) && y < WaterTileData.GetLength(1) && WaterTileData[x, y].isWater)
                 {
                     tileList.Add($"Water: {x},{y}");
                     continue;
@@ -99,72 +99,207 @@ public static class TileContext
                     tileList.Add(tileString);
                     continue;
                 }
-                string? objectContext = GetObjectContext(location, x, y);
-                if (objectContext is null) continue;
+                string? objectContext = GetTileContext(location, x, y);
+                if (objectContext is null or "") continue;
                 
                 tileList.Add(objectContext);
             }
         }
+        SentBuildings.Clear();
+        SentFurniture.Clear();
         return tileList;
     }
 
-    public static string? GetObjectContext(GameLocation location, int x, int y)
+    public static Dictionary<string, int> GetObjectAmountInLocation(GameLocation location, Point? startTile = null, int radius = 0)
     {
+        _location = location;
+        var objects = GetObjectsInLocation(location, startTile, radius);
+
+        Dictionary<string, int> amountOfObject = new();
+        Logger.Info($"amount of objects: {objects.Count}");
+        foreach (var kvp in objects)
+        {
+            string name;
+            switch (kvp.Value)
+            {
+                case Object obj:
+                    name = obj.DisplayName;
+                    break;
+                case ResourceClump clump:
+                    name = $"{clump.modData.Name}";
+                    break;
+                case LargeTerrainFeature largeTerrainFeature:
+                    name = $"{largeTerrainFeature.modData.Name}";
+                    break;
+                case TerrainFeature feature:
+                    name = $"{feature.modData.Name}";
+                    break;
+                case WaterTiles.WaterTileData:
+                    name = "Water";
+                    break;
+                case Building building:
+                    name = StringUtilities.TokenizeBuildingName(building);
+                    break;
+                default:
+                    continue;
+            }
+            
+            if (!amountOfObject.TryGetValue(name, out _))
+            {
+                amountOfObject.Add(name,1);
+                continue;
+            }
+            amountOfObject[name] += 1;
+        }
+        return amountOfObject;
+    }
+
+    public static Dictionary<Point, object> GetObjectsInLocation(GameLocation location, Point? startTile = null, int radius = 0)
+    {
+        _location = location;
+        Dictionary<Point,object> objectTiles = new();
+
         HashSet<Building> sentBuildings = new();
+        HashSet<Furniture> sentFurniture = new();
+
+        Point tile = startTile ?? new Point();
+        int minX = startTile is null ? 0 : tile.X - radius;
+        int minY = startTile is null ? 0 : tile.Y - radius;
+        
+        int maxX = startTile is null ? location.Map.DisplayWidth / Game1.tileSize : tile.X + radius;
+        int maxY = startTile is null ? location.Map.DisplayHeight / Game1.tileSize : tile.Y + radius;
+        
+        Rectangle rangeRect = new();
+        if (startTile is not null)
+        {
+            rangeRect = new(Math.Clamp((tile.X - radius) * 64,0,maxX * 64),
+                Math.Clamp((tile.Y - radius) * 64,0,maxY * 64),
+                (radius * 2) * 64, (radius * 2) * 64); // this should reach to startTile.x + radius
+        }
+
+        Logger.Info($"map size X: {maxX}  maxY: {maxY}");
+
+        for (int x = minX; x < maxX; x++)
+        {
+            for (int y = minY; y < maxY; y++)
+            {
+                Rectangle rect = new Rectangle(x * Game1.tileSize, y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
+                if (startTile is not null && !rangeRect.Intersects(rect)) continue; // is outside of range
+
+                if (x < WaterTileData?.GetLength(0) && y < WaterTileData.GetLength(1) && WaterTileData[x, y].isWater)
+                {
+                    objectTiles.Add(new Point(x,y),WaterTileData[x,y]);
+                    continue;
+                }
+                object? obj = TileUtilities.GetTileType(location, new Point(x, y));
+                
+                if (!Game1.currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
+                        false, Game1.player, true,false,false,true)
+                    && obj is null)
+                    continue;
+
+                if (obj is null)
+                {
+                    if (location.isActionableTile(x, y, Main.Bot._farmer))
+                    {
+                        ActionableTiles.Add(new Point(x, y));
+                        string[] action = ArgUtility.SplitBySpace(Main.Bot._currentLocation.doesTileHaveProperty(x, y, "Action", "Buildings"));
+                        if (action.Length < 1)
+                        {
+                            objectTiles.Add(new Point(x,y),"Action");
+                            continue;
+                        }
+                        
+                        switch (action[0])
+                        {
+                            case "Dialogue":
+                            case "Message":
+                            case "MessageOnce":
+                            case "NPCMessage":
+                            case "MessageSpeech":
+                                objectTiles.Add(new Point(x,y),"Action");
+                                continue;
+                            case "Letter":
+                                objectTiles.Add(new Point(x,y),"Action");
+                                continue;
+                        }
+                        Logger.Info($"tile: {x},{y}  length: {action.Length}  action: {string.Join(" ", action)}");
+                    }
+                    objectTiles.Add(new Point(x,y),"Action");
+                    continue;
+                }
+                object? tileObj = TileUtilities.GetTileType(location, new Point(x, y));
+                if (tileObj is null || (tileObj is Building building && !sentBuildings.Add(building)) 
+                                    || (tileObj is Furniture furniture && !sentFurniture.Add(furniture))) continue;
+                objectTiles.Add(new Point(x,y), tileObj);
+            }
+        }
+        return objectTiles;
+    }
+
+    public static readonly HashSet<Building> SentBuildings = new();
+    public static readonly HashSet<Furniture> SentFurniture = new();
+    public static string? GetTileContext(GameLocation location, int x, int y)
+    {
+        _location = location;
         object? obj = TileUtilities.GetTileType(location, new Point(x, y));
         if (obj is null) return null;
         switch (obj)
-            {
-                case Chest chest:
-                    string name = chest.giftbox.Value ? "Gift-box" : "Chest";
-                    string tileString = $"{name} tile: {x},{y}";
-                    if (!chest.giftbox.Value) tileString += $", colour: {chest.getCategoryColor()}";
-                    return tileString;
-                case Object objectValue:
-                    return $"Tile: {x},{y}, name: {objectValue.DisplayName}, Type: {objectValue.Type}";
-                case Building building:
-                    if (building.isActionableTile(x, y, Main.Bot._farmer))
-                    {
-                        return $"{x},{y} has an action for the {StringUtilities.TokenizeBuildingName(building)}";
-                    }
-                    if (!sentBuildings.Add(building)) return null; // we do this as buildings take up multiple tiles
-                    int buildX = building.tileX.Value;
-                    int buildY = building.tileY.Value;
-                    Point humanDoor = building.getPointForHumanDoor();
-                    string contextString = $"The top left tile of the {StringUtilities.TokenizeBuildingName(building)} is: {buildX},{buildY}." +
-                                        $" the bottom right is {buildX + building.tilesWide.Value}, {buildY + building.tilesHigh.Value}. ";
-                    if (humanDoor != new Point(-1,-1)) contextString += $" The door is at {humanDoor.X},{humanDoor.Y}.";
-                    if (building.animalDoor.Value != new Point(-1, -1)) 
-                        contextString += $" The animal door is at: {building.animalDoor.Value}.";
-                    return contextString;
-                case ResourceClump resourceClump:
-                    // substring will always get "ResourceClump" as object name is not a part of modData
-                    int start = resourceClump.modData.Name.IndexOf('(');
-                    string subStr = resourceClump.modData.Name.Substring(start + 1,
-                        resourceClump.modData.Name.IndexOf(')') - start - 1);
-                    return $"{subStr} is at: {x},{y}";
-                case TerrainFeature terrainFeature:
-                    switch (terrainFeature)
-                    {
-                        case HoeDirt dirt:
-                            string context = $"{dirt.Tile}: empty dirt";
-                            if (dirt.crop is not null)
-                            {
-                                Item item = ItemRegistry.Create(dirt.crop.indexOfHarvest.Value);
-                                context = $"{dirt.Tile}: {item.DisplayName} fully grown: {dirt.crop.fullyGrown.Value}";
-                            }
-                            return context;
-                        default:
-                            int startIndex = terrainFeature.modData.Name.IndexOf('(');
-                            string substring = terrainFeature.modData.Name.Substring(startIndex + 1,
-                                terrainFeature.modData.Name.IndexOf(')') - startIndex - 1);
-                            return $"{substring} is at: {x},{y}";
-                    }
-            }
-
+        {
+            case Chest chest:
+                string name = chest.giftbox.Value ? "Gift-box" : "Chest";
+                string tileString = $"{name} tile: {x},{y}";
+                if (!chest.giftbox.Value) tileString += $", colour: {chest.getCategoryColor()}";
+                return tileString;
+            case Furniture furniture:
+                if (!SentFurniture.Add(furniture)) return "";
+                return $"Name: {furniture.DisplayName}, X: {furniture.GetBoundingBox().X / 64} Y: {furniture.GetBoundingBox().Y / 64}" +
+                       $" Width: {furniture.GetBoundingBox().Width / 64} Height: {furniture.GetBoundingBox().Height / 64}";
+            case Object objectValue:
+                return $"{x},{y}, Name: {objectValue.DisplayName}";
+            case Building building:
+                if (building.isActionableTile(x, y, Main.Bot._farmer))
+                {
+                    return $"{x},{y} has an action for the {StringUtilities.TokenizeBuildingName(building)}";
+                }
+                if (!SentBuildings.Add(building)) return null; // we do this as buildings take up multiple tiles
+                int buildX = building.tileX.Value;
+                int buildY = building.tileY.Value;
+                Point humanDoor = building.getPointForHumanDoor();
+                string contextString = $"The top left tile of the {StringUtilities.TokenizeBuildingName(building)} is: {buildX},{buildY}." +
+                                    $" the bottom right is {buildX + building.tilesWide.Value}, {buildY + building.tilesHigh.Value}. ";
+                if (humanDoor != new Point(-1,-1)) contextString += $" The door is at {humanDoor.X},{humanDoor.Y}.";
+                if (building.animalDoor.Value != new Point(-1, -1)) 
+                    contextString += $" The animal door is at: {building.animalDoor.Value}.";
+                return contextString;
+            case ResourceClump resourceClump:
+                // substring will always get "ResourceClump" as object name is not a part of modData
+                int start = resourceClump.modData.Name.IndexOf('(');
+                string subStr = resourceClump.modData.Name.Substring(start + 1,
+                    resourceClump.modData.Name.IndexOf(')') - start - 1);
+                return $"{subStr} is at: {x},{y}";
+            case TerrainFeature terrainFeature:
+                switch (terrainFeature)
+                {
+                    case HoeDirt dirt:
+                        string context = $"{dirt.Tile}: empty dirt";
+                        if (dirt.crop is not null)
+                        {
+                            Item item = ItemRegistry.Create(dirt.crop.indexOfHarvest.Value);
+                            context = $"{dirt.Tile}: {item.DisplayName} fully grown: {dirt.crop.fullyGrown.Value}";
+                        }
+                        return context;
+                    default:
+                        int startIndex = terrainFeature.modData.Name.IndexOf('(');
+                        string substring = terrainFeature.modData.Name.Substring(startIndex + 1,
+                            terrainFeature.modData.Name.IndexOf(')') - startIndex - 1);
+                        return $"{substring} is at: {x},{y}";
+                }
+        }
+        
         return "";
     }
-    
+
     public static string GetWarpTiles(GameLocation location,bool addBuildings = false)
     {
         location.TryGetMapProperty("Warp", out var warps);

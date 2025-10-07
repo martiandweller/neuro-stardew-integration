@@ -432,11 +432,13 @@ public static class PlaceBuildingActions
 		{
 			for (int y = 0; y < Main.Bot._currentLocation.Map.DisplayHeight / Game1.tileSize; y++)
 			{
-				string? str = TileContext.GetObjectContext(Main.Bot._currentLocation,x,y);
-				if (str is null || str.Contains("Litter")) continue; // only have important stuff like buildings
+				string? str = TileContext.GetTileContext(Main.Bot._currentLocation,x,y);
+				if (str is null || str.Contains("Weeds") || str.Contains("Stone")) continue; // only have important stuff like buildings
 				state += $"\n{str}";
 			}
 		}
+		TileContext.SentFurniture.Clear();
+		TileContext.SentBuildings.Clear();
 		
 		window.SetForce(5, $"You are now in {Main.Bot._currentLocation.DisplayName}", $"{state}",true);
 		window.Register();

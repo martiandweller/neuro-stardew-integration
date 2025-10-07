@@ -4,6 +4,7 @@ using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.Actions.ObjectActions;
+using NeuroStardewValley.Source.Actions.WorldQuery;
 using NeuroStardewValley.Source.ContextStrings;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewModdingAPI;
@@ -25,6 +26,8 @@ public static class RegisterMainGameActions
 			.AddAction(new WorldObjectActions.PlaceObjects()).AddAction(new WorldObjectActions.PlaceObject());
 
 		window.AddAction(new InteractAtTile());
+
+		window.AddAction(new QueryWorldActions.GetObjectsInRadius());
 		if (Main.Config.WaitTimeAction)
 		{
 			window.AddAction(new WaitForTime());
@@ -210,7 +213,10 @@ public static class RegisterMainGameActions
 			}
 			if (state == "")
 			{
-				state = string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer.TilePoint,Main.Config.TileContextRadius));
+				var tiles = TileContext.GetObjectAmountInLocation(Main.Bot._currentLocation);
+				state = tiles.Aggregate($"These are the amount of each object in this location:",
+					(current, kvp) => current + $"\n{kvp.Key} amount: {kvp.Value}");
+				// state = string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer.TilePoint,Main.Config.TileContextRadius));
 			}
 			window.SetForce(afterSeconds, query, state, ephemeral is null || ephemeral.Value);
 		}
