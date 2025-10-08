@@ -137,15 +137,10 @@ public static class BuildingActions
 
 		protected override void Execute(KeyValuePair<BuildingActionTile,bool> resultData)
 		{
-			Task.Run(async () => await ExecuteFunction(resultData));
-		}
-
-		private async Task ExecuteFunction(KeyValuePair<BuildingActionTile,bool> result)
-		{
-			if (result.Value)
+			if (resultData.Value)
 			{
-				Point pos = result.Key.Tile;
-				await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(pos.X, pos.Y));
+				Point pos = resultData.Key.Tile;
+				Main.Bot.Pathfinding.Goto(new Goal.GetToTile(pos.X, pos.Y));
 				if (!RangeCheck.InRange(pos)) // in case pathfinding can't get to tile
 				{
 					Context.Send($"The pathfinding had an issue, leading to you not being able to go to the tile. You should try something else.");
@@ -153,7 +148,7 @@ public static class BuildingActions
 					return;
 				}
 			}
-			Main.Bot.Building.DoBuildingAction(_building, result.Key.Tile.ToVector2());
+			Main.Bot.Building.DoBuildingAction(_building, resultData.Key.Tile.ToVector2());
 			if (Game1.activeClickableMenu is null)
 			{
 				RegisterMainGameActions.RegisterPostAction();
@@ -234,14 +229,9 @@ public static class BuildingActions
 
 		protected override void Execute(bool pathfinding)
 		{
-			Task.Run(async () => await ExecuteFunction(pathfinding));
-		}
-
-		private async Task ExecuteFunction(bool pathfinding)
-		{
 			if (pathfinding)
 			{
-				await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Pos.X,Pos.Y));
+				Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Pos.X,Pos.Y));
 				if (!RangeCheck.InRange(Pos)) // in case pathfinding can't get to door
 				{
 					Context.Send($"The pathfinding had an issue, leading to you not being able to enter the building. You should try something else.");

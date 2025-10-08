@@ -71,15 +71,10 @@ public static class PathFindingActions
         protected override void Execute(Goal? goal)
         {
             if (goal is null) return; // probably find
-
-            Task.Run(async () => await ExecuteFunctions(goal));
-        }
-
-        private async Task ExecuteFunctions(Goal goal)
-        {
-            await Main.Bot.Pathfinding.Goto(goal, _destructive);
+            Main.Bot.Pathfinding.Goto(goal, _destructive);
             RegisterMainGameActions.RegisterPostAction();
         }
+
     }
 
     public class PathFindToExit : NeuroAction<Goal?>
@@ -139,7 +134,7 @@ public static class PathFindingActions
                 return ExecutionResult.Success($"Entering {exitPoint}");
             }
             
-            Main.Bot.Pathfinding.BuildCollisionMap();
+            Main.Bot.Pathfinding.BuildCollisionMapInRadius(exitPoint,3);
             if (Main.Bot.Pathfinding.IsBlocked(exitPoint.X, exitPoint.Y) && (bool)!destructive)
             {
                 return ExecutionResult.Failure("You gave a position that is blocked. Maybe try something else!");
@@ -160,12 +155,7 @@ public static class PathFindingActions
         protected override void Execute(Goal? goal)
         {
             if (goal is null) return; // probably fine
-
-            Task.Run(async () => await ExecuteFunctions(goal));
-        }
-        
-        private async Task ExecuteFunctions(Goal goal)
-        {
+            
             Logger.Warning($"async execute functions");
             GameLocation oldLocation = Main.Bot._currentLocation;
             Vector2 vec2 = goal.VectorLocation.ToVector2() * 64;
@@ -181,7 +171,7 @@ public static class PathFindingActions
             
             if (!Utility.tileWithinRadiusOfPlayer(goal.X, goal.Y, 1, Main.Bot._farmer))
             {
-                await Main.Bot.Pathfinding.Goto(goal, _destructive);
+                Main.Bot.Pathfinding.Goto(goal, _destructive);
 
                 // probably don't need to do lower checks if these are different
                 if (!Main.Bot._currentLocation.Equals(oldLocation)) return;
@@ -198,7 +188,8 @@ public static class PathFindingActions
                 Main.Bot._farmer.warpFarmer(warp);
                 
                 // warps can take a second to register sometimes
-                await Task.Delay(3000);
+                var t = Task.Delay(3000);
+                t.Wait();
                 if (Main.Bot._currentLocation.Equals(oldLocation))
                 {
                     RegisterMainGameActions.RegisterPostAction();
@@ -250,15 +241,12 @@ public static class PathFindingActions
 
         protected override void Execute(KeyValuePair<NPC,bool> resultData)
         {
-            Task.Run(async () =>
+            Main.Bot.Pathfinding.Goto(new Goal.GoalDynamic(resultData.Key, 1));
+            if (resultData.Value)
             {
-                await Main.Bot.Pathfinding.Goto(new Goal.GoalDynamic(resultData.Key, 1));
-                if (resultData.Value)
-                {
-                    Main.Bot.Characters.InteractWithCharacter(resultData.Key);
-                }
-                RegisterMainGameActions.RegisterPostAction(); // this should not run if character starts talking
-            });
+                Main.Bot.Characters.InteractWithCharacter(resultData.Key);
+            }
+            RegisterMainGameActions.RegisterPostAction(); // this should not run if character starts talking
         }
     }
 
@@ -301,11 +289,8 @@ public static class PathFindingActions
         protected override void Execute(Monster? resultData)
         {
             if (resultData is null) return;
-            Task.Run(async () =>
-            {                
-                await Main.Bot.Pathfinding.AttackMonster(new Goal.GoalDynamic(resultData, 1));
-                RegisterMainGameActions.RegisterPostAction();
-            });
+            Main.Bot.Pathfinding.AttackMonster(new Goal.GoalDynamic(resultData, 1));
+            RegisterMainGameActions.RegisterPostAction();
         }
     }
 }

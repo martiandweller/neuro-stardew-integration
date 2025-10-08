@@ -103,39 +103,34 @@ public static class ToolActions
             if (selectedItem is MeleeWeapon) meleeString = selectedItem.Name == "Scythe" ? "Scythe" : "Weapon";
             SwapItemHandler.SwapItem(selectedItem.GetType(),meleeString);
             
-            Task.Run(async () => await ExecuteFunctions(selectedItem));
-        }
+            if (selectedItem is not Tool)
+            {
+	            if (selectedItem is Object obj && obj.Edibility != -300)
+	            {
+		            Main.Bot.Player.EatHeldItem();
+	            }
 
-        private async Task ExecuteFunctions(Item selectedItem)
-        {
-	        if (selectedItem is not Tool)
-	        {
-		        if (selectedItem is Object obj && obj.Edibility != -300)
-		        {
-			        Main.Bot.Player.EatHeldItem();
-		        }
+	            if (Utility.isThereAnObjectHereWhichAcceptsThisItem(Main.Bot._currentLocation, selectedItem, Tile.X,
+		                Tile.Y))
+	            {
+		            Object objAt = Main.Bot._currentLocation.getObjectAtTile(Tile.X, Tile.Y);
+		            Main.Bot.Player.AddItemToObject(objAt, Main.Bot._farmer.ActiveItem);
+	            }
+            }
+            if (_pathfind)
+            {
+	            Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Tile.X, Tile.Y)); // get direction of final this to point
+	            int direction = _directions.ToList().IndexOf(_direction);
+	            Main.Bot.Tool.UseTool(direction);
+            }
+            else
+            {
+	            int direction = _directions.ToList().IndexOf(_direction);
+	            Logger.Info($"direction int: {direction}");
+	            Main.Bot.Tool.UseTool(direction);
+            }
 
-		        if (Utility.isThereAnObjectHereWhichAcceptsThisItem(Main.Bot._currentLocation, selectedItem, Tile.X,
-			            Tile.Y))
-		        {
-			        Object objAt = Main.Bot._currentLocation.getObjectAtTile(Tile.X, Tile.Y);
-			        Main.Bot.Player.AddItemToObject(objAt, Main.Bot._farmer.ActiveItem);
-		        }
-	        }
-	        if (_pathfind)
-	        {
-		        await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Tile.X, Tile.Y)); // get direction of final this to point
-		        int direction = _directions.ToList().IndexOf(_direction);
-		        Main.Bot.Tool.UseTool(direction);
-	        }
-	        else
-	        {
-		        int direction = _directions.ToList().IndexOf(_direction);
-		        Logger.Info($"direction int: {direction}");
-		        Main.Bot.Tool.UseTool(direction);
-	        }
-
-	        RegisterMainGameActions.RegisterPostAction();
+            RegisterMainGameActions.RegisterPostAction();
         }
     }
 	public class RefillWateringCan : NeuroAction

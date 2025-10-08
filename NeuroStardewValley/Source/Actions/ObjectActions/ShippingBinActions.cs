@@ -62,17 +62,12 @@ public static class ShippingBinActions
 		protected override void Execute(ShippingBin? resultData)
 		{
 			if (resultData is null) return;
-			
-			Task.Run(async () => await ExecuteFunctions(resultData));
-		}
-
-		private static async Task ExecuteFunctions(ShippingBin resultData)
-		{
-			await Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 1));
+		
+			Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 1));
 			_bin = resultData;
 			HandleShippingBinUi();
 		}
-
+		
 		private static Dictionary<int, Queue<ShippingBin>> ClosestShippingBin(Point place, List<ShippingBin> bins)
 		{
 			Dictionary<int, Queue<ShippingBin>> points = new();

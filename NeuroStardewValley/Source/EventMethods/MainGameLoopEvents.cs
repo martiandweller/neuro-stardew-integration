@@ -59,6 +59,7 @@ public static class MainGameLoopEvents
 			case BobberBar:
 			// we need to check if old is dialogue box to stop issues with changing menus while standing in bed
 			case DialogueBox when Game1.player.isInBed.Value:
+				if (!Game1.fadeToBlack) break; // in case says no to going to sleep
 				return;
 			case DialogueBox when e.NewMenu is not DialogueBox:
 				Main.Bot.Dialogue.CurrentDialogueBox = null;

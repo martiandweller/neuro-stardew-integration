@@ -73,17 +73,12 @@ public static class ChestActions
 				{
 					if (kvp.Value == resultData)
 					{
-						Task.Run(async () => await ExecuteFunctions(kvp.Key.ToPoint(),resultData));
+						Main.Bot.Pathfinding.Goto(new Goal.GetToTile(kvp.Key.ToPoint().X,kvp.Key.ToPoint().Y));
+						Open(resultData);
 					}
 				}
 			}
 			
-		}
-
-		private static async Task ExecuteFunctions(Point position,Chest chest)
-		{
-			await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(position.X,position.Y));
-			Open(chest);
 		}
 		
 		private static IInventory Open(Chest chest)
