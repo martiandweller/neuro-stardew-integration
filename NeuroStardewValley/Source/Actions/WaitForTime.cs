@@ -10,10 +10,14 @@ namespace NeuroStardewValley.Source.Actions;
 
 public class WaitForTime : NeuroAction<int>
 {
+	// passage of time from wiki https://stardewvalleywiki.com/Day_Cycle
+	private const double Standard = 0.7;
+	// in-game its actually 14 seconds I'm just going to go with the wiki
+	private const double Indoor = 0.9;
 	public override string Name => "wait_for_time";
-	// TODO: make seconds correct
 	protected override string Description =>
-		$"Wait until a specified in-game time, each 10 in-game minutes lasts for {Game1.gameTimeInterval} seconds. You should send the time as a string, in the format hour:minute.";
+		$"Wait until a specified in-game time, each 10 in-game minutes lasts for {GetTime() * 10} seconds. You should" +
+		$" send the time as a string, in the format hour:minute.";
 	protected override JsonSchema Schema => new()
 	{
 		Type = JsonSchemaType.Object,
@@ -50,4 +54,6 @@ public class WaitForTime : NeuroAction<int>
 	{
 		LessImportantEvents.WaitingTime = resultData;
 	}
+
+	private static double GetTime() => Main.Bot._currentLocation.IsOutdoors ? Standard : Indoor;
 }

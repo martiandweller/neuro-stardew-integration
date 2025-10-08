@@ -5,17 +5,16 @@ using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.ContextStrings;
 using NeuroStardewValley.Source.RegisterActions;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace NeuroStardewValley.Source.Actions.WorldQuery;
 
-public class QueryWorldActions
+public static class QueryWorldActions
 {
+	private static readonly int MinRadius = Main.Config.MinQueryRange;
+	private static readonly int MaxRadius = Main.Config.MaxQueryRange;
 	public class GetObjectsInRadius : NeuroAction<int>
 	{
-		const int MinRadius = 3;
-		const int MaxRadius = 30;
 		private string[]? _objectNames;
 		public override string Name => "get_objects_in_radius";
 		protected override string Description => $"Get all of the objects in a radius between {MinRadius} and {MaxRadius}" +
@@ -71,7 +70,7 @@ public class QueryWorldActions
 
 		protected override void Execute(int resultData)
 		{
-			string contextString = $"These are the objects in a radius of {resultData} at {Main.Bot._farmer.TilePoint}";
+			string contextString = $"These are the objects in a radius of {resultData} at {Main.Bot._farmer.TilePoint} at {Main.Bot._currentLocation.DisplayName}";
 			
 			var tiles = TileContext.GetObjectsInLocation(Main.Bot._currentLocation, Main.Bot._farmer.TilePoint,
 				resultData);
@@ -104,6 +103,69 @@ public class QueryWorldActions
 			TileContext.SentBuildings.Clear();
 			TileContext.SentFurniture.Clear();
 			
+			Context.Send(contextString,true);
+			RegisterMainGameActions.RegisterPostAction();
+		}
+	}
+ 
+	public class GetObjectTypeInRadius : NeuroAction<KeyValuePair<string,int>>
+	{
+		public override string Name => "get_object_type_in_range";
+		protected override string Description => "Get only the specified type of object in range, certain names may not" +
+		                                         " be very obvious e.g. HoeDirt being for the dirt you can plant on.";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "object_name","radius" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["object_name"] = QJS.Enum(TileContext.GetObjectAmountInLocation(Main.Bot._currentLocation)
+					.Select(kvp => kvp.Key).ToList()),
+				["radius"] = QJS.Type(JsonSchemaType.Integer),
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<string, int> resultData)
+		{
+			string? name = actionData.Data?.Value<string>("object_name");
+			int? radius = actionData.Data?.Value<int>("radius");
+
+			resultData = new();
+			if (string.IsNullOrEmpty(name) || radius is null)
+			{
+				return ExecutionResult.Failure($"You cannot specify a null value.");
+			}
+
+			if (radius < MinRadius || radius > MaxRadius)
+			{
+				return ExecutionResult.Failure($"The radius should only be between {MinRadius} and {MaxRadius}.");
+			}
+
+			if (!TileContext.GetObjectAmountInLocation(Main.Bot._currentLocation)
+				    .Select(kvp => kvp.Key).ToList().Contains(name))
+			{
+				return ExecutionResult.Failure($"The name you specified is not valid.");
+			}
+
+			resultData = new(name, (int)radius);
+			return ExecutionResult.Success("");
+		}
+
+		protected override void Execute(KeyValuePair<string, int> resultData)
+		{
+			var objects = TileContext.GetObjectsInLocation(Main.Bot._currentLocation, Main.Bot._farmer.TilePoint,
+				resultData.Value);
+
+			string contextString = $"These are the {resultData.Key}s in a radius of {resultData.Value} around " +
+			                       $"{Main.Bot._farmer.TilePoint} at {Main.Bot._currentLocation.DisplayName}:";
+			foreach (var kvp in objects)
+			{
+				string simpleName = TileContext.SimpleObjectName(kvp.Value);
+				string? name = TileContext.GetObjectContext(kvp.Value, kvp.Key.X, kvp.Key.Y);
+				if (name is null || simpleName != resultData.Key) continue;
+				contextString +=$"\n{name}";
+			}
+			TileContext.SentFurniture.Clear();
+			TileContext.SentBuildings.Clear();
 			Context.Send(contextString,true);
 			RegisterMainGameActions.RegisterPostAction();
 		}

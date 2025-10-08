@@ -19,7 +19,7 @@ public static class TileUtilities
 
 		if (collisionMap)
 		{
-			Main.Bot.Pathfinding.BuildCollisionMap();
+			Main.Bot.Pathfinding.BuildCollisionMapInRadius(tile,3);
 			if (Main.Bot.Pathfinding.IsBlocked(tile.X, tile.Y) && !destructive)
 			{
 				reason = "You gave a position that is blocked.";

@@ -27,7 +27,7 @@ public static class RegisterMainGameActions
 
 		window.AddAction(new InteractAtTile());
 
-		window.AddAction(new QueryWorldActions.GetObjectsInRadius());
+		window.AddAction(new QueryWorldActions.GetObjectsInRadius()).AddAction(new QueryWorldActions.GetObjectTypeInRadius());
 		if (Main.Config.WaitTimeAction)
 		{
 			window.AddAction(new WaitForTime());
@@ -214,7 +214,7 @@ public static class RegisterMainGameActions
 			if (state == "")
 			{
 				var tiles = TileContext.GetObjectAmountInLocation(Main.Bot._currentLocation);
-				state = tiles.Aggregate($"These are the amount of each object in this location:",
+				state = tiles.Where(kvp => kvp.Key != "Grass").Aggregate($"These are the amount of each object in this location:",
 					(current, kvp) => current + $"\n{kvp.Key} amount: {kvp.Value}");
 				// state = string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer.TilePoint,Main.Config.TileContextRadius));
 			}

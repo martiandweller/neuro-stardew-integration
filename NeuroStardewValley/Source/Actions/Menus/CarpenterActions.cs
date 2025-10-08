@@ -440,7 +440,9 @@ public static class PlaceBuildingActions
 		TileContext.SentFurniture.Clear();
 		TileContext.SentBuildings.Clear();
 		
-		window.SetForce(5, $"You are now in {Main.Bot._currentLocation.DisplayName}", $"{state}",true);
+		window.SetForce(5, $"You are now in {Main.Bot._currentLocation.DisplayName}", $"These" +
+			$" are the important objects in this location, you may need to check if a building can still be" +
+			$" placed somewhere: {state}",true);
 		window.Register();
 	}
 }

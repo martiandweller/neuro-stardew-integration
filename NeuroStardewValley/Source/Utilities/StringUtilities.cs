@@ -1,14 +1,16 @@
 using Microsoft.Xna.Framework;
+using Netcode;
 using NeuroStardewValley.Debug;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Network;
+using StardewValley.TerrainFeatures;
 using StardewValley.TokenizableStrings;
 using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Utilities;
 
-public class StringUtilities
+public static class StringUtilities
 {
 	public static string FormatTimeString()
 	{
@@ -159,5 +161,25 @@ public class StringUtilities
 	public static string TokenizeBuildingName(Building building)
 	{
 		return TokenParser.ParseText(building.GetData().Name);
+	}
+
+	/// <summary>
+	/// Correct the name given from modData.Name from <see cref="ResourceClump"/> and <see cref="TerrainFeature"/>
+	/// </summary>
+	public static string CorrectObjectName(INetObject<NetFields> netObject)
+	{
+		switch (netObject)
+		{
+			case ResourceClump resourceClump:
+				int start = resourceClump.modData.Name.IndexOf('(');
+				return resourceClump.modData.Name.Substring(start + 1,
+					resourceClump.modData.Name.IndexOf(')') - start - 1);
+			case TerrainFeature terrainFeature:
+				int startIndex = terrainFeature.modData.Name.IndexOf('(');
+				return terrainFeature.modData.Name.Substring(startIndex + 1,
+					terrainFeature.modData.Name.IndexOf(')') - startIndex - 1);
+		}
+
+		return "";
 	}
 }

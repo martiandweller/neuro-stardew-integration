@@ -109,51 +109,11 @@ public static class TileContext
         SentFurniture.Clear();
         return tileList;
     }
-
-    public static Dictionary<string, int> GetObjectAmountInLocation(GameLocation location, Point? startTile = null, int radius = 0)
-    {
-        _location = location;
-        var objects = GetObjectsInLocation(location, startTile, radius);
-
-        Dictionary<string, int> amountOfObject = new();
-        Logger.Info($"amount of objects: {objects.Count}");
-        foreach (var kvp in objects)
-        {
-            string name;
-            switch (kvp.Value)
-            {
-                case Object obj:
-                    name = obj.DisplayName;
-                    break;
-                case ResourceClump clump:
-                    name = $"{clump.modData.Name}";
-                    break;
-                case LargeTerrainFeature largeTerrainFeature:
-                    name = $"{largeTerrainFeature.modData.Name}";
-                    break;
-                case TerrainFeature feature:
-                    name = $"{feature.modData.Name}";
-                    break;
-                case WaterTiles.WaterTileData:
-                    name = "Water";
-                    break;
-                case Building building:
-                    name = StringUtilities.TokenizeBuildingName(building);
-                    break;
-                default:
-                    continue;
-            }
-            
-            if (!amountOfObject.TryGetValue(name, out _))
-            {
-                amountOfObject.Add(name,1);
-                continue;
-            }
-            amountOfObject[name] += 1;
-        }
-        return amountOfObject;
-    }
-
+    
+    /// <summary>
+    /// Gets the objects in either the location of the range specified.
+    /// </summary>
+    /// <returns>a Dictionary with the key as a <see cref="Point"/> and the value as the <see cref="object"/></returns>
     public static Dictionary<Point, object> GetObjectsInLocation(GameLocation location, Point? startTile = null, int radius = 0)
     {
         _location = location;
@@ -236,14 +196,78 @@ public static class TileContext
         }
         return objectTiles;
     }
-
+    
     public static readonly HashSet<Building> SentBuildings = new();
     public static readonly HashSet<Furniture> SentFurniture = new();
+    public static Dictionary<string, int> GetObjectAmountInLocation(GameLocation location, Point? startTile = null, int radius = 0)
+    {
+        _location = location;
+        var objects = GetObjectsInLocation(location, startTile, radius);
+
+        Dictionary<string, int> amountOfObject = new();
+        Logger.Info($"amount of objects: {objects.Count}");
+        foreach (var kvp in objects)
+        {
+            string name = SimpleObjectName(kvp.Value);
+            if (name == "") continue;
+            
+            if (!amountOfObject.TryGetValue(name, out _))
+            {
+                amountOfObject.Add(name,1);
+                continue;
+            }
+            amountOfObject[name] += 1;
+        }
+        return amountOfObject;
+    }
+
+    /// <summary>
+    /// The bare minimum name for an object, this is used in <see cref="GetObjectAmountInLocation"/> 
+    /// </summary>
+    /// <returns>This will return either the object name or an empty string if the object is not valid.</returns>
+    public static string SimpleObjectName(object obj)
+    {
+        string name;
+        switch (obj)
+        {
+            case Object objs:
+                name = objs.DisplayName;
+                break;
+            case ResourceClump clump:
+                name = $"{StringUtilities.CorrectObjectName(clump)}";
+                break;
+            case LargeTerrainFeature largeTerrainFeature:
+                name = $"{StringUtilities.CorrectObjectName(largeTerrainFeature)}";
+                break;
+            case TerrainFeature feature:
+                name = $"{StringUtilities.CorrectObjectName(feature)}";
+                break;
+            case WaterTiles.WaterTileData:
+                name = "Water";
+                break;
+            case Building building:
+                name = StringUtilities.TokenizeBuildingName(building);
+                break;
+            default:
+                return "";
+        }
+
+        return name;
+    }
+    
+    /// <summary>
+    /// Gets the object at the provided tile and returns a string for that type of object, if there is no object it will be an empty string
+    /// </summary>
     public static string? GetTileContext(GameLocation location, int x, int y)
     {
         _location = location;
         object? obj = TileUtilities.GetTileType(location, new Point(x, y));
         if (obj is null) return null;
+        return GetObjectContext(obj,x,y);
+    }
+
+    public static string? GetObjectContext(object obj,int x,int y)
+    {
         switch (obj)
         {
             case Chest chest:
@@ -274,9 +298,7 @@ public static class TileContext
                 return contextString;
             case ResourceClump resourceClump:
                 // substring will always get "ResourceClump" as object name is not a part of modData
-                int start = resourceClump.modData.Name.IndexOf('(');
-                string subStr = resourceClump.modData.Name.Substring(start + 1,
-                    resourceClump.modData.Name.IndexOf(')') - start - 1);
+                string subStr = StringUtilities.CorrectObjectName(resourceClump);
                 return $"{subStr} is at: {x},{y}";
             case TerrainFeature terrainFeature:
                 switch (terrainFeature)
@@ -290,9 +312,7 @@ public static class TileContext
                         }
                         return context;
                     default:
-                        int startIndex = terrainFeature.modData.Name.IndexOf('(');
-                        string substring = terrainFeature.modData.Name.Substring(startIndex + 1,
-                            terrainFeature.modData.Name.IndexOf(')') - startIndex - 1);
+                        string substring = StringUtilities.CorrectObjectName(terrainFeature);
                         return $"{substring} is at: {x},{y}";
                 }
         }

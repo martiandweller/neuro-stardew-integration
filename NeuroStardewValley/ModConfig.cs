@@ -9,9 +9,15 @@ public class ModConfig
     public bool RegisterIfPausedForLong { get; set; } = true; // re-register main actions if paused for too long
     public int TimeUntilRegisterAgain { get; set; } = 60000; // time until register actions again in milliseconds.
     public int SaveSlot { get; set; } = 0; // save slot to use.
+    [Obsolete("The objects in the radius are no longer sent, might make this a config option later so its being kept")]
     public int TileContextRadius { get; set; } = 50; // The radius of tiles to send as context.
     public int StaminaSendInterval { get; set; } = 400; // The amount of in-game hours between each stamina context, sent every hour divisible by four would be 400.
     public bool WaitTimeAction { get; set; } = true; // Allow Neuro to use an action that allows her wait for until a provided time.
+    
+    // specific actions config
+
+    public int MinQueryRange { get; set; } = 3;
+    public int MaxQueryRange { get; set; } = 100;
     public Dictionary<string, bool> CharacterCreationOptions { get; set; } = new()
     {
         { "skin", true },

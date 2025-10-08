@@ -6,7 +6,6 @@ using StardewModdingAPI.Events;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.EventMethods;
 using NeuroStardewValley.Source.RegisterActions;
-using StardewBotFramework.Source.Modules.Pathfinding.Algorithms;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Menus;
@@ -137,7 +136,6 @@ internal sealed class Main : Mod
                         Logger.Info($"exception: {exception}");
                         return;
                     }
-                    
                 }
                 Logger.Info($"wait for collision map");
 
@@ -214,5 +212,4 @@ internal sealed class Main : Mod
         Bot.CharacterCreation.SetCreator((CharacterCustomization)TitleMenu.subMenu);
         MainMenuActions.RegisterAction();
     }
-
 }
