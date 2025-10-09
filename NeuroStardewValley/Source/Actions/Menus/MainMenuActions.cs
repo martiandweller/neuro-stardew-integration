@@ -103,10 +103,8 @@ public static class MainMenuActions
             if (data == new Dictionary<string, string>() || data is null) return;
             
             SetCharacter(data,true);
-            var task = Task.Run(async () => await Task.Delay(5000));
-            task.Wait();
-            
-            Main.Bot.CharacterCreation.StartGame();
+
+            DelayedAction.functionAfterDelay(() => Main.Bot.CharacterCreation.StartGame(), 5000);
         }
 
         private static readonly List<string> CatBreedStrings = new()

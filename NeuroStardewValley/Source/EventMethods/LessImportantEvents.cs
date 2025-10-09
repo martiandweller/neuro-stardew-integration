@@ -64,17 +64,6 @@ public static class LessImportantEvents
 			.AddAction(new ChatActions.SendChatMessage())
 			.Register();
 	}
-
-	public static void OnBotSkillChanged(object? sender, BotSkillLevelChangedEventArgs e)
-	{
-		MainGameLoopEvents.SkillsChangedThisDay.Add(e.ChangedSkill, e.NewLevel);
-	}
-
-	public static void OnDayStartedSkills(object? sender, BotDayStartedEventArgs e)
-	{
-		MainGameLoopEvents.SkillsChangedThisDay.Clear();
-	}
-
 	public static void InventoryChanged(object? sender, BotInventoryChangedEventArgs e)
 	{
 		string contextString = "";

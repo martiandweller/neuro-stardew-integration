@@ -8,6 +8,7 @@ using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewBotFramework.Source.Events.World_Events;
+using StardewBotFramework.Source.Modules.Menus;
 using StardewModdingAPI.Enums;
 using StardewModdingAPI.Utilities;
 using StardewValley;
@@ -19,8 +20,6 @@ namespace NeuroStardewValley.Source.EventMethods;
 
 public static class MainGameLoopEvents
 {
-	public static readonly Dictionary<SkillType, int> SkillsChangedThisDay = new();
-
 	#region RegisterActions
 
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
@@ -64,6 +63,8 @@ public static class MainGameLoopEvents
 			case DialogueBox when e.NewMenu is not DialogueBox:
 				Main.Bot.Dialogue.CurrentDialogueBox = null;
 				break;
+			case LevelUpMenu: // lower thing doesn't work, and I'm too lazy to find out why
+				return;
 		}
 
 		switch (e.NewMenu)
@@ -102,7 +103,7 @@ public static class MainGameLoopEvents
 				break;
 			case LevelUpMenu levelUpMenu:
 				Main.Bot.EndDaySkillMenu.SetMenu(levelUpMenu);
-				RegisterLevelUpMenu.GetSkillContext(SkillsChangedThisDay);
+				RegisterLevelUpMenu.GetSkillContext();
 				break;
 			case ShippingMenu shippingMenu:
 				Main.Bot.EndDayShippingMenu.SetMenu(shippingMenu);
@@ -135,11 +136,7 @@ public static class MainGameLoopEvents
 				{
 					Context.Send($"These are the event that are happening this season, {BillBoardInteraction.GetCalendarContext()}" +
 					             $"\nThere are: {billboard.calendarDays.Count} days in this season. It is currently day {SDate.Now().Day} of {SDate.Now().Season}.");
-					Task.Run(async () => // delay for 6.5 seconds then exit menu
-					{
-						await Task.Delay(6500);
-						Main.Bot.BillBoard.ExitMenu();
-					});
+					DelayedAction.functionAfterDelay(() => Main.Bot.BillBoard.ExitMenu(), 6500);
 				}
 				break;
 			case LetterViewerMenu letterViewerMenu:
@@ -151,21 +148,20 @@ public static class MainGameLoopEvents
 				}
 				else
 				{
-					Task.Run(async () =>
+					for (int i = 0; i <= Main.Bot.LetterViewer.GetMessage().Count; i++)
 					{
-						for (int i = 0; i <= Main.Bot.LetterViewer.GetMessage().Count; i++)
+						string message = LetterContext.GetStringContext(Main.Bot.LetterViewer.GetMessage()[i],
+								i == Main.Bot.LetterViewer.GetMessage().Count - 1,i + 1); // only send extra on last page
+						Context.Send($"{message}");
+						var t = Task.Run(async () => await Task.Delay(9000)); // surely 9 seconds per page is enough :Glueless:
+						t.Wait();
+						
+						if (i != Main.Bot.LetterViewer.GetMessage().Count - 1)
 						{
-							string message = LetterContext.GetStringContext(Main.Bot.LetterViewer.GetMessage()[i],
-									i == Main.Bot.LetterViewer.GetMessage().Count - 1,i + 1); // only send extra on last page
-							Context.Send($"{message}");
-							await Task.Delay(9000); // surely 9 seconds per page is enough :Glueless:
-							if (i != Main.Bot.LetterViewer.GetMessage().Count - 1)
-							{
-								Main.Bot.LetterViewer.NextPage();
-							}
+							Main.Bot.LetterViewer.NextPage();
 						}
-						Main.Bot.LetterViewer.ExitMenu();
-					});
+					}
+					Main.Bot.LetterViewer.ExitMenu();
 				}
 
 				break;
@@ -199,7 +195,7 @@ public static class MainGameLoopEvents
 		// ugly but it gets rid of warning and double send at start of game and other double sends
 		if (e is { NewMenu: null } and {OldMenu:not TitleMenu or not LevelUpMenu or not MineElevatorMenu})
 		{
-			Logger.Info($"Re-registering post action: old menu: {e.OldMenu.GetType()}  new: {e.NewMenu}");
+			Logger.Info($"Re-registering post action: old menu: {e.OldMenu}  new: {e.NewMenu}");
 			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
@@ -213,12 +209,12 @@ public static class MainGameLoopEvents
 			Logger.Error($"exit location: {e.Event.exitLocation.Name}  {e.Event.exitLocation.Location}  {e.Event.exitLocation.IsRequestFor(e.Event.exitLocation.Location)}");
 			return; // player should get warped after event
 		}
-		Task.Run(async () =>
+
+		DelayedAction.functionAfterDelay(() =>
 		{
-			await Task.Delay(15); // this is because sometimes events finish before giving back control
 			Logger.Info($"post event task delay");
 			RegisterMainGameActions.RegisterPostAction();
-		});
+		}, 1500);
 	}
 
 	#endregion

@@ -27,15 +27,15 @@ public static class RegisterMainGameActions
 
 		window.AddAction(new InteractAtTile());
 
-		window.AddAction(new QueryWorldActions.GetObjectsInRadius()).AddAction(new QueryWorldActions.GetObjectTypeInRadius());
 		if (Main.Config.WaitTimeAction)
 		{
 			window.AddAction(new WaitForTime());
 		}
 
-		if (Main.Bot._currentLocation.Objects.Length > 0)
+		if (Main.Bot._currentLocation.Objects.Length > 0 || TileContext.ActionableTiles.Count > 0 ||
+		    Game1.currentLocation.buildings.Count > 0)
 		{
-			window.AddAction(new WorldObjectActions.InteractWithObject());
+			window.AddAction(new QueryWorldActions.GetObjectsInRadius()).AddAction(new QueryWorldActions.GetObjectTypeInRadius());
 		}
 
 		if (Game1.currentLocation.characters.Any(monster => monster.IsMonster))
@@ -45,17 +45,7 @@ public static class RegisterMainGameActions
 		
 		if (Main.Bot._currentLocation.characters.Any(character => !character.IsMonster))
 		{
-			window.AddAction(new PathFindingActions.GoToCharacter());
-		}
-
-		if (TileContext.ActionableTiles.Count > 0)
-		{
-			window.AddAction(new WorldObjectActions.InteractWithActionTile());
-		}
-
-		if (Game1.currentLocation.buildings.Count > 0)
-		{
-			window.AddAction(new BuildingActions.InteractWithBuilding());
+			window.AddAction(new PathFindingActions.InteractCharacter());
 		}
 		
 		if (Game1.player.CurrentItem is not null)

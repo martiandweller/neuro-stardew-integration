@@ -57,15 +57,14 @@ public static class BlacksmithActions
 		protected override void Execute(int resultData)
 		{
 			Main.Bot.Blacksmith.OpenGeode(resultData);
-			Task.Run(async () => await SendTreasureContext()); // geode item takes time to be added to menu
-		}
-
-		private static async Task SendTreasureContext()
-		{
-			await Task.Delay(3000); // magic number but it looks good so I don't card
-			GeodeMenu? menu = Game1.activeClickableMenu as GeodeMenu;
-			Context.Send($"You got a {menu?.geodeTreasure.DisplayName} from the geode!");
-			RegisterStoreActions.RegisterBlacksmithActions();
+			
+			// geode item takes time to be added to menu
+			DelayedAction.functionAfterDelay(() =>
+			{
+				GeodeMenu? menu = Game1.activeClickableMenu as GeodeMenu;
+				Context.Send($"You got a {menu?.geodeTreasure.DisplayName} from the geode!");
+				RegisterStoreActions.RegisterBlacksmithActions();
+			}, 3000);
 		}
 
 		private static string[] GetSchema()

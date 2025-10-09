@@ -145,13 +145,8 @@ public static class ToolActions
 
 		protected override void Execute()
 		{
-			Task.Run(async () => await ExecuteFunctions());
-			
-		}
-		private static async Task ExecuteFunctions()
-		{
-			await Main.Bot.Tool.RefillWateringCan();
-			RegisterMainGameActions.RegisterPostAction();
+			Main.Bot.Tool.RefillWateringCan();
+			RegisterMainGameActions.RegisterPostAction();	
 		}
 	}
 	public class DestroyObject : NeuroAction<Point>
@@ -209,11 +204,7 @@ public static class ToolActions
 
 		protected override void Execute(Point resultData)
 		{
-			Task.Run(async () => await ExecuteFunctions(resultData));
-		}
-		private static async Task ExecuteFunctions(Point point)
-		{
-			await Main.Bot.Tool.RemoveObject(point);
+			Main.Bot.Tool.RemoveObject(resultData);
 			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
@@ -270,18 +261,13 @@ public static class ToolActions
 		{
 			if (resultData is null) return;
 			
-			Task.Run(async () => await ExecuteFunctions(resultData));
-		}
-		
-		private static async Task ExecuteFunctions(List<int> resultData)
-		{
 			for (int i = 0; i < resultData.Count; i++)
 			{
 				resultData[i] *= 64;
 			}
 			Rectangle rect = new(resultData[0], resultData[1], resultData[2] - resultData[0],
 				(resultData[3] - resultData[1]) + 64); // add extra tile to get what is expected
-			await Main.Bot.Tool.WaterSelectPatches(rect);
+			Main.Bot.Tool.WaterSelectPatches(rect);
 			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
@@ -352,22 +338,17 @@ public static class ToolActions
 
 		protected override void Execute(KeyValuePair<Tool, Rectangle> resultData)
 		{
-			Task.Run(async () => await ExecuteFunction(resultData));
-		}
-
-		private static async Task ExecuteFunction(KeyValuePair<Tool, Rectangle> kvp)
-		{
-			SwapItemHandler.SwapItem(kvp.Key.GetType(),"");
-			if (kvp.Key is Hoe)
+			SwapItemHandler.SwapItem(resultData.Key.GetType(),"");
+			if (resultData.Key is Hoe)
 			{
-				var tiles = Main.Bot.Tool.CreateFarmLandTiles(kvp.Value);
-				await Main.Bot.Tool.MakeFarmLand(tiles);
+				var tiles = Main.Bot.Tool.CreateFarmLandTiles(resultData.Value);
+				Main.Bot.Tool.MakeFarmLand(tiles);
 				RegisterMainGameActions.RegisterPostAction();
 				return;
 			}
 
-			Rectangle rect = kvp.Value;
-			await Main.Bot.Tool.RemoveObjectsInDimension(rect);
+			Rectangle rect = resultData.Value;
+			Main.Bot.Tool.RemoveObjectsInDimension(rect);
 			RegisterMainGameActions.RegisterPostAction();
 		}
 	}

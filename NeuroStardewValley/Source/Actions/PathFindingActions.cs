@@ -19,26 +19,25 @@ public static class PathFindingActions
     public class Pathfinding : NeuroAction<Goal?>
     {
         private bool _destructive;
-        
         public override string Name => "move_character";
         protected override string Description =>
             "This will move the character to the provided tile location in the world.";
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
-            Required = new List<string> { "x_position", "y_position" },
+            Required = new List<string> { "x_tile", "y_tile" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["x_position"] = QJS.Type(JsonSchemaType.Integer),
-                ["y_position"] = QJS.Type(JsonSchemaType.Integer),
+                ["x_tile"] = QJS.Type(JsonSchemaType.Integer),
+                ["y_tile"] = QJS.Type(JsonSchemaType.Integer),
                 ["destructive"] = QJS.Type(JsonSchemaType.Boolean)
             }
         };
 
         protected override ExecutionResult Validate(ActionData actionData, out Goal? goal)
         {
-            string? xStr = actionData.Data?.Value<string>("x_position");
-            string? yStr = actionData.Data?.Value<string>("y_position");
+            string? xStr = actionData.Data?.Value<string>("x_tile");
+            string? yStr = actionData.Data?.Value<string>("y_tile");
             bool? destructive = actionData.Data?.Value<bool>("destructive");
 
             Logger.Info($"data: {xStr}  yData: {yStr}");
@@ -201,12 +200,13 @@ public static class PathFindingActions
         }
     }
 
-    public class GoToCharacter : NeuroAction<KeyValuePair<NPC,bool>>
+    public class InteractCharacter : NeuroAction<KeyValuePair<NPC,bool>>
     {
-        public override string Name => "go_to_character";
-        protected override string Description => "Go to a character that is in this location, if you interact with the " +
-                                                 "character it will most likely try to talk to the character," +
-                                                 " unless they cannot be talked to or you are holding something that can be gifted.";
+        public override string Name => "interact_with_character";
+        protected override string Description => "Interact with a character that is in this location, if they are too" +
+                                                 " far away you will walk to them. When you decide to interact with the" +
+                                                 " character it will try to talk to the character unless they cannot be" +
+                                                 " talked to or you are holding something that can be gifted.";
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
@@ -226,16 +226,16 @@ public static class PathFindingActions
             resultData = new();
             if (string.IsNullOrEmpty(charName) || interact is null)
             {
-                ExecutionResult.Failure($"You provided either an empty or null string");
+                return ExecutionResult.Failure($"You provided either an empty or null string");
             }
 
-            int index = Main.Bot._currentLocation.characters.Select(npc => npc.Name).ToList().IndexOf(charName!);
+            int index = Main.Bot._currentLocation.characters.Select(npc => npc.Name).ToList().IndexOf(charName);
             if (index == -1)
             {
                 return ExecutionResult.Failure($"The value you provided was invalid.");
             }
             
-            resultData = new(Main.Bot._currentLocation.characters[index],interact!.Value);
+            resultData = new(Main.Bot._currentLocation.characters[index],interact.Value);
             return ExecutionResult.Success();
         }
 

@@ -73,17 +73,15 @@ public static class WorldObjectActions
 		{
 			var placeTile = new PlaceTile(resultData.Value,Main.Bot._currentLocation,itemToPlace: resultData.Key);
 
-			Task.Run(async () =>
+			Main.Bot.Tool.PlaceObjectsAtTiles(new List<PlaceTile> { placeTile },false);
+			
+			if (TileUtilities.GetTileType(Main.Bot._currentLocation, resultData.Value) != resultData.Key)
 			{
-				await Main.Bot.Tool.PlaceObjectsAtTiles(new List<PlaceTile> { placeTile },false);
-				if (TileUtilities.GetTileType(Main.Bot._currentLocation, resultData.Value) != resultData.Key)
-				{
-					Context.Send($"The object you selected to place may not have been placed where you wanted" +
-					             $" it to be, you should check to see if there is anything blocked it or blocking your" +
-					             $" way from it.",true);
-				}
-				RegisterMainGameActions.RegisterPostAction();
-			});
+				Context.Send($"The object you selected to place may not have been placed where you wanted" +
+				             $" it to be, you should check to see if there is anything blocked it or blocking your" +
+				             $" way from it.",true);
+			}
+			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
 	
@@ -136,11 +134,8 @@ public static class WorldObjectActions
 
 		protected override void Execute(KeyValuePair<Object, int> resultData)
 		{
-			Task.Run(async () =>
-			{
-				await Main.Bot.Tool.PlaceObjectsInRadius(Main.Bot._farmer.TilePoint, resultData.Key, resultData.Value);
-				RegisterMainGameActions.RegisterPostAction();
-			});
+			Main.Bot.Tool.PlaceObjectsInRadius(Main.Bot._farmer.TilePoint, resultData.Key, resultData.Value);
+			RegisterMainGameActions.RegisterPostAction();
 		}
 	}
 	

@@ -55,8 +55,6 @@ internal sealed class Main : Mod
         helper.Events.GameLoop.SaveLoaded += OneTimeEvents.OnSaveLoaded;
 
         Bot.GameEvents.ChatMessageReceived += LessImportantEvents.OnChatMessage;
-        Bot.GameEvents.BotSkillChanged += LessImportantEvents.OnBotSkillChanged;
-        Bot.GameEvents.DayStarted += LessImportantEvents.OnDayStartedSkills;
         Bot.GameEvents.UiTimeChanged += LessImportantEvents.OnUiTimeChanged;
         Bot.GameEvents.HUDMessageAdded += OneTimeEvents.OnHUDMessageAdded;
         Bot.GameEvents.OnBotDeath += LessImportantEvents.OnBotDeath;
@@ -125,20 +123,10 @@ internal sealed class Main : Mod
                 Logger.Warning($"is action: {result}");
                 break;
             case SButton.V:
-                for (int i = 0; i < 1000; i++)
-                {
-                    try
-                    {
-                        Task.Run(() => Bot.Pathfinding.BuildCollisionMap());
-                    }
-                    catch (Exception exception)
-                    {
-                        Logger.Info($"exception: {exception}");
-                        return;
-                    }
-                }
-                Logger.Info($"wait for collision map");
-
+                Logger.Info($"update levels");
+                // Bot._farmer.setSkillLevel("Fishing", 10);
+                Bot._farmer.setSkillLevel("Combat", 10);
+                // Bot._farmer.setSkillLevel("Farming", 10);
                 break;
         }
     }
