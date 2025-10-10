@@ -26,7 +26,7 @@ public static class QueryWorldActions
 			Properties = new Dictionary<string, JsonSchema>
 			{
 				["radius"] = QJS.Type(JsonSchemaType.Integer),
-				["object_names"] = new()
+				["excluded_names"] = new()
 				{
 					Type = JsonSchemaType.Array,
 					Items = new JsonSchema {Type = JsonSchemaType.String}
@@ -38,7 +38,7 @@ public static class QueryWorldActions
 			_objectNames = null;
 			resultData = -1;
 			int radius = actionData.Data?.Value<int>("radius") ?? int.MaxValue;
-			JArray? jArray = actionData.Data?.Value<JArray>("object_names");
+			JArray? jArray = actionData.Data?.Value<JArray>("excluded_names");
 
 			List<string> names = new();
 			if (jArray is not null)
@@ -104,14 +104,14 @@ public static class QueryWorldActions
 			TileContext.SentFurniture.Clear();
 			
 			Context.Send(contextString,true);
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
  
 	public class GetObjectTypeInRadius : NeuroAction<KeyValuePair<string,int>>
 	{
 		public override string Name => "get_object_type_in_range";
-		protected override string Description => "Get only the specified type of object in range, certain names may not" +
+		protected override string Description => $"Get only the specified type of object in a range between {MinRadius} and {MaxRadius}, certain names may not" +
 		                                         " be very obvious e.g. HoeDirt being for the dirt you can plant on.";
 		protected override JsonSchema Schema => new()
 		{
@@ -145,6 +145,9 @@ public static class QueryWorldActions
 			{
 				return ExecutionResult.Failure($"The name you specified is not valid.");
 			}
+			
+			if (TileContext.GetSpecifiedObjects(name, Main.Bot._farmer.TilePoint,(int)radius, Main.Bot._currentLocation).Length < 1)
+				return ExecutionResult.Failure($"There is no {name} in a radius of {radius}, you can try to either increase the radius or try something else.");
 
 			resultData = new(name, (int)radius);
 			return ExecutionResult.Success("");
@@ -152,22 +155,13 @@ public static class QueryWorldActions
 
 		protected override void Execute(KeyValuePair<string, int> resultData)
 		{
-			var objects = TileContext.GetObjectsInLocation(Main.Bot._currentLocation, Main.Bot._farmer.TilePoint,
-				resultData.Value);
-
 			string contextString = $"These are the {resultData.Key}s in a radius of {resultData.Value} around " +
-			                       $"{Main.Bot._farmer.TilePoint} at {Main.Bot._currentLocation.DisplayName}:";
-			foreach (var kvp in objects)
-			{
-				string simpleName = TileContext.SimpleObjectName(kvp.Value);
-				string? name = TileContext.GetObjectContext(kvp.Value, kvp.Key.X, kvp.Key.Y);
-				if (name is null || simpleName != resultData.Key) continue;
-				contextString +=$"\n{name}";
-			}
-			TileContext.SentFurniture.Clear();
-			TileContext.SentBuildings.Clear();
+			 $"{Main.Bot._farmer.TilePoint} at {Main.Bot._currentLocation.DisplayName}:";
+			
+			contextString += TileContext.GetSpecifiedObjects(resultData.Key, Main.Bot._farmer.TilePoint,
+				resultData.Value, Main.Bot._currentLocation);
 			Context.Send(contextString,true);
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
 }

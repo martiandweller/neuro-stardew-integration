@@ -8,8 +8,6 @@ using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewBotFramework.Source.Events.World_Events;
-using StardewBotFramework.Source.Modules.Menus;
-using StardewModdingAPI.Enums;
 using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Buildings;
@@ -28,22 +26,20 @@ public static class MainGameLoopEvents
 		if (e.Player.passedOut || Game1.eventUp) return;
 		string warps = TileContext.GetWarpTiles(e.NewLocation,true);
 		string warpsString = !string.IsNullOrEmpty(warps) ? TileContext.GetWarpTilesString(warps) : "There are no warps in this location";
-		var tiles = TileContext.GetObjectAmountInLocation(e.NewLocation);
-		Logger.Info($"tiles: {tiles.Count}");
-		string objectContext = $"These are the amount of each object in this location:";
-		foreach (var kvp in tiles)
-		{
-			Logger.Info($"kvp: {kvp.Key}  {kvp.Value}");
-			objectContext += $"\n{kvp.Key} amount: {kvp.Value}";
-		}
-		Logger.Info($"object context: {objectContext}");
 		
 		string characterContext = string.Concat(Main.Bot.Characters.GetCharactersInCurrentLocation(e.NewLocation)
-			.Select(kvp => $"{kvp.Value.Name} is at {kvp.Key} in this location").ToList());
+			.Select(kvp => $"\n{kvp.Value.displayName} is at {kvp.Key}").ToList());
+
+		characterContext = characterContext.Length < 1
+			? $"There are no characters in {e.NewLocation.DisplayName} as of when you entered it."
+			: $"nThese are the characters in {e.NewLocation.DisplayName}: {characterContext}";
 		
-		Context.Send(warpsString, true);
-		Context.Send(characterContext,true);
-		RegisterMainGameActions.RegisterPostAction(e, 0,
+		warpsString = warpsString.Length < 1
+			? $"There are no warps in {e.NewLocation.DisplayName} as of when you entered it"
+			: $"These are the warps to other places in {e.NewLocation.DisplayName}: {warpsString}";
+		
+		Context.Send($"{warpsString}\n{characterContext}", true);
+		RegisterMainActions.RegisterPostAction(e, 0,
 			$"You are at {e.NewLocation.DisplayName} from {e.OldLocation.DisplayName}, The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
 			$" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)} " +
 			$"\nIf you want more information about your items should open your inventory.");
@@ -193,11 +189,10 @@ public static class MainGameLoopEvents
 		}
 		
 		// ugly but it gets rid of warning and double send at start of game and other double sends
-		if (e is { NewMenu: null } and {OldMenu:not TitleMenu or not LevelUpMenu or not MineElevatorMenu})
-		{
-			Logger.Info($"Re-registering post action: old menu: {e.OldMenu}  new: {e.NewMenu}");
-			RegisterMainGameActions.RegisterPostAction();
-		}
+		if (e.NewMenu is not null || e.OldMenu is MineElevatorMenu || e.OldMenu is TitleMenu || e.OldMenu is LevelUpMenu) return;
+		
+		Logger.Info($"Re-registering post action: old menu: {e.OldMenu}  new: {e.NewMenu}");
+		RegisterMainActions.RegisterPostAction();
 	}
 	
 	// may need to check what event was ended in the future
@@ -213,7 +208,7 @@ public static class MainGameLoopEvents
 		DelayedAction.functionAfterDelay(() =>
 		{
 			Logger.Info($"post event task delay");
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}, 1500);
 	}
 

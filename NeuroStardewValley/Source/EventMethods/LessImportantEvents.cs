@@ -21,7 +21,7 @@ public static class LessImportantEvents
 		if (Game1.timeOfDay == WaitingTime)
 		{
 			WaitingTime = -1;
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 		if (Game1.timeOfDay % 100 != 0)
 		{
@@ -111,7 +111,7 @@ public static class LessImportantEvents
 			await Task.Delay(1500);
 			Main.Bot.FishingBar.CloseRewardMenu();
 			_ranCaughtFish = false;
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		});
 	}
 }

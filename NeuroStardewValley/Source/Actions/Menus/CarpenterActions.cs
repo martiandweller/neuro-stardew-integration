@@ -428,12 +428,12 @@ public static class PlaceBuildingActions
 		}
 		window.AddAction(new CancelPlacingBuilding()).AddAction(new CanBuildOnTile());
 		string state = "";
-		for (int x = 0; x < Main.Bot._currentLocation.Map.DisplayWidth / Game1.tileSize; x++)
+		for (int x = 0; x < TileUtilities.MaxX; x++)
 		{
-			for (int y = 0; y < Main.Bot._currentLocation.Map.DisplayHeight / Game1.tileSize; y++)
+			for (int y = 0; y < TileUtilities.MaxY; y++)
 			{
 				string? str = TileContext.GetTileContext(Main.Bot._currentLocation,x,y);
-				if (str is null || str.Contains("Weeds") || str.Contains("Stone")) continue; // only have important stuff like buildings
+				if (str is null || str.Contains("Weeds") || str.Contains("Stone")) continue; // remove litter
 				state += $"\n{str}";
 			}
 		}

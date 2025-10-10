@@ -291,7 +291,7 @@ public static class TileContext
                 int buildY = building.tileY.Value;
                 Point humanDoor = building.getPointForHumanDoor();
                 string contextString = $"The top left tile of the {StringUtilities.TokenizeBuildingName(building)} is: {buildX},{buildY}." +
-                                    $" the bottom right is {buildX + building.tilesWide.Value}, {buildY + building.tilesHigh.Value}. ";
+                                    $" The bottom right is {buildX + building.tilesWide.Value}, {buildY + building.tilesHigh.Value}.";
                 if (humanDoor != new Point(-1,-1)) contextString += $" The door is at {humanDoor.X},{humanDoor.Y}.";
                 if (building.animalDoor.Value != new Point(-1, -1)) 
                     contextString += $" The animal door is at: {building.animalDoor.Value}.";
@@ -318,6 +318,24 @@ public static class TileContext
         }
         
         return "";
+    }
+
+    public static string GetSpecifiedObjects(string simpleName,Point startTile,int radius, GameLocation location)
+    {
+        var objects = GetObjectsInLocation(location, startTile,radius);
+
+        string str = "";
+        foreach (var kvp in objects)
+        {
+            string objSimpleName = SimpleObjectName(kvp.Value);
+            string? name = GetObjectContext(kvp.Value, kvp.Key.X, kvp.Key.Y);
+            if (name is null || objSimpleName != simpleName) continue;
+            str +=$"\n{name}";
+        }
+        SentFurniture.Clear();
+        SentBuildings.Clear();
+
+        return str;
     }
 
     public static string GetWarpTiles(GameLocation location,bool addBuildings = false)

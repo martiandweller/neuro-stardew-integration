@@ -13,7 +13,7 @@ public static class OneTimeEvents
 {
 	public static void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
 	{
-		RegisterMainGameActions.RegisterPostAction();
+		RegisterMainActions.RegisterPostAction();
 	}
 
 	public static void OnHUDMessageAdded(object? sender, HUDMessageAddedEventArgs e)

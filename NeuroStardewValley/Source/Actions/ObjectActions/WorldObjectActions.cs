@@ -81,7 +81,7 @@ public static class WorldObjectActions
 				             $" it to be, you should check to see if there is anything blocked it or blocking your" +
 				             $" way from it.",true);
 			}
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
 	
@@ -135,7 +135,7 @@ public static class WorldObjectActions
 		protected override void Execute(KeyValuePair<Object, int> resultData)
 		{
 			Main.Bot.Tool.PlaceObjectsInRadius(Main.Bot._farmer.TilePoint, resultData.Key, resultData.Value);
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
 	
@@ -226,7 +226,7 @@ public static class WorldObjectActions
 					break;
 			}
 			
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
 	
@@ -273,17 +273,25 @@ public static class WorldObjectActions
 		protected override void Execute(Point resultData)
 		{
 			Main.Bot.ActionTiles.DoActionTile(resultData);
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
 
-	// this is for tiles that can have a unique property
-	public class InteractWithTile : NeuroAction<Point>
+	/// <summary>
+	/// This is for interacting with tiles that use a property to change, some examples of these are troughs and ladders.
+	/// </summary>
+	public class InteractWithTileProperty : NeuroAction<Point>
 	{
-		public override string Name => "interact_with_tile";
-		protected override string Description =>
-			"Interact with a specified tile that is different from normal tiles, this would commonly be used for troughs" +
-			". in animal houses or interacting with the ladders in the mines";
+		private const string DefaultName = "interact_with_tile";
+		private const string DefaultDescription = "Interact with a specified tile that is different from normal tiles, this would commonly be used for troughs" +
+		                                  ". in animal houses or interacting with the ladders in the mines. You will be told about these different types of tiles in context when they occur.";
+		public InteractWithTileProperty(string name = DefaultName, string description = DefaultDescription)
+		{
+			Name = name;
+			Description = description;
+		}
+		public override string Name { get; }
+		protected override string Description { get;}
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -323,7 +331,7 @@ public static class WorldObjectActions
 			// currently just stops from sending if mine ladder
 			bool registerAction = Main.Bot._currentLocation.getTileIndexAt(resultData.X, resultData.Y, "Buildings") != 173;
 			Main.Bot._currentLocation.checkAction(new Location(resultData.X,resultData.Y),Game1.viewport,Main.Bot._farmer);
-			if (registerAction) RegisterMainGameActions.RegisterPostAction();
+			if (registerAction) RegisterMainActions.RegisterPostAction();
 		}
 
 		public static List<Point> GetSchema()
@@ -333,9 +341,9 @@ public static class WorldObjectActions
 			switch (Main.Bot._currentLocation)
 			{
 				case AnimalHouse animalHouse:
-					for (int x = 0; x < Main.Bot._currentLocation.Map.DisplayWidth / 64; x++)
+					for (int x = 0; x < TileUtilities.MaxX; x++)
 					{
-						for (int y = 0; y < Main.Bot._currentLocation.Map.DisplayHeight / 64; y++)
+						for (int y = 0; y < TileUtilities.MaxY; y++)
 						{
 							if (animalHouse.doesTileHaveProperty(x, y, "Trough", "Back") == null ||
 							    Main.Bot._currentLocation.Objects.ContainsKey(new Vector2(x, y))) continue;
@@ -346,9 +354,9 @@ public static class WorldObjectActions
 
 					break;
 				case MineShaft mineShaft:
-					for (int x = 0; x < mineShaft.Map.DisplayWidth / 64; x++)
+					for (int x = 0; x < TileUtilities.MaxX; x++)
 					{
-						for (int y = 0; y < mineShaft.Map.DisplayHeight / 64; y++)
+						for (int y = 0; y < TileUtilities.MaxY; y++)
 						{
 							if (mineShaft.getTileIndexAt(x,y, "Buildings") != 173)
 								continue; // tile index for ladders

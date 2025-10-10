@@ -130,7 +130,7 @@ public static class ToolActions
 	            Main.Bot.Tool.UseTool(direction);
             }
 
-            RegisterMainGameActions.RegisterPostAction();
+            RegisterMainActions.RegisterPostAction();
         }
     }
 	public class RefillWateringCan : NeuroAction
@@ -146,7 +146,7 @@ public static class ToolActions
 		protected override void Execute()
 		{
 			Main.Bot.Tool.RefillWateringCan();
-			RegisterMainGameActions.RegisterPostAction();	
+			RegisterMainActions.RegisterPostAction();	
 		}
 	}
 	public class DestroyObject : NeuroAction<Point>
@@ -205,7 +205,7 @@ public static class ToolActions
 		protected override void Execute(Point resultData)
 		{
 			Main.Bot.Tool.RemoveObject(resultData);
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
 	public class WaterFarmLand : NeuroAction<List<int>>
@@ -268,7 +268,7 @@ public static class ToolActions
 			Rectangle rect = new(resultData[0], resultData[1], resultData[2] - resultData[0],
 				(resultData[3] - resultData[1]) + 64); // add extra tile to get what is expected
 			Main.Bot.Tool.WaterSelectPatches(rect);
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
 	public class UseToolInRect : NeuroAction<KeyValuePair<Tool, Rectangle>>
@@ -343,13 +343,20 @@ public static class ToolActions
 			{
 				var tiles = Main.Bot.Tool.CreateFarmLandTiles(resultData.Value);
 				Main.Bot.Tool.MakeFarmLand(tiles);
-				RegisterMainGameActions.RegisterPostAction();
+				RegisterMainActions.RegisterPostAction();
+				return;
+			}
+
+			if (resultData.Key is WateringCan)
+			{
+				Main.Bot.Tool.WaterSelectPatches(resultData.Value, false);
+				RegisterMainActions.RegisterPostAction();
 				return;
 			}
 
 			Rectangle rect = resultData.Value;
 			Main.Bot.Tool.RemoveObjectsInDimension(rect);
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
 	public class Fishing : NeuroAction<int>
@@ -425,7 +432,7 @@ public static class ToolActions
 			{
 				if (!Main.Bot.FishingBar.Fish(resultData))
 				{
-					RegisterMainGameActions.RegisterPostAction();
+					RegisterMainActions.RegisterPostAction();
 				}
 
 				await Task.Delay(1500);
@@ -433,7 +440,7 @@ public static class ToolActions
 				{
 					return;
 				}
-				RegisterMainGameActions.RegisterPostAction(); // could not fish due to small pond
+				RegisterMainActions.RegisterPostAction(); // could not fish due to small pond
 			});
 		}
 	}

@@ -21,7 +21,7 @@ public static class RegisterStoreActions
 		if (Main.Bot.Shop._currentShop is null)
 		{
 			Game1.activeClickableMenu = null;
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 			return;
 		}
 		// amount of items that can be highlighted
@@ -36,7 +36,7 @@ public static class RegisterStoreActions
 		if (items.Count < 1)
 		{
 			Game1.activeClickableMenu = null;
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 			return;
 		}
 		for (int i = 0; i < items.Count - 1; i++)

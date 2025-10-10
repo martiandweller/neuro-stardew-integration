@@ -127,7 +127,7 @@ public static class ChestActions
 		protected override void Execute()
 		{
 			Close();
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 		
 		private static void Close()

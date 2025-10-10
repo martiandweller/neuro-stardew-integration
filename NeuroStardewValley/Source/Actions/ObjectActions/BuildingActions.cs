@@ -144,14 +144,14 @@ public static class BuildingActions
 				if (!RangeCheck.InRange(pos)) // in case pathfinding can't get to tile
 				{
 					Context.Send($"The pathfinding had an issue, leading to you not being able to go to the tile. You should try something else.");
-					RegisterMainGameActions.RegisterPostAction();
+					RegisterMainActions.RegisterPostAction();
 					return;
 				}
 			}
 			Main.Bot.Building.DoBuildingAction(_building, resultData.Key.Tile.ToVector2());
 			if (Game1.activeClickableMenu is null)
 			{
-				RegisterMainGameActions.RegisterPostAction();
+				RegisterMainActions.RegisterPostAction();
 			}
 		}
 
@@ -235,7 +235,7 @@ public static class BuildingActions
 				if (!RangeCheck.InRange(Pos)) // in case pathfinding can't get to door
 				{
 					Context.Send($"The pathfinding had an issue, leading to you not being able to enter the building. You should try something else.");
-					RegisterMainGameActions.RegisterPostAction();
+					RegisterMainActions.RegisterPostAction();
 					return;
 				}
 			}

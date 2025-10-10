@@ -71,7 +71,7 @@ public static class PathFindingActions
         {
             if (goal is null) return; // probably find
             Main.Bot.Pathfinding.Goto(goal, _destructive);
-            RegisterMainGameActions.RegisterPostAction();
+            RegisterMainActions.RegisterPostAction();
         }
 
     }
@@ -191,7 +191,7 @@ public static class PathFindingActions
                 t.Wait();
                 if (Main.Bot._currentLocation.Equals(oldLocation))
                 {
-                    RegisterMainGameActions.RegisterPostAction();
+                    RegisterMainActions.RegisterPostAction();
                 }
                 return;
             }
@@ -246,7 +246,7 @@ public static class PathFindingActions
             {
                 Main.Bot.Characters.InteractWithCharacter(resultData.Key);
             }
-            RegisterMainGameActions.RegisterPostAction(); // this should not run if character starts talking
+            RegisterMainActions.RegisterPostAction(); // this should not run if character starts talking
         }
     }
 
@@ -290,7 +290,7 @@ public static class PathFindingActions
         {
             if (resultData is null) return;
             Main.Bot.Pathfinding.AttackMonster(new Goal.GoalDynamic(resultData, 1));
-            RegisterMainGameActions.RegisterPostAction();
+            RegisterMainActions.RegisterPostAction();
         }
     }
 }

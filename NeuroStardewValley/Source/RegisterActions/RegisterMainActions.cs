@@ -16,16 +16,14 @@ using StardewValley.Tools;
 
 namespace NeuroStardewValley.Source.RegisterActions;
 
-public static class RegisterMainGameActions
+public static class RegisterMainActions
 {
 	#region AddActions
 
-	public static void RegisterActions(ActionWindow window)
+	private static void RegisterActions(ActionWindow window)
 	{
 		window.AddAction(new PathFindingActions.Pathfinding()).AddAction(new PathFindingActions.PathFindToExit())
-			.AddAction(new WorldObjectActions.PlaceObjects()).AddAction(new WorldObjectActions.PlaceObject());
-
-		window.AddAction(new InteractAtTile());
+			.AddAction(new InventoryActions.OpenInventory()).AddAction(new InventoryActions.ChangeSelectedToolbarSlot());
 
 		if (Main.Config.WaitTimeAction)
 		{
@@ -38,6 +36,12 @@ public static class RegisterMainGameActions
 			window.AddAction(new QueryWorldActions.GetObjectsInRadius()).AddAction(new QueryWorldActions.GetObjectTypeInRadius());
 		}
 
+		if (Main.Bot._farmer.Items.Any(item => item is not null && item.isPlaceable()))
+		{
+			window.AddAction(new WorldObjectActions.PlaceObjects()).AddAction(new WorldObjectActions.PlaceObject())
+				.AddAction(new InteractAtTile());
+		}
+		
 		if (Game1.currentLocation.characters.Any(monster => monster.IsMonster))
 		{
 			window.AddAction(new PathFindingActions.AttackMonster());
@@ -57,12 +61,9 @@ public static class RegisterMainGameActions
 		{
 			window.AddAction(new QuestLogActions.OpenLog());
 		}
-
-		window.AddAction(new InventoryActions.OpenInventory())
-			.AddAction(new InventoryActions.ChangeSelectedToolbarSlot());
 	}
 
-	public static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null,GameLocation? location = null)
+	private static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null,GameLocation? location = null)
 	{
 		GameLocation newLocation;
 		if (e is not null)
@@ -94,7 +95,9 @@ public static class RegisterMainGameActions
 					{
 						case WateringCan wateringCan:
 						{
-							if (!wateringCan.isBottomless.Value) window.AddAction(new ToolActions.RefillWateringCan());
+							if (!wateringCan.isBottomless.Value || wateringCan.WaterLeft < wateringCan.waterCanMax)
+								window.AddAction(new ToolActions.RefillWateringCan());
+							
 							window.AddAction(new ToolActions.WaterFarmLand());
 							break;
 						}
@@ -130,7 +133,7 @@ public static class RegisterMainGameActions
 		}
 	}
 
-	public static void RegisterLocationActions(ActionWindow window,GameLocation location)
+	private static void RegisterLocationActions(ActionWindow window,GameLocation location)
 	{
 		bool madeChestAction = false;
 		foreach (var dict in location.Objects)
@@ -153,6 +156,7 @@ public static class RegisterMainGameActions
 			}
 		}
 		
+		List<Point> propertyTile = WorldObjectActions.InteractWithTileProperty.GetSchema();
 		switch (location)
 		{
 			case Farm farm:
@@ -163,20 +167,19 @@ public static class RegisterMainGameActions
 
 				break;
 			case AnimalHouse:
-				List<Point> troughTiles = WorldObjectActions.InteractWithTile.GetSchema();
-				if (troughTiles.Count < 1) break;
-				NeuroSDKCsharp.Messages.Outgoing.Context.Send($"There are the locations of the troughs: {string.Join(" ",troughTiles)}");
-
-				window.AddAction(new WorldObjectActions.InteractWithTile());
+				if (propertyTile.Count < 1) break;
+				NeuroSDKCsharp.Messages.Outgoing.Context.Send($"These are the locations of troughs in this area," +
+				                                              $" you can should put hay in them to feed your animals: {string.Join(",",propertyTile)}");
+				
+				window.AddAction(new WorldObjectActions.InteractWithTileProperty("interact_with_trough"));
 				break;
 			case MineShaft:
-				List<Point> ladderTile = WorldObjectActions.InteractWithTile.GetSchema();
-				if (ladderTile.Count < 1) break;
-				NeuroSDKCsharp.Messages.Outgoing.Context.Send($"These are the locations of the ladders," +
+				if (propertyTile.Count < 1) break;
+				NeuroSDKCsharp.Messages.Outgoing.Context.Send($"These are the locations of the ladders in this cave," +
 				                                              $" you may need to destroy the object over them to use them." +
-				                                              $" {string.Join(" ",ladderTile)}");
+				                                              $" {string.Join(",",propertyTile)}");
 
-				window.AddAction(new WorldObjectActions.InteractWithTile());
+				window.AddAction(new WorldObjectActions.InteractWithTileProperty("interact_with_ladder"));
 				break;
 		}
 	}
@@ -198,7 +201,7 @@ public static class RegisterMainGameActions
 			{
 				query = $"You are at {Main.Bot._currentLocation.Name}, at the tile {Main.Bot.Player.BotTilePosition()}" +
 				        $" The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
-				        $" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)}" +
+				        $" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true)}" +
 				        $"\nIf you want more information about your items you should open your inventory.";
 			}
 			if (state == "")

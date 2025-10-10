@@ -15,7 +15,6 @@ using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Actions;
 
-// TODO: This is meant to be a combination of all "interact with" actions 
 public class InteractAtTile : NeuroAction<Point>
 {
 	private static List<Point> ActionTiles => TileContext.ActionableTiles.ToList();
@@ -62,7 +61,7 @@ public class InteractAtTile : NeuroAction<Point>
 			case Object:
 				result = ObjectValidation(tileX,tileY,useHeldItem,out reason);
 				break;
-			case Building build:
+			case Building:
 				Logger.Info($"interacting with building");
 				result = BuildingValidation(tileX,tileY,out reason);
 				break;
@@ -123,7 +122,7 @@ public class InteractAtTile : NeuroAction<Point>
 				Main.Bot.ActionTiles.DoActionTile(point);
 				if (Game1.activeClickableMenu is null)
 				{
-					RegisterMainGameActions.RegisterPostAction();
+					RegisterMainActions.RegisterPostAction();
 				}
 				break;
 		}
@@ -190,7 +189,7 @@ public class InteractAtTile : NeuroAction<Point>
 				break;
 		}
 			
-		RegisterMainGameActions.RegisterPostAction();
+		RegisterMainActions.RegisterPostAction();
 	}
 
 	private static BuildingActionTile? GetBuildingTile(Building building,Point point)
@@ -243,7 +242,7 @@ public class InteractAtTile : NeuroAction<Point>
 		Main.Bot.Building.DoBuildingAction(building, buildingTile.Tile.ToVector2());
 		if (Game1.activeClickableMenu is null)
 		{
-			RegisterMainGameActions.RegisterPostAction();
+			RegisterMainActions.RegisterPostAction();
 		}
 	}
 

@@ -171,7 +171,7 @@ internal sealed class Main : Mod
         if (_registerTimer >= Config.TimeUntilRegisterAgain)
         {
             _registerTimer = 0;
-            RegisterMainGameActions.RegisterPostAction();
+            RegisterMainActions.RegisterPostAction();
         }
         
         if (Game1.activeClickableMenu is not TitleMenu) return;
