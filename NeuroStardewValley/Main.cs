@@ -73,7 +73,8 @@ internal sealed class Main : Mod
 
         if (Config.Debug)
         {
-            helper.Events.Display.Rendered += StardewBotFramework.Debug.DrawFoundTiles.OnRenderPathNode;
+            helper.Events.Display.Rendered += StardewBotFramework.Debug.DebugDraw.RenderMap;
+            helper.Events.Display.Rendered += StardewBotFramework.Debug.DebugDraw.OnRenderPathNode;
             helper.Events.Input.ButtonPressed += InputOnButtonPressed;   
         }
     }
