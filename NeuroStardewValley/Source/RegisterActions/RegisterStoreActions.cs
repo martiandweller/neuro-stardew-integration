@@ -4,7 +4,6 @@ using NeuroStardewValley.Source.Actions;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.Utilities;
 using StardewValley;
-using StardewValley.GameData.Buildings;
 using StardewValley.Menus;
 
 namespace NeuroStardewValley.Source.RegisterActions;
@@ -23,12 +22,6 @@ public static class RegisterStoreActions
 			Game1.activeClickableMenu = null;
 			RegisterMainActions.RegisterPostAction();
 			return;
-		}
-		// amount of items that can be highlighted
-		if (Main.Bot.Shop._currentShop.inventory.actualInventory.Any(item =>
-			    item is not null && Main.Bot.Shop._currentShop.inventory.highlightMethod(item)))
-		{
-			window.AddAction(new ShopActions.SellBackItem());
 		}
 
 		string itemString = "These are the items in the shop and their sale prices:";
@@ -51,20 +44,21 @@ public static class RegisterStoreActions
 				itemString += $" items needed for upgrade: {upgradeItem.DisplayName} {stockInformation.TradeItemCount}";
 			}
 		}
-
-		itemString += "\nThese are the items you can sell to the shop: ";
-
-		if (Main.Bot.Shop._currentShop is null) return;
-		foreach (var item in Main.Bot.Shop._currentShop.inventory.actualInventory)
+		
+		if (Main.Bot.Shop._currentShop.inventory.actualInventory.Any(item =>
+			    item is not null && Main.Bot.Shop._currentShop.inventory.highlightMethod(item)))
 		{
-			if (item is null) continue;
-
-			if (Main.Bot.Shop._currentShop.inventory.highlightMethod(item))
-			{
-				itemString += $"\n{item.DisplayName} sell price: {item.sellToStorePrice()}";
-			}
+			window.AddAction(new ShopActions.SellBackItem());
 		}
-		window.SetForce(0, "You are in a shop", itemString);
+		
+		itemString += "\nThese are the items you can sell to the shop: ";
+		
+		foreach (var item in Main.Bot.Shop._currentShop.inventory.actualInventory.Where(item =>
+			         item is not null && Main.Bot.Shop._currentShop.inventory.highlightMethod(item)))
+		{
+				itemString += $"\n{item.DisplayName} sell price: {item.sellToStorePrice()}";
+		}
+		window.SetForce(0, "You are in a shop's menu, you can either buy or sell back items here", itemString);
 		
 		window.Register();
 	}
@@ -79,8 +73,8 @@ public static class RegisterStoreActions
 			return;
 		}
 		
-		window.AddAction(new CarpenterActions.DemolishBuilding())
-		.AddAction(new CarpenterActions.CreateBuilding()).AddAction(new CarpenterActions.ChangeBuildingBlueprint());
+		window.AddAction(new CarpenterActions.DemolishBuilding()).AddAction(new CarpenterActions.CreateBuilding())
+			.AddAction(new CarpenterActions.ChangeBuildingBlueprint());
 
 		if (Main.Bot.FarmBuilding._carpenterMenu.Blueprint.IsUpgrade)
 		{

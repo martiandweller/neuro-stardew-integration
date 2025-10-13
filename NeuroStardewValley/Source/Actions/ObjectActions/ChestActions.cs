@@ -9,7 +9,6 @@ using NeuroStardewValley.Source.Utilities;
 using Newtonsoft.Json.Linq;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
-using StardewValley.Inventories;
 using StardewValley.Objects;
 using Object = StardewValley.Object;
 
@@ -17,7 +16,7 @@ namespace NeuroStardewValley.Source.Actions.ObjectActions;
 
 public static class ChestActions
 {
-	public static Chest? Chest;
+	public static Chest? Chest { get; set; }
 
 	public class OpenChest : NeuroAction<Chest>
 	{
@@ -81,16 +80,17 @@ public static class ChestActions
 			
 		}
 		
-		private static IInventory Open(Chest chest)
+		private static void Open(Chest chest)
 		{
 			Chest = chest;
 			Dictionary<Point, Object> objects = StringUtilities.GetObjectsInLocation(Chest);
 
-			if (!objects.ContainsValue(Chest)) return new Inventory();
+			if (!objects.ContainsValue(Chest))
+			{
+				return;
+			}
 
 			Main.Bot.Chest.OpenChest(Chest);
-
-			return Main.Bot.Chest.GetItems(Chest);
 		}
 
 		private static List<string> GetChestsLocations(out List<Chest> chests)
@@ -141,7 +141,9 @@ public static class ChestActions
 	private class AddItemsToChest : NeuroAction<List<Item>>
 	{
 		public override string Name => "insert_items";
-		protected override string Description => "Insert items in this chest.";
+		protected override string Description => $"Insert items in this chest, you should make sure the amount of items" +
+		                                         $" you send can be fit in this chest. The max capacity of this chest" +
+		                                         $" assuming no items is {Chest?.GetActualCapacity()}";
 		protected override JsonSchema Schema => new ()
 		{
 			Type = JsonSchemaType.Object,
@@ -162,24 +164,26 @@ public static class ChestActions
 				resultData = new();
 				return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
 			}
-			var objarray = actionData.Data?.Value<object>("item_index");
+			var objArray = actionData.Data?.Value<object>("item_index");
 
 			resultData = new();
-			if (objarray is null)
+			if (objArray is null)
 			{
 				return ExecutionResult.Failure($"item index is null");
 			}
 
 			List<int> array = new();
-			foreach (var token in (JArray)objarray)
+			foreach (var token in (JArray)objArray)
 			{
 				if (token.Value<int?>() is null) continue;
+				
+				if (token.Value<int>() < 0 || token.Value<int>() > Main.Bot.Inventory.Inventory.Count - 1 || Main.Bot.Inventory.Inventory[token.Value<int>()] is null)
+					return ExecutionResult.Failure($"{token.Value<int>()} cannot be accessed.");
 				
 				array.Add(token.Value<int>());
 			}
 			
-			var nullItems = Chest.Items.Where(slot => slot is null);
-			if (array.Count > nullItems.ToList().Count)
+			if (array.Count > Chest.GetActualCapacity() - Chest.Items.Count(item => item is not null))
 			{
 				return ExecutionResult.Failure($"You have tried to add too many items to this chest.");
 			}
@@ -205,8 +209,8 @@ public static class ChestActions
 	private class TakeItemsFromChest : NeuroAction<List<Item>>
 	{
 		public override string Name => "take_items";
-		protected override string Description => "Take items from this chest.";
-		protected override JsonSchema Schema => new ()
+		protected override string Description => $"Take items from this chest, indexes are calculated from 0 - amount of items, the amount being in this case {Chest?.Items.Count - 1}.";
+		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
 			Required = new List<string> { "item_index" },
@@ -226,24 +230,28 @@ public static class ChestActions
 				resultData = new();
 				return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
 			}
-			var objarray = actionData.Data?.Value<object>("item_index");
+			var objArray = actionData.Data?.Value<JArray>("item_index");
 
 			resultData = new();
-			if (objarray is null)
+			if (objArray is null)
 			{
 				return ExecutionResult.Failure($"item index is null");
 			}
 
 			List<int> array = new();
-			foreach (var token in (JArray)objarray)
+			foreach (var token in objArray)
 			{
 				if (token.Value<int?>() is null) continue;
+
 				
 				array.Add(token.Value<int>());
 			}
 
 			foreach (var index in array)
 			{
+				if (index < 0) return ExecutionResult.Failure($"You cannot provide an index less than one.");
+				if (index > Chest.Items.Count - 1) return ExecutionResult.Failure($"You cannot provide an index larger than the amount of items in this chest.");
+				
 				if (Chest.Items[index] is null)
 				{
 					return ExecutionResult.Failure($"{index} is not a valid item in this chest.");
@@ -275,6 +283,7 @@ public static class ChestActions
 
 		window.AddAction(new CloseChest()).AddAction(new AddItemsToChest()).AddAction(new TakeItemsFromChest());
 		if (includeColourPicker) window.AddAction(new ItemGrabActions.SelectColour());
+		
 		string nameList = InventoryContext.GetInventoryString(Chest!.Items, true);
 		window.SetForce(0,$"You are now interacting with a chest", 
 			$"These are the items in this chest: {nameList}.\n This is your inventory: " +

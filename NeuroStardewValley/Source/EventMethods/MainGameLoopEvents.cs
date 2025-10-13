@@ -32,11 +32,11 @@ public static class MainGameLoopEvents
 
 		characterContext = characterContext.Length < 1
 			? $"There are no characters in {e.NewLocation.DisplayName} as of when you entered it."
-			: $"nThese are the characters in {e.NewLocation.DisplayName}: {characterContext}";
+			: $"These are the characters in {e.NewLocation.DisplayName} when you entered it: {characterContext}";
 		
 		warpsString = warpsString.Length < 1
 			? $"There are no warps in {e.NewLocation.DisplayName} as of when you entered it"
-			: $"These are the warps to other places in {e.NewLocation.DisplayName}: {warpsString}";
+			: $"These are the warps to other places in {e.NewLocation.DisplayName} when you entered it: {warpsString}";
 		
 		Context.Send($"{warpsString}\n{characterContext}", true);
 		RegisterMainActions.RegisterPostAction(e, 0,

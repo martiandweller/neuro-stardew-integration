@@ -12,7 +12,7 @@ public static class ShopActions
 	public class BuyItem : NeuroAction<KeyValuePair<ISalable,int>>
 	{
 		public override string Name => "buy_item";
-		protected override string Description => "Buy an item from the shop";
+		protected override string Description => "Buy an item from this shop";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
@@ -59,11 +59,6 @@ public static class ShopActions
 							$"You cannot buy this item or the amount of this item, as you do not have enough money for this.");
 					}
 				case 2:
-					if (sellItem.salePrice() * amount > Game1.player.QiGems)
-					{
-						return ExecutionResult.Failure($"You cannot buy this item or the amount of this item, as you do not have enough money for this.");
-					}
-					break;
 				case 3:
 					if (sellItem.salePrice() * amount > Game1.player.QiGems)
 					{
@@ -93,7 +88,8 @@ public static class ShopActions
 	public class SellBackItem : NeuroAction<KeyValuePair<int, int>> // index of item and amount
 	{
 		public override string Name => "sell_back_item";
-		protected override string Description => "Sell back an item you have bought from here";
+		protected override string Description => "Sell back an item you have bought from here, this index should be from an" +
+		                                         " index in your inventory";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,

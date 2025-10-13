@@ -20,13 +20,13 @@ namespace NeuroStardewValley.Source.Actions;
     public class OpenInventory : NeuroAction
     {
         public override string Name => "open_inventory";
-        protected override string Description => "Open your inventory allowing the altering of items, this will also allow for you to craft items. being in the inventory or crafting items stop time.";
+        protected override string Description => "Open your inventory allowing the altering of items, this will also" +
+                                                 " allow for you to craft items. Being in the inventory or crafting items stop time.";
         protected override JsonSchema Schema => new();
         protected override ExecutionResult Validate(ActionData actionData)
         {
             return ExecutionResult.Success();
         }
-
         protected override void Execute()
         {
             Main.Bot.PlayerInformation.OpenInventory();
@@ -35,7 +35,7 @@ namespace NeuroStardewValley.Source.Actions;
     private class ExitInventory : NeuroAction
     {
         public override string Name => "close_inventory";
-        protected override string Description => "Close your inventory and go back to playing the game, this will make time start going again.";
+        protected override string Description => "Close your inventory and go back to playing the game, this will make time start again.";
         protected override JsonSchema Schema => new();
         protected override ExecutionResult Validate(ActionData actionData)
         {
@@ -56,43 +56,43 @@ namespace NeuroStardewValley.Source.Actions;
     {
         private int _position;
         public override string Name => "move_item";
-        protected override string Description => $"Move an item in inventory, you have {Main.Bot.Inventory.MaxInventory} slots in your inventory";
-
+        protected override string Description => $"Move an item in inventory to another slot, you have {Main.Bot.Inventory.MaxInventory}" +
+                                                 $" slots in your inventory. If there is already an item in the provided slot, the item will occupy the provided item's previous slot.";
         protected override JsonSchema Schema => new ()
         {
             Type = JsonSchemaType.Object,
             Required = new List<string> { "item", "position" },
             Properties = new Dictionary<string, JsonSchema>
             {
-                ["item"] = QJS.Enum(GetItemNames(Main.Bot.Inventory.GetInventory())),
-                ["position"] = QJS.Enum(Enumerable.Range(0,Main.Bot.Inventory.MaxInventory)) // reduce one so we get 0-11
+                ["item"] = QJS.Type(JsonSchemaType.Integer),
+                ["position"] = QJS.Type(JsonSchemaType.Integer)
             }
         };
         
         protected override ExecutionResult Validate(ActionData actionData, out Item? resultData)
         {
             int? itemPosition = actionData.Data?.Value<int>("position");
-            string? itemName = actionData.Data?.Value<string>("item");
+            int? movingItem = actionData.Data?.Value<int>("item");
 
-            if (itemPosition is null || itemName is null)
+            if (itemPosition is null || movingItem is null)
             {
                 resultData = null;
                 return ExecutionResult.Failure($"An argument you gave was null");
             }
             
-            if (itemPosition > Main.Bot.Inventory.MaxInventory)
+            if (itemPosition > Main.Bot.Inventory.MaxInventory || itemPosition < 0)
             {
                 resultData = null;
-                return ExecutionResult.Failure($"You have given a position that is larger than the size of your inventory");
+                return ExecutionResult.Failure($"You have given a position that is larger or smaller than the size of your inventory");
             }
 
-            if (!GetItemNames(Main.Bot.Inventory.GetInventory()).Contains(itemName) || GetItemInInventory(Main.Bot.Inventory.GetInventory(), itemName) is null)
+            if (movingItem > Main.Bot.Inventory.MaxInventory || movingItem < 0 || Main.Bot.Inventory.Inventory[(int)movingItem] == null)
             {
                 resultData = null;
-                return ExecutionResult.Failure($"You have given an item that is not in your inventory");
+                return ExecutionResult.Failure($"There is not an item in the provided index");
             }
 
-            resultData = GetItemInInventory(Main.Bot.Inventory.GetInventory(), itemName)!;
+            resultData = Main.Bot.Inventory.Inventory[(int)movingItem];
             _position = (int)itemPosition;
             
             return ExecutionResult.Success();
@@ -100,45 +100,9 @@ namespace NeuroStardewValley.Source.Actions;
 
         protected override void Execute(Item? resultData)
         {
-            Main.Bot.Inventory.MoveItem(resultData!, _position);
+            if (resultData is null) return;
+            Main.Bot.Inventory.MoveItem(resultData, _position);
             RegisterInventoryActions();
-        }
-
-        private IEnumerable<string> GetItemNames(Inventory inventory)
-        {
-            List<string> items = new();
-            for (int i = 0; i < inventory.Count; i++)
-            {
-                if (inventory[i] is null)
-                {
-                    continue;
-                }
-                items.Add($"Item Name: {inventory[i].DisplayName}, Item Amount: {inventory[i].stack}, Item Position: {i}");
-            }
-
-            return items;
-        }
-
-        private Item? GetItemInInventory(Inventory inventory,string itemString)
-        {
-            Item? item = null;
-            List<string> items = GetItemNames(inventory).ToList();
-            for (int i = 0; i < inventory.Count; i++)
-            {
-                if (inventory[i] is null)
-                {
-                    items.Add($"Position: {i} has no item in it");
-                    continue;
-                }
-
-                if (items[i] == itemString)
-                {
-                    item = inventory[i];
-                    break;
-                }
-            }
-
-            return item;
         }
     }
     private class RemoveItem : NeuroAction<KeyValuePair<Item,int>>
@@ -246,7 +210,6 @@ namespace NeuroStardewValley.Source.Actions;
         } 
         
         public override string Name => "interact_with_trinkets";
-
         protected override string Description =>
             "This will allow you to interact with trinkets, you can either remove or equip trinkets";
         protected override JsonSchema Schema => new ()
@@ -331,7 +294,6 @@ namespace NeuroStardewValley.Source.Actions;
 
         public override string Name => "change_equipped";
         protected override string Description => "This allows you to change equipped clothing and items";
-
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
@@ -488,8 +450,9 @@ namespace NeuroStardewValley.Source.Actions;
     public class RemoveFromItem : NeuroAction<Item>
     {
         public override string Name => "remove_attached_item";
-        protected override string Description => "Remove the item attached to another item." +
-                                                 " The attachment will either, be placed the first empty slot in your inventory or it will be dropped on the floor. This depends on how much free space you have.";
+        protected override string Description => "Remove the item attached to another item. The attachment will either," +
+                                                 " be placed the first empty slot in your inventory or it will be" +
+                                                 " dropped on the floor. This depends on how much free space you have.";
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,

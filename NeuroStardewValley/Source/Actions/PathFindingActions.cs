@@ -250,11 +250,11 @@ public static class PathFindingActions
         }
     }
 
+    // TODO: this will interact with the first monster that is called that not in that position
     public class AttackMonster : NeuroAction<Monster>
     {
         public override string Name => "attack_monster";
         protected override string Description => "Select a monster to attack.";
-
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
@@ -283,7 +283,7 @@ public static class PathFindingActions
                 return ExecutionResult.Failure($"That monster no longer exists in this location");
             }
             resultData = monster as Monster;
-            return ExecutionResult.Success($"You are attacking a {monster.Name}");
+            return ExecutionResult.Success($"You are attacking the {monster.Name} at {monster.TilePoint}");
         }
 
         protected override void Execute(Monster? resultData)
