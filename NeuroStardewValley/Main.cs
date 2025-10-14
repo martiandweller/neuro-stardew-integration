@@ -75,7 +75,7 @@ internal sealed class Main : Mod
         {
             helper.Events.Display.Rendered += StardewBotFramework.Debug.DebugDraw.RenderMap;
             helper.Events.Display.Rendered += StardewBotFramework.Debug.DebugDraw.OnRenderPathNode;
-            helper.Events.Input.ButtonPressed += InputOnButtonPressed;   
+            helper.Events.Input.ButtonPressed += InputOnButtonPressed;
         }
     }
 

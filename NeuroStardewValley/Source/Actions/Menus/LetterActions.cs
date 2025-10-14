@@ -94,7 +94,7 @@ public static class LetterActions
 			window.AddAction(new TakeItems());
 		}
 
-		if (Main.Bot.LetterViewer.HasQuest)
+		if (Main.Bot.LetterViewer.HasQuest == true)
 		{
 			window.AddAction(new AcceptQuest());
 		}

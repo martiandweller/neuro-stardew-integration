@@ -61,8 +61,8 @@ public static class TileContext
                 }
                 object? obj = TileUtilities.GetTileType(location, new Point(x, y));
                 
-                if (!Game1.currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
-                        false, Game1.player, true,false,false,true)
+                if (!Main.Bot._currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
+                        false, Main.Bot._farmer, true,false,false,true)
                     && obj is null)
                     continue;
 
@@ -152,11 +152,12 @@ public static class TileContext
                     continue;
                 }
                 object? obj = TileUtilities.GetTileType(location, new Point(x, y));
-                
-                if (!Game1.currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
-                        false, Game1.player, true,false,false,true)
-                    && obj is null)
-                    continue;
+
+                // issue with isCollidingPosition and running on separate threads, check RegisterMainActions for reason
+                // if (!Main.Bot._currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
+                //         false, Main.Bot._farmer, true,false,false,true)
+                //     && obj is null)
+                //     continue;
 
                 if (obj is null)
                 {
@@ -184,8 +185,8 @@ public static class TileContext
                                 continue;
                         }
                         Logger.Info($"tile: {x},{y}  length: {action.Length}  action: {string.Join(" ", action)}");
+                        objectTiles.Add(new Point(x,y),"Action");
                     }
-                    objectTiles.Add(new Point(x,y),"Action");
                     continue;
                 }
                 object? tileObj = TileUtilities.GetTileType(location, new Point(x, y));
