@@ -3,6 +3,7 @@ using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
@@ -27,7 +28,7 @@ public static class BuildingActions
 			Required = new List<string> { "building" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["building"] = QJS.Enum(GetLocationsBuildings().Select(StringUtilities.TokenizeBuildingName))
+				["building"] = QJS.Enum(GetLocationsBuildings().Select(StringUtilities.GetBuildingName))
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out Building? resultData)
@@ -40,12 +41,12 @@ public static class BuildingActions
 				return ExecutionResult.Failure($"Building was null or empty");
 			}
 
-			if (!GetLocationsBuildings().Select(StringUtilities.TokenizeBuildingName).Contains(buildingString))
+			if (!GetLocationsBuildings().Select(StringUtilities.GetBuildingName).Contains(buildingString))
 			{
 				return ExecutionResult.Failure($"Building you gave is not valid.");
 			}
 			
-			int index = GetLocationsBuildings().Select(StringUtilities.TokenizeBuildingName).ToList().IndexOf(buildingString);
+			int index = GetLocationsBuildings().Select(StringUtilities.GetBuildingName).ToList().IndexOf(buildingString);
 			Building building = GetLocationsBuildings()[index];
 
 			if (GetBuildingsActionTiles(new List<Building> { building })[building].Count == 0 && building.GetIndoors() == null)
@@ -62,7 +63,7 @@ public static class BuildingActions
 			if (resultData is null) return;
 			
 			ActionWindow window = ActionWindow.Create(Main.GameInstance);
-			string stateString = $"Select an action to do with the selected {StringUtilities.TokenizeBuildingName(resultData)}," +
+			string stateString = $"Select an action to do with the selected {StringUtilities.GetBuildingName(resultData)}," +
 			                     $" the bottom left of the building is at {resultData.tileX},{resultData.tileY} and is " +
 			                     $"{resultData.tilesHigh} tiles high and {resultData.tilesWide} tiles wide.";
 			if (GetBuildingsActionTiles(new List<Building> { resultData })[resultData].Count > 0)
@@ -85,7 +86,7 @@ public static class BuildingActions
 		}
 	}
 
-	public class BuildingAction : NeuroAction<KeyValuePair<BuildingActionTile,bool>>
+	private class BuildingAction : NeuroAction<KeyValuePair<BuildingActionTile,bool>>
 	{
 		private readonly Building _building;
 
@@ -135,22 +136,32 @@ public static class BuildingActions
 			return ExecutionResult.Success();
 		}
 
-		protected override void Execute(KeyValuePair<BuildingActionTile,bool> resultData)
+		protected override async void Execute(KeyValuePair<BuildingActionTile,bool> resultData)
 		{
-			if (resultData.Value)
+			try
 			{
-				Point pos = resultData.Key.Tile;
-				Main.Bot.Pathfinding.Goto(new Goal.GetToTile(pos.X, pos.Y));
-				if (!RangeCheck.InRange(pos)) // in case pathfinding can't get to tile
+				if (resultData.Value)
 				{
-					Context.Send($"The pathfinding had an issue, leading to you not being able to go to the tile. You should try something else.");
+					Point pos = resultData.Key.Tile;
+					await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(pos.X, pos.Y));
+					await TaskDispatcher.SwitchToMainThread();
+					if (!RangeCheck.InRange(pos)) // in case pathfinding can't get to tile
+					{
+						Context.Send($"The pathfinding had an issue, leading to you not being able to go to the tile. You should try something else.");
+						RegisterMainActions.RegisterPostAction();
+						return;
+					}
+				}
+				Main.Bot.Building.DoBuildingAction(_building, resultData.Key.Tile.ToVector2());
+				if (Game1.activeClickableMenu is null)
+				{
 					RegisterMainActions.RegisterPostAction();
-					return;
 				}
 			}
-			Main.Bot.Building.DoBuildingAction(_building, resultData.Key.Tile.ToVector2());
-			if (Game1.activeClickableMenu is null)
+			catch (Exception e)
 			{
+				Logger.Error($"{e}");
+				await TaskDispatcher.SwitchToMainThread();
 				RegisterMainActions.RegisterPostAction();
 			}
 		}
@@ -172,7 +183,7 @@ public static class BuildingActions
 		}
 	}
 
-	public class EnterBuilding : NeuroAction<bool>
+	private class EnterBuilding : NeuroAction<bool>
 	{
 		private readonly Building _building;
 
@@ -227,19 +238,29 @@ public static class BuildingActions
 			return ExecutionResult.Success();
 		}
 
-		protected override void Execute(bool pathfinding)
+		protected override async void Execute(bool pathfinding)
 		{
-			if (pathfinding)
+			try
 			{
-				Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Pos.X,Pos.Y));
-				if (!RangeCheck.InRange(Pos)) // in case pathfinding can't get to door
+				if (pathfinding)
 				{
-					Context.Send($"The pathfinding had an issue, leading to you not being able to enter the building. You should try something else.");
-					RegisterMainActions.RegisterPostAction();
-					return;
+					await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Pos.X,Pos.Y));
+					await TaskDispatcher.SwitchToMainThread();
+					if (!RangeCheck.InRange(Pos)) // in case pathfinding can't get to door
+					{
+						Context.Send($"The pathfinding had an issue, leading to you not being able to enter the building. You should try something else.");
+						RegisterMainActions.RegisterPostAction();
+						return;
+					}
 				}
+				Main.Bot.Building.UseHumanDoor(_building);
 			}
-			Main.Bot.Building.UseHumanDoor(_building);
+			catch (Exception e)
+			{
+				Logger.Error($"{e}");
+				await TaskDispatcher.SwitchToMainThread();
+				RegisterMainActions.RegisterPostAction();
+			}
 		}
 	}
 

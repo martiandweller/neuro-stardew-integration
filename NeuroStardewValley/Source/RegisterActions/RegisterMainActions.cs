@@ -7,6 +7,7 @@ using NeuroStardewValley.Source.Actions.ObjectActions;
 using NeuroStardewValley.Source.Actions.WorldQuery;
 using NeuroStardewValley.Source.ContextStrings;
 using StardewBotFramework.Source.Events.EventArgs;
+using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Buildings;
@@ -199,7 +200,7 @@ public static class RegisterMainActions
 		{
 			if (query == "")
 			{
-				query = $"You are at {Main.Bot._currentLocation.Name}, at the tile {Main.Bot.Player.BotTilePosition()}" +
+				query = $"You are at the tile {Main.Bot.Player.BotTilePosition()}" +
 				        $" The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
 				        $" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true)}" +
 				        $"\nIf you want more information about your items you should open your inventory.";
@@ -207,9 +208,8 @@ public static class RegisterMainActions
 			if (state == "")
 			{
 				var tiles = TileContext.GetObjectAmountInLocation(Main.Bot._currentLocation);
-				state = tiles.Where(kvp => kvp.Key != "Grass").Aggregate($"These are the amount of each object in this location:",
+				state = tiles.Where(kvp => kvp.Key != "Grass").Aggregate($"These are the amount of each object in {Main.Bot._currentLocation.DisplayName}:",
 					(current, kvp) => current + $"\n{kvp.Key} amount: {kvp.Value}");
-				// state = string.Join("\n",TileContext.GetTilesInLocation(Main.Bot._currentLocation,Main.Bot._farmer.TilePoint,Main.Config.TileContextRadius));
 			}
 			window.SetForce(afterSeconds, query, state, ephemeral is null || ephemeral.Value);
 		}

@@ -9,6 +9,7 @@ using NeuroStardewValley.Source.Utilities;
 using Newtonsoft.Json.Linq;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
+using StardewValley.Menus;
 using StardewValley.Objects;
 using Object = StardewValley.Object;
 
@@ -62,22 +63,33 @@ public static class ChestActions
 			return ExecutionResult.Success();
 		}
 
-		protected override void Execute(Chest? resultData)
+		protected override async void Execute(Chest? resultData)
 		{
-			if (resultData is null) return;
-			
-			foreach (var dict in Game1.currentLocation.Objects)
+			try
 			{
-				foreach (var kvp in dict)
+				if (resultData is null) return;
+			
+				foreach (var dict in Game1.currentLocation.Objects)
 				{
-					if (kvp.Value == resultData)
+					foreach (var kvp in dict.Where(kvp => kvp.Value == resultData))
 					{
-						Main.Bot.Pathfinding.Goto(new Goal.GetToTile(kvp.Key.ToPoint().X,kvp.Key.ToPoint().Y));
+						await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(kvp.Key.ToPoint().X,kvp.Key.ToPoint().Y));
+						await TaskDispatcher.SwitchToMainThread();
 						Open(resultData);
 					}
 				}
 			}
-			
+			catch (Exception e)
+			{
+				Logger.Error($"{e}");
+				await TaskDispatcher.SwitchToMainThread();
+				if (Game1.activeClickableMenu is ItemGrabMenu)
+				{
+					RegisterChestActions();
+					return;
+				}
+				RegisterMainActions.RegisterPostAction();
+			}
 		}
 		
 		private static void Open(Chest chest)

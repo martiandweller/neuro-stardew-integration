@@ -2,7 +2,10 @@ using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
 using NeuroSDKCsharp.Websocket;
+using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.ContextStrings;
+using NeuroStardewValley.Source.RegisterActions;
+using NeuroStardewValley.Source.Utilities;
 using Newtonsoft.Json.Linq;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
@@ -59,13 +62,28 @@ public static class ShippingBinActions
 			return ExecutionResult.Success("Walking to shipping bin now.");
 		}
 
-		protected override void Execute(ShippingBin? resultData)
+		protected override async void Execute(ShippingBin? resultData)
 		{
-			if (resultData is null) return;
+			try
+			{
+				if (resultData is null) return;
 		
-			Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 1));
-			_bin = resultData;
-			HandleShippingBinUi();
+				await Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 1));
+				await TaskDispatcher.SwitchToMainThread();
+				_bin = resultData;
+				HandleShippingBinUi();
+			}
+			catch (Exception e)
+			{
+				Logger.Error($"{e}");
+				await TaskDispatcher.SwitchToMainThread();
+				if (Game1.activeClickableMenu is ItemGrabMenu)
+				{
+					RegisterBinActions();
+					return;
+				}
+				RegisterMainActions.RegisterPostAction();
+			}
 		}
 		
 		private static Dictionary<int, Queue<ShippingBin>> ClosestShippingBin(Point place, List<ShippingBin> bins)

@@ -89,7 +89,7 @@ public static class MainGameLoopEvents
 				}
 				break;
 			case ShopMenu shopMenu:
-				Main.Bot.Shop.OpenShop(shopMenu); // this should be handled by OpenShopUi
+				Main.Bot.Shop.OpenShop(shopMenu); // this should also be handled by OpenShopUi
 				RegisterStoreActions.RegisterDefaultShop();
 				break;
 			case CarpenterMenu carpenterMenu:
@@ -135,7 +135,7 @@ public static class MainGameLoopEvents
 				{
 					Context.Send($"These are the event that are happening this season, {BillBoardInteraction.GetCalendarContext()}" +
 					             $"\nThere are: {billboard.calendarDays.Count} days in this season. It is currently day {SDate.Now().Day} of {SDate.Now().Season}.");
-					DelayedAction.functionAfterDelay(() => Main.Bot.BillBoard.ExitMenu(), 6500);
+					DelayedAction.functionAfterDelay(Main.Bot.BillBoard.ExitMenu, 6500);
 				}
 				break;
 			case LetterViewerMenu letterViewerMenu:
@@ -244,15 +244,12 @@ public static class MainGameLoopEvents
 	
 	public static void LocationNpcChanged(object? sender, BotCharacterListChangedEventArgs e)
 	{
-		foreach (var npc in e.Added)
-		{
-			Context.Send($"{npc.Name} has entered this location, they are at {npc.TilePoint}.",true);
-		}
+		string contextString = "These are the characters that have either joined or exited this location recently:";
+		
+		contextString = e.Added.Aggregate(contextString, (current, npc) => current + $"\n{npc.Name} has entered this location, they are at {npc.TilePoint}.");
+		contextString = e.Removed.Aggregate(contextString, (current, npc) => current + $"\n{npc.Name} has exited this location from {npc.currentLocation.DisplayName}.");
 
-		foreach (var npc in e.Removed)
-		{
-			Context.Send($"{npc.Name} has exited this location.",true);
-		}
+		Context.Send(contextString,true);
 	}
 
 	#endregion

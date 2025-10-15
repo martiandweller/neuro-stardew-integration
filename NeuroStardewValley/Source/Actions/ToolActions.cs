@@ -95,7 +95,7 @@ public static class ToolActions
             return ExecutionResult.Success();
         }
 
-        protected override void Execute(Item? selectedItem)
+        protected override async void Execute(Item? selectedItem)
         {
             if (selectedItem is null) return;
             
@@ -119,7 +119,18 @@ public static class ToolActions
             }
             if (_pathfind)
             {
-	            Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Tile.X, Tile.Y)); // get direction of final this to point
+	            try
+	            {
+		            await Main.Bot.Pathfinding.Goto(new Goal.GetToTile(Tile.X, Tile.Y)); // get direction of final this to point
+		            await TaskDispatcher.SwitchToMainThread();
+	            }
+	            catch (Exception e)
+	            {
+		            Logger.Error($"{e}");
+		            await TaskDispatcher.SwitchToMainThread();
+		            RegisterMainActions.RegisterPostAction();
+		            return;
+	            }
 	            int direction = _directions.ToList().IndexOf(_direction);
 	            Main.Bot.Tool.UseTool(direction);
             }
@@ -349,7 +360,7 @@ public static class ToolActions
 
 			if (resultData.Key is WateringCan)
 			{
-				Main.Bot.Tool.WaterSelectPatches(resultData.Value, false);
+				Main.Bot.Tool.WaterSelectPatches(resultData.Value);
 				RegisterMainActions.RegisterPostAction();
 				return;
 			}

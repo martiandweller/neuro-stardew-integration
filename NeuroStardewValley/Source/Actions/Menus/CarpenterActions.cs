@@ -293,7 +293,7 @@ public static class PlaceBuildingActions
 			if (building.buildingType.Value == Main.Bot.FarmBuilding.BlueprintEntry?.UpgradeFrom)
 			{
 				resultData = building;
-				return ExecutionResult.Success($"selected: {StringUtilities.TokenizeBuildingName(building)}"); 
+				return ExecutionResult.Success($"selected: {StringUtilities.GetBuildingName(building)}"); 
 			}
 
 			resultData = null;
@@ -322,7 +322,7 @@ public static class PlaceBuildingActions
 			}
 			foreach (var building in buildings)
 			{
-				names.Add($"{StringUtilities.TokenizeBuildingName(building)}  pos: {building.tileX.Value},{building.tileY.Value}");
+				names.Add($"{StringUtilities.GetBuildingName(building)}  pos: {building.tileX.Value},{building.tileY.Value}");
 			}
 
 			return names;
@@ -332,7 +332,7 @@ public static class PlaceBuildingActions
 		{
 			foreach (var building in Game1.currentLocation.buildings)
 			{
-				if ($"{StringUtilities.TokenizeBuildingName(building)}  pos: {building.tileX.Value},{building.tileY.Value}" == str)
+				if ($"{StringUtilities.GetBuildingName(building)}  pos: {building.tileX.Value},{building.tileY.Value}" == str)
 				{
 					return building;
 				}

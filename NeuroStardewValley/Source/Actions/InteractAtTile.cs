@@ -222,11 +222,11 @@ public class InteractAtTile : NeuroAction<Point>
 			
 		if (tile is null)
 		{
-			reason = $"There is no action for {StringUtilities.TokenizeBuildingName(building)} at {tileX},{tileY}";
+			reason = $"There is no action for {StringUtilities.GetBuildingName(building)} at {tileX},{tileY}";
 			return false;
 		}
 		
-		reason = $"Interacting with {StringUtilities.TokenizeBuildingName(building)}";
+		reason = $"Interacting with {StringUtilities.GetBuildingName(building)}";
 		return true;
 	}
 

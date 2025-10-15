@@ -117,7 +117,7 @@ public static class BuyAnimalsActions
 				return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,"BuildingCheck"));
 			}
 			resultData = building;
-			return ExecutionResult.Success($"You have selected a: {StringUtilities.TokenizeBuildingName(building)}");
+			return ExecutionResult.Success($"You have selected a: {StringUtilities.GetBuildingName(building)}");
 		}
 
 		protected override void Execute(Building? resultData)
@@ -135,7 +135,7 @@ public static class BuyAnimalsActions
 			using var enumerator = enumerable.GetEnumerator();
 			while (enumerator.MoveNext())
 			{
-				strings.Add($"{enumerator.Current.tileX.Value},{enumerator.Current.tileY.Value} {StringUtilities.TokenizeBuildingName(enumerator.Current)}");
+				strings.Add($"{enumerator.Current.tileX.Value},{enumerator.Current.tileY.Value} {StringUtilities.GetBuildingName(enumerator.Current)}");
 			}
 			
 			return strings;
@@ -263,7 +263,7 @@ public static class BuyAnimalsActions
 
 	private static string FormatBuildingAnimals(Building building)
 	{
-		string animals = $"-{building.tileX.Value},{building.tileY.Value} {StringUtilities.TokenizeBuildingName(building)}";
+		string animals = $"-{building.tileX.Value},{building.tileY.Value} {StringUtilities.GetBuildingName(building)}";
 		foreach (var dict in building.GetIndoors().animals)
 		{
 			animals += string.Join("\n--",dict.Select(kvp => kvp.Value.displayType));

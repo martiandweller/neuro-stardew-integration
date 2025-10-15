@@ -67,11 +67,21 @@ public static class PathFindingActions
             return ExecutionResult.Success($"You are walking towards {goal.VectorLocation}.");
         }
 
-        protected override void Execute(Goal? goal)
+        protected override async void Execute(Goal? goal)
         {
-            if (goal is null) return; // probably find
-            Main.Bot.Pathfinding.Goto(goal, _destructive);
-            RegisterMainActions.RegisterPostAction();
+            try
+            {
+                if (goal is null) return; // probably fine
+                await Main.Bot.Pathfinding.Goto(goal, _destructive);
+                await TaskDispatcher.SwitchToMainThread();
+                RegisterMainActions.RegisterPostAction();
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"{e}");
+                await TaskDispatcher.SwitchToMainThread();
+                RegisterMainActions.RegisterPostAction();
+            }
         }
 
     }
@@ -79,6 +89,7 @@ public static class PathFindingActions
     public class PathFindToExit : NeuroAction<Goal?>
     {
         private bool _destructive;
+        private GameLocation _oldLocation = Main.Bot._currentLocation;
         public override string Name => "move_to_exit";
         protected override string Description => "This will move the character to the provided tile to go to an exit, " +
                                                  "the provided coordinates are sent as X and Y in that order.";
@@ -148,55 +159,63 @@ public static class PathFindingActions
 
             goal = new Goal.GoalPosition(exitPoint.X,exitPoint.Y);
             _destructive = (bool)destructive;
+            _oldLocation = Main.Bot._currentLocation;
             return ExecutionResult.Success($"Going to {goal.VectorLocation}");
         }
 
-        protected override void Execute(Goal? goal)
+        protected override async void Execute(Goal? goal)
         {
-            if (goal is null) return; // probably fine
-            
-            Logger.Warning($"async execute functions");
-            GameLocation oldLocation = Main.Bot._currentLocation;
-            Vector2 vec2 = goal.VectorLocation.ToVector2() * 64;
-            var buildings = Main.Bot._currentLocation.buildings
-                .Where(building => building.GetBoundingBox().Contains(vec2)).ToList();
-            Building? building = null;
-            if (buildings.Count > 0)
+            try
             {
-                building = buildings[0];
-                Point point = building.getPointForHumanDoor();
-                goal = new Goal.GetToTile(point.X, point.Y);
-            }
-            
-            if (!Utility.tileWithinRadiusOfPlayer(goal.X, goal.Y, 1, Main.Bot._farmer))
-            {
-                Main.Bot.Pathfinding.Goto(goal, _destructive);
-
-                // probably don't need to do lower checks if these are different
-                if (!Main.Bot._currentLocation.Equals(oldLocation)) return;
-            }
-
-            // pathfinding can't go within 1 tile of current position so we do this.
-            if (building is null)
-            {
-                List<Warp> warps = Main.Bot._currentLocation.warps.Where(warp => warp.X == goal.X && warp.Y == goal.Y)
-                    .ToList();
-                if (!warps.Any()) return;
-                var warp = warps[0];
-
-                Main.Bot._farmer.warpFarmer(warp);
-                
-                // warps can take a second to register sometimes
-                var t = Task.Delay(3000);
-                t.Wait();
-                if (Main.Bot._currentLocation.Equals(oldLocation))
+                if (goal is null) return; // probably fine
+                Vector2 vec2 = goal.VectorLocation.ToVector2() * 64;
+                var buildings = Main.Bot._currentLocation.buildings
+                    .Where(building => building.GetBoundingBox().Contains(vec2)).ToList();
+                Building? building = null;
+                if (buildings.Count > 0)
                 {
-                    RegisterMainActions.RegisterPostAction();
+                    building = buildings[0];
+                    Point point = building.getPointForHumanDoor();
+                    goal = new Goal.GetToTile(point.X, point.Y);
                 }
-                return;
-            }
             
-            Main.Bot.Building.UseHumanDoor(building);
+                if (!Utility.tileWithinRadiusOfPlayer(goal.X, goal.Y, 1, Main.Bot._farmer))
+                {
+                    await Main.Bot.Pathfinding.Goto(goal, _destructive);
+                    await TaskDispatcher.SwitchToMainThread();
+
+                    // probably don't need to do lower checks if these are different
+                    if (!Main.Bot._currentLocation.Equals(_oldLocation)) return;
+                }
+
+                // pathfinding can't go within 1 tile of current position so we do this.
+                if (building is null)
+                {
+                    List<Warp> warps = Main.Bot._currentLocation.warps.Where(warp => warp.X == goal.X && warp.Y == goal.Y)
+                        .ToList();
+                    if (!warps.Any()) return;
+                    var warp = warps[0];
+
+                    Main.Bot._farmer.warpFarmer(warp);
+                
+                    // warps can take a second to register sometimes
+                    await Task.Delay(3000);
+                    await TaskDispatcher.SwitchToMainThread();
+                    if (Main.Bot._currentLocation.Equals(_oldLocation))
+                    {
+                        RegisterMainActions.RegisterPostAction();
+                    }
+                    return;
+                }
+            
+                Main.Bot.Building.UseHumanDoor(building);
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"exception in path-find to exit: {e}");
+                await TaskDispatcher.SwitchToMainThread();
+                if (Main.Bot._currentLocation.Equals(_oldLocation)) RegisterMainActions.RegisterPostAction();
+            }
         }
     }
 
@@ -239,14 +258,24 @@ public static class PathFindingActions
             return ExecutionResult.Success();
         }
 
-        protected override void Execute(KeyValuePair<NPC,bool> resultData)
+        protected override async void Execute(KeyValuePair<NPC,bool> resultData)
         {
-            Main.Bot.Pathfinding.Goto(new Goal.GoalDynamic(resultData.Key, 1));
-            if (resultData.Value)
+            try
             {
-                Main.Bot.Characters.InteractWithCharacter(resultData.Key);
+                await Main.Bot.Pathfinding.Goto(new Goal.GoalDynamic(resultData.Key, 1));
+                await TaskDispatcher.SwitchToMainThread();
+                if (resultData.Value)
+                {
+                    Main.Bot.Characters.InteractWithCharacter(resultData.Key);
+                }
+                RegisterMainActions.RegisterPostAction(); // this should not run if character starts talking
             }
-            RegisterMainActions.RegisterPostAction(); // this should not run if character starts talking
+            catch (Exception e)
+            {
+                Logger.Error($"Error in InteractCharacter: {e}");
+                await TaskDispatcher.SwitchToMainThread();
+                RegisterMainActions.RegisterPostAction();
+            }
         }
     }
 
@@ -286,11 +315,21 @@ public static class PathFindingActions
             return ExecutionResult.Success($"You are attacking the {monster.Name} at {monster.TilePoint}");
         }
 
-        protected override void Execute(Monster? resultData)
+        protected override async void Execute(Monster? resultData)
         {
-            if (resultData is null) return;
-            Main.Bot.Pathfinding.AttackMonster(new Goal.GoalDynamic(resultData, 1));
-            RegisterMainActions.RegisterPostAction();
+            try
+            {
+                if (resultData is null) return;
+                await Main.Bot.Pathfinding.AttackMonster(new Goal.GoalDynamic(resultData, 1),true);
+                await TaskDispatcher.SwitchToMainThread();
+                RegisterMainActions.RegisterPostAction();
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Error in AttackMonster: {e}");
+                await TaskDispatcher.SwitchToMainThread();
+                RegisterMainActions.RegisterPostAction();
+            }
         }
     }
 }

@@ -1,8 +1,8 @@
 {
   "Name": "NeuroStardewValleyIntegration",
   "Author": "PandaPanda135",
-  "Version": "0.0.1",
-  "Description": "Adds Neuro-sama SDK integration to Stardew Valley",
+  "Version": "0.9.0",
+  "Description": "Adds Neuro API integration to Stardew Valley.",
   "UniqueID": "Panda.NeuroStardewValley",
   "EntryDll": "NeuroStardewValley.dll",
   "MinimumApiVersion": "4.0.0",

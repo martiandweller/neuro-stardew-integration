@@ -96,18 +96,14 @@ public static class StringUtilities
 
 	public static string FormatBannerMessage(string message)
 	{
-		string formattedMessage = "";
-
-		formattedMessage = message.Replace("\n", "");
+		string formattedMessage = message.Replace("\n", "");
 
 		return formattedMessage;
 	}
 
 	public static string FormatDailyQuest(string description)
 	{
-		string formattedMessage = "";
-
-		formattedMessage = description;
+		string formattedMessage = description;
 		char lastChar = '#';
 		int spaceRepeat = 0;
 		foreach (var c in formattedMessage) // we do this to remove the large gaps in text
@@ -158,26 +154,45 @@ public static class StringUtilities
 		return itemString;
 	}
 	
-	public static string TokenizeBuildingName(Building building)
+	public static string GetBuildingName(Building building)
 	{
 		return TokenParser.ParseText(building.GetData().Name);
 	}
 
+	private static readonly Dictionary<int, string> ResourceClumpNames = new()
+	{
+		{44, "Green rain bush"},
+		{46, "Green rain bush"},
+		{600, "Stump"},
+		{602, "Hollow log"},
+		{622, "Meteorite"},
+		{672, "Boulder"},
+		{752, "Mine rock"},
+		{754, "Mine rock"},
+		{756, "Mine rock"},
+		{758, "Mine rock"},
+		{148, "Quarry boulder"}
+	};
+	
 	/// <summary>
-	/// Correct the name given from modData.Name from <see cref="ResourceClump"/> and <see cref="TerrainFeature"/>
+	/// Corrects the name given from modData.Name for <see cref="TerrainFeature"/> and modded <see cref="ResourceClump"/>
+	/// , in the case of a vanilla resource clump it will get the name from <see cref="ResourceClumpNames"/>
 	/// </summary>
 	public static string CorrectObjectName(INetObject<NetFields> netObject)
 	{
 		switch (netObject)
 		{
-			case ResourceClump resourceClump:
-				int start = resourceClump.modData.Name.IndexOf('(');
-				return resourceClump.modData.Name.Substring(start + 1,
-					resourceClump.modData.Name.IndexOf(')') - start - 1);
-			case TerrainFeature terrainFeature:
-				int startIndex = terrainFeature.modData.Name.IndexOf('(');
-				return terrainFeature.modData.Name.Substring(startIndex + 1,
-					terrainFeature.modData.Name.IndexOf(')') - startIndex - 1);
+			case ResourceClump clump:
+				if (ResourceClumpNames.TryGetValue(clump.parentSheetIndex.Value, out string? test)) return test;
+				
+				// this is for non-vanilla and will always output "ResourceClump"
+				int start = clump.modData.Name.IndexOf('(');
+				return clump.modData.Name.Substring(start + 1,
+					clump.modData.Name.IndexOf(')') - start - 1);
+			case TerrainFeature feature:
+				int startIndex = feature.modData.Name.IndexOf('(');
+				return feature.modData.Name.Substring(startIndex + 1,
+					feature.modData.Name.IndexOf(')') - startIndex - 1);
 		}
 
 		return "";

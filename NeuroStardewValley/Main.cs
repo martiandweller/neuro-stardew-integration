@@ -1,12 +1,12 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using NeuroStardewValley.Debug;
 using StardewBotFramework.Source;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using NeuroStardewValley.Source.Actions.Menus;
 using NeuroStardewValley.Source.EventMethods;
 using NeuroStardewValley.Source.RegisterActions;
+using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
 using StardewValley.Menus;
@@ -28,6 +28,7 @@ internal sealed class Main : Mod
     
     public override void Entry(IModHelper helper)
     {
+        TaskDispatcher.Initialize();
         Logger.SetMonitor(Monitor);
         Bot = new StardewClient(helper, ModManifest, Monitor, helper.Multiplayer);
 
@@ -153,6 +154,7 @@ internal sealed class Main : Mod
     private Vector2 _lastPlayerPos;
     private void Update(object? sender, UpdateTickingEventArgs e)
     {
+        TaskDispatcher.RunPending();
         // this is for if neuro has been frozen for too long
         Vector2 newPos = Bot._farmer.Position;
         // this covers most stuff like EventUp and current menu not null

@@ -152,12 +152,11 @@ public static class TileContext
                     continue;
                 }
                 object? obj = TileUtilities.GetTileType(location, new Point(x, y));
-
-                // issue with isCollidingPosition and running on separate threads, check RegisterMainActions for reason
-                // if (!Main.Bot._currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
-                //         false, Main.Bot._farmer, true,false,false,true)
-                //     && obj is null)
-                //     continue;
+                
+                if (!Main.Bot._currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
+                        false, Main.Bot._farmer, true,false,false,true)
+                    && obj is null)
+                    continue;
 
                 if (obj is null)
                 {
@@ -210,7 +209,8 @@ public static class TileContext
         foreach (var kvp in objects)
         {
             string name = SimpleObjectName(kvp.Value);
-            if (name == "") continue;
+            // can find an error item in town, using object displayName doesn't work
+            if (name == "" || name.ToLower().Contains("error")) continue;
             
             if (!amountOfObject.TryGetValue(name, out _))
             {
@@ -228,7 +228,7 @@ public static class TileContext
     /// <returns>This will return either the object name or an empty string if the object is not valid.</returns>
     public static string SimpleObjectName(object obj)
     {
-        string name;
+        string name = "";
         switch (obj)
         {
             case Object objs:
@@ -247,10 +247,8 @@ public static class TileContext
                 name = "Water";
                 break;
             case Building building:
-                name = StringUtilities.TokenizeBuildingName(building);
+                name = StringUtilities.GetBuildingName(building);
                 break;
-            default:
-                return "";
         }
 
         return name;
@@ -285,13 +283,13 @@ public static class TileContext
             case Building building:
                 if (building.isActionableTile(x, y, Main.Bot._farmer))
                 {
-                    return $"{x},{y} has an action for the {StringUtilities.TokenizeBuildingName(building)}";
+                    return $"{x},{y} has an action for the {StringUtilities.GetBuildingName(building)}";
                 }
                 if (!SentBuildings.Add(building)) return null; // we do this as buildings take up multiple tiles
                 int buildX = building.tileX.Value;
                 int buildY = building.tileY.Value;
                 Point humanDoor = building.getPointForHumanDoor();
-                string contextString = $"The top left tile of the {StringUtilities.TokenizeBuildingName(building)} is: {buildX},{buildY}." +
+                string contextString = $"The top left tile of the {StringUtilities.GetBuildingName(building)} is: {buildX},{buildY}." +
                                     $" The bottom right is {buildX + building.tilesWide.Value}, {buildY + building.tilesHigh.Value}.";
                 if (humanDoor != new Point(-1,-1)) contextString += $" The door is at {humanDoor.X},{humanDoor.Y}.";
                 if (building.animalDoor.Value != new Point(-1, -1)) 
