@@ -16,6 +16,7 @@ public class ModConfig
     
     // specific actions config
 
+    // When Neuro uses a query action it will ask her for a radius, this limits the size of what she can receive.
     public int MinQueryRange { get; set; } = 3;
     public int MaxQueryRange { get; set; } = 100;
     public Dictionary<string, bool> CharacterCreationOptions { get; set; } = new()

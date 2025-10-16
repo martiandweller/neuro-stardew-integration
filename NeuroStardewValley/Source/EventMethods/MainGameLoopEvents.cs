@@ -8,6 +8,7 @@ using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Events.EventArgs;
 using StardewBotFramework.Source.Events.World_Events;
+using StardewBotFramework.Source.Modules.Pathfinding.Algorithms;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewModdingAPI.Utilities;
 using StardewValley;
@@ -25,7 +26,9 @@ public static class MainGameLoopEvents
 	{
 		TileContext.ActionableTiles.Clear();
 		AlgorithmBase.IPathing.collisionMap.Clear();
-		
+		AlgorithmBase.IPathing pathing = new AStar.Pathing();
+		pathing.BuildCollisionMap(Main.Bot._currentLocation);
+
 		if (e.Player.passedOut || Game1.eventUp) return;
 		string warps = TileContext.GetWarpTiles(e.NewLocation,true);
 		string warpsString = !string.IsNullOrEmpty(warps) ? TileContext.GetWarpTilesString(warps) : "There are no warps in this location";

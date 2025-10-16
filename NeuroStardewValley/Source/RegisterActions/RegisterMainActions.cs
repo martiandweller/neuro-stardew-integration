@@ -7,7 +7,6 @@ using NeuroStardewValley.Source.Actions.ObjectActions;
 using NeuroStardewValley.Source.Actions.WorldQuery;
 using NeuroStardewValley.Source.ContextStrings;
 using StardewBotFramework.Source.Events.EventArgs;
-using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Buildings;
@@ -189,6 +188,13 @@ public static class RegisterMainActions
 
 	public static void RegisterPostAction(BotWarpedEventArgs? e = null,int afterSeconds = 0,string query = "",string state = "",bool? ephemeral = null)
 	{
+		if (Main.Bot._farmer.IsSitting())
+		{
+			var actionWindow = ActionWindow.Create(Main.GameInstance);
+			actionWindow.AddAction(new WorldObjectActions.StopSitting()).Register();
+			NeuroSDKCsharp.Messages.Outgoing.Context.Send($"You are currently sitting, if you would like to get up you should use the stop sitting action.");
+			return;
+		}
 		if (!Context.IsPlayerFree) return;
 		
 		Logger.Info($"register actions again.");

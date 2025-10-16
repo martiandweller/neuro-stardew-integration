@@ -44,6 +44,11 @@ public class WaitForTime : NeuroAction<int>
 		{
 			return ExecutionResult.Failure($"The time you provided was not in the correct format.");
 		}
+
+		if (!Game1.shouldTimePass())
+		{
+			return ExecutionResult.Failure($"You cannot use this as time is currently pause and will not advance");
+		}
 		
 		if (time < Game1.timeOfDay) return ExecutionResult.Failure($"The time you provided is earlier than the current time.");
 		resultData = time;

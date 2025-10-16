@@ -24,8 +24,6 @@ public static class WorldEvents
 			using var enumerator = e.Removed.GetEnumerator();
 			HandleEnumeratorContext(enumerator,"{0} was removed from this location.");
 		}
-		
-		// if (CharacterController.IsMoving()) CharacterController.ForceStopMoving();
 	}
 
 	public static void LocationFurnitureChanged(object? sender, BotFurnitureChangedEventArgs e)

@@ -23,18 +23,8 @@ public static class StringUtilities
 		{
 			intHours = Game1.timeOfDay / 100 % 12;
 		}
-		int minutes = Game1.timeOfDay % 100;
-		string padZeros = "";
-		string hours = intHours.ToString();
-		string text = "";
-		if (Game1.timeOfDay % 100 == 0)
-		{
-			padZeros = padZeros.Insert(0,"0");
-		}
-		text = text.Insert(text.Length,hours);
-		text = text.Insert(text.Length,":");
-		text = text.Insert(text.Length, minutes.ToString());
-		text = text.Insert(text.Length, padZeros);
+
+		string text = FormatTime(intHours);
 		if (Game1.timeOfDay < 1200 || Game1.timeOfDay >= 2400)
 		{
 			text = text.Insert(text.Length, " AM");
@@ -63,9 +53,16 @@ public static class StringUtilities
 		{
 			intHours = Game1.timeOfDay / 100;
 		}
+
+		string text = FormatTime(intHours);
+		return text;
+	}
+
+	private static string FormatTime(int hour)
+	{
 		int minutes = Game1.timeOfDay % 100;
 		string padZeros = "";
-		string hours = intHours.ToString();
+		string hours = hour.ToString();
 		string text = "";
 		if (Game1.timeOfDay % 100 == 0)
 		{

@@ -226,7 +226,7 @@ public static class TileContext
     /// The bare minimum name for an object, this is used in <see cref="GetObjectAmountInLocation"/> 
     /// </summary>
     /// <returns>This will return either the object name or an empty string if the object is not valid.</returns>
-    public static string SimpleObjectName(object obj)
+    private static string SimpleObjectName(object obj)
     {
         string name = "";
         switch (obj)
@@ -253,19 +253,23 @@ public static class TileContext
 
         return name;
     }
-    
+
     /// <summary>
-    /// Gets the object at the provided tile and returns a string for that type of object, if there is no object it will be an empty string
+    /// Gets the object at the provided tile and returns a string for that type of object, if there is no object it will be an empty string.
     /// </summary>
-    public static string? GetTileContext(GameLocation location, int x, int y)
+    /// <param name="location"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="simple">This will return a more simplified version of an object's context.</param>
+    public static string? GetTileContext(GameLocation location, int x, int y, bool simple = false)
     {
         _location = location;
         object? obj = TileUtilities.GetTileType(location, new Point(x, y));
         if (obj is null) return null;
-        return GetObjectContext(obj,x,y);
+        return simple ? SimpleObjectName(obj) : GetObjectContext(obj,x,y);
     }
 
-    public static string? GetObjectContext(object obj,int x,int y)
+    private static string? GetObjectContext(object obj,int x,int y)
     {
         switch (obj)
         {

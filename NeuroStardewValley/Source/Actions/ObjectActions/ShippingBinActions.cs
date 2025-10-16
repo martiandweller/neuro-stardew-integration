@@ -242,6 +242,7 @@ public static class ShippingBinActions
 		protected override void Execute()
 		{
 			Main.Bot.ShippingBinInteraction.GrabLastItem();
+			RegisterBinActions();
 		}
 	}
 

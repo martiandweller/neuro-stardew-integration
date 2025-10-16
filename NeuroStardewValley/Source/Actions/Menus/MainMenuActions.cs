@@ -224,26 +224,12 @@ public static class MainMenuActions
                             properties.Add(kvp.Key,QJS.Enum(Enumerable.Range(0,30)));
                             break;
                         case "name":
-                            properties.Add(kvp.Key,new JsonSchema
-                            {
-                                Type = JsonSchemaType.String,
-                                MaxLength = 20, // mmmm magic number yummy (There is no solid max length, and it is based on font)
-                                MinLength = 1
-                            });
-                            break;
                         case "farm_name":
-                            properties.Add(kvp.Key,new JsonSchema
-                            {
-                                Type = JsonSchemaType.String,
-                                MaxLength = 20,
-                                MinLength = 1
-                            });
-                            break;
                         case "favourite_thing":
                             properties.Add(kvp.Key,new JsonSchema
                             {
                                 Type = JsonSchemaType.String,
-                                MaxLength = 20,
+                                MaxLength = 20, // mmmm magic number yummy (There is no solid max length, and it is based on font)
                                 MinLength = 1
                             });
                             break;

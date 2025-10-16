@@ -371,4 +371,21 @@ public static class WorldObjectActions
 			return tiles;
 		}
 	}
+
+	public class StopSitting : NeuroAction
+	{
+		public override string Name => "stop_sitting";
+		protected override string Description => "Stop sitting";
+		protected override JsonSchema Schema => new();
+		protected override ExecutionResult Validate(ActionData actionData)
+		{
+			return ExecutionResult.Success();
+		}
+
+		protected override void Execute()
+		{
+			Main.Bot._farmer.StopSitting();
+			DelayedAction.functionAfterDelay(() => RegisterMainActions.RegisterPostAction(), 3000);
+		}
+	}
 }
