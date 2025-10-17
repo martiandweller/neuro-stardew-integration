@@ -119,7 +119,7 @@ public static class QueryWorldActions
 			Required = new List<string> { "object_name","radius" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["object_name"] = QJS.Enum(TileContext.GetObjectAmountInLocation(Main.Bot._currentLocation)
+				["object_name"] = QJS.Enum(TileContext.GetNameAmountInLocation(Main.Bot._currentLocation)
 					.Select(kvp => kvp.Key).ToList()),
 				["radius"] = QJS.Type(JsonSchemaType.Integer),
 			}
@@ -140,7 +140,7 @@ public static class QueryWorldActions
 				return ExecutionResult.Failure($"The radius should only be between {MinRadius} and {MaxRadius}.");
 			}
 
-			if (!TileContext.GetObjectAmountInLocation(Main.Bot._currentLocation)
+			if (!TileContext.GetNameAmountInLocation(Main.Bot._currentLocation)
 				    .Select(kvp => kvp.Key).ToList().Contains(name))
 			{
 				return ExecutionResult.Failure($"The name you specified is not valid.");

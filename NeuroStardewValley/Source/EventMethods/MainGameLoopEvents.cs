@@ -225,6 +225,9 @@ public static class MainGameLoopEvents
 	public static void OnDayStarted(object? sender, BotDayStartedEventArgs e)
 	{
 		Context.Send(NewDayContext());
+		AlgorithmBase.IPathing pathing = new AStar.Pathing();
+		// stop ugly stuttering
+		pathing.BuildCollisionMap(Main.Bot._currentLocation);
 	}
 
 	public static void OnDayEnded(object? sender, BotDayEndedEventArgs e)

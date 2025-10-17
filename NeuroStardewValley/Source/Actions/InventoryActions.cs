@@ -110,7 +110,8 @@ namespace NeuroStardewValley.Source.Actions;
         private IEnumerable<string> Options => new[] { "drop", "bin" };
         private string _selectedOption = "";
         public override string Name => "remove_item";
-        protected override string Description => "remove an item from your inventory, this can be done by either dropping it or putting it in the bin.";
+        protected override string Description => "remove an item from your inventory, this can be done by either dropping" +
+                                                 " it or putting it in the bin. If you specify 0 as the amount, the whole stack will be removed";
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
@@ -157,6 +158,7 @@ namespace NeuroStardewValley.Source.Actions;
             {
                 return ExecutionResult.Failure($"You have selected more or too little items then are available.");
             }
+            
             resultData = new(item,(int)selectedAmount);
             _selectedOption = selectedOption;
             return ExecutionResult.Success($"You are binning {selectedAmount} {item.DisplayName}");
@@ -169,10 +171,11 @@ namespace NeuroStardewValley.Source.Actions;
             if (page is null) return;
             
             Main.Bot.Inventory.setPage(page);
+            int stack = resultData.Value == 0 ? resultData.Key.Stack : resultData.Value;
             
             int index = Main.Bot.Inventory.Inventory.IndexOf(resultData.Key);
             Main.Bot.Inventory.SelectSingleCursorItem(index,true);
-            for (int i = 0; i < resultData.Value - 1; i++)
+            for (int i = 0; i <= stack; i++)
             {
                 Logger.Info($"clicking");
                 Main.Bot.Inventory.SelectSingleCursorItem(index);

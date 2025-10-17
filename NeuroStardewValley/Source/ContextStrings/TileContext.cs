@@ -199,7 +199,7 @@ public static class TileContext
     
     public static readonly HashSet<Building> SentBuildings = new();
     public static readonly HashSet<Furniture> SentFurniture = new();
-    public static Dictionary<string, int> GetObjectAmountInLocation(GameLocation location, Point? startTile = null, int radius = 0)
+    public static Dictionary<string, int> GetNameAmountInLocation(GameLocation location, Point? startTile = null, int radius = 0)
     {
         _location = location;
         var objects = GetObjectsInLocation(location, startTile, radius);
@@ -223,10 +223,10 @@ public static class TileContext
     }
 
     /// <summary>
-    /// The bare minimum name for an object, this is used in <see cref="GetObjectAmountInLocation"/> 
+    /// The bare minimum name for an object, this is used in <see cref="GetNameAmountInLocation"/> 
     /// </summary>
     /// <returns>This will return either the object name or an empty string if the object is not valid.</returns>
-    private static string SimpleObjectName(object obj)
+    public static string SimpleObjectName(object obj)
     {
         string name = "";
         switch (obj)

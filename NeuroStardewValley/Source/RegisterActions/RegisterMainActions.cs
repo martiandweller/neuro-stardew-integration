@@ -213,12 +213,37 @@ public static class RegisterMainActions
 			}
 			if (state == "")
 			{
-				var tiles = TileContext.GetObjectAmountInLocation(Main.Bot._currentLocation);
-				state = tiles.Where(kvp => kvp.Key != "Grass").Aggregate($"These are the amount of each object in {Main.Bot._currentLocation.DisplayName}:",
-					(current, kvp) => current + $"\n{kvp.Key} amount: {kvp.Value}");
+				state = GetSeparatedState();
 			}
 			window.SetForce(afterSeconds, query, state, ephemeral is null || ephemeral.Value);
 		}
 		window.Register();
+	}
+
+	private static string GetSeparatedState()
+	{
+		var names = TileContext.GetNameAmountInLocation(Main.Bot._currentLocation);
+		string context = "These are the objects around you: ";
+		string building = "";
+		foreach (var kvp in TileContext.GetObjectsInLocation(Main.Bot._currentLocation))
+		{
+			string name = TileContext.SimpleObjectName(kvp.Value);
+			if (name == "" || context.Contains(name) || building.Contains(name)) continue;
+			switch (kvp.Value)
+			{
+				case Building:
+					building += $"\n{name} amount: {names[name]}";
+					break;
+				default:
+					context += $"\n{name} amount: {names[name]}";
+					break;
+			}
+		}
+
+		if (building.Length == 0) return context;
+		
+		building = $"\nThese are the buildings around you: {building}";
+		context += $"{building}";
+		return context;
 	}
 }
