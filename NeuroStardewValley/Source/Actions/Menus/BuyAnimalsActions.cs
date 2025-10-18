@@ -5,7 +5,6 @@ using NeuroStardewValley.Source.Utilities;
 using StardewValley;
 using StardewValley.Buildings;
 using StardewValley.Menus;
-using Logger = NeuroStardewValley.Debug.Logger;
 
 namespace NeuroStardewValley.Source.Actions.Menus;
 
@@ -105,7 +104,7 @@ public static class BuyAnimalsActions
 				return ExecutionResult.Failure($"building cannot be null");
 			}
 
-			int index = GetSchema().IndexOf(buildingString);
+			int index = GetSchema().ToList().IndexOf(buildingString);
 			if (index == -1)
 			{
 				return ExecutionResult.Failure($"The building you gave was not valid.");
@@ -127,18 +126,10 @@ public static class BuyAnimalsActions
 			RegisterActions();
 		}
 
-		private static List<string> GetSchema()
+		public IEnumerable<string> GetSchema()
 		{
-			var enumerable = Main.Bot.AnimalMenu.GetAvailableBuildings();
-			
-			List<string> strings = new();
-			using var enumerator = enumerable.GetEnumerator();
-			while (enumerator.MoveNext())
-			{
-				strings.Add($"{enumerator.Current.tileX.Value},{enumerator.Current.tileY.Value} {StringUtilities.GetBuildingName(enumerator.Current)}");
-			}
-			
-			return strings;
+			return Main.Bot.AnimalMenu.GetAvailableBuildings().Select(building =>
+				$"{building.tileX.Value},{building.tileY.Value} {StringUtilities.GetBuildingName(building)}");
 		}
 	}
 
@@ -235,8 +226,13 @@ public static class BuyAnimalsActions
 		if (Main.Bot.AnimalMenu.Menu.onFarm && !Main.Bot.AnimalMenu.Menu.namingAnimal)
 		{
 			queryString = "You are selecting the building for the animal to be in.";
-			stateString = $"These are the other animal in the valid buildings: {string.Join("\n",Main.Bot.AnimalMenu.GetAvailableBuildings().Select(FormatBuildingAnimals))}";
-			window.AddAction(new SelectBuilding()).AddAction(new ExitMenu());
+			stateString = "None of the buildings in this location are valid.";
+			if (new SelectBuilding().GetSchema().ToArray().Length != 0)
+			{
+				stateString = $"These are the other animal in the valid buildings: {string.Join("\n",Main.Bot.AnimalMenu.GetAvailableBuildings().Select(FormatBuildingAnimals))}";
+				window.AddAction(new SelectBuilding());
+			}
+			window.AddAction(new ExitMenu());
 		}
 		else if (Main.Bot.AnimalMenu.Menu.onFarm)
 		{
@@ -248,22 +244,24 @@ public static class BuyAnimalsActions
 		{
 			List<ClickableTextureComponent> cc = Main.Bot.AnimalMenu.GetAvailableButtons(); 
 			queryString = "You are selecting an animal to buy";
-			foreach (var c in cc)
-			{ 
-				Logger.Info($"c: {c.hoverText}  {c.item}");
-			}
 			stateString = $"You have {Main.Bot.PlayerInformation.Money} gold.";
 			stateString += $"\n{string.Concat(cc.Select(c => $"{c.hoverText} price: {c.item.salePrice()}"))}";
 			window.AddAction(new SelectAnimal()).AddAction(new ExitMenu());
 		}
-
+		
 		window.SetForce(waitTime, queryString, stateString);
 		window.Register();
 	}
 
 	private static string FormatBuildingAnimals(Building building)
 	{
-		string animals = $"-{building.tileX.Value},{building.tileY.Value} {StringUtilities.GetBuildingName(building)}";
+		string animals = $"-{building.tileX.Value},{building.tileY.Value} {StringUtilities.GetBuildingName(building)}:";
+		if (building.GetIndoors().animals.Length == 0)
+		{
+			animals = $"There are no animals in {StringUtilities.GetBuildingName(building)}";
+			return animals;
+		}
+		
 		foreach (var dict in building.GetIndoors().animals)
 		{
 			animals += string.Join("\n--",dict.Select(kvp => kvp.Value.displayType));

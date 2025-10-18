@@ -167,8 +167,7 @@ namespace NeuroStardewValley.Source.Actions;
         protected override void Execute(KeyValuePair<Item,int> resultData)
         {
             GameMenu? menu = Game1.activeClickableMenu as GameMenu;
-            InventoryPage? page = menu?.GetCurrentPage() as InventoryPage;
-            if (page is null) return;
+            if (menu?.GetCurrentPage() is not InventoryPage page) return;
             
             Main.Bot.Inventory.setPage(page);
             int stack = resultData.Value == 0 ? resultData.Key.Stack : resultData.Value;
