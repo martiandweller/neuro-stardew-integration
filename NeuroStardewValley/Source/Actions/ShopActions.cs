@@ -96,7 +96,7 @@ public static class ShopActions
 			Required = new List<string> { "item_index" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["item_index"] = QJS.Enum(Main.Bot.Shop._currentShop?.inventory.actualInventory.Where(item => item is not null && Main.Bot.Shop._currentShop.inventory.highlightMethod(item)).Select(item => Main.Bot.Shop._currentShop.inventory.actualInventory.IndexOf(item)) ?? Array.Empty<int>()), // get shop menu items
+				["item_index"] = QJS.Enum(Main.Bot.Shop.Menu?.inventory.actualInventory.Where(item => item is not null && Main.Bot.Shop.Menu.inventory.highlightMethod(item)).Select(item => Main.Bot.Shop.Menu.inventory.actualInventory.IndexOf(item)) ?? Array.Empty<int>()), // get shop menu items
 				["amount"] = QJS.Type(JsonSchemaType.Integer)
 			}
 		};
@@ -106,7 +106,7 @@ public static class ShopActions
 			int? itemAmount = actionData.Data?.Value<int>("amount");
 			
 			resultData = new();
-			if (Main.Bot.Shop._currentShop is null) return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,"Main.Bot.Shop._currentShop"));
+			if (Main.Bot.Shop.Menu is null) return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,"Main.Bot.Shop.Menu"));
 			if (itemIndex is null || itemAmount is null)
 			{
 				return ExecutionResult.Failure($"A value you provided was null.");

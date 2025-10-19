@@ -165,7 +165,7 @@ public static class JunimoNoteActions
 
 		protected override void Execute()
 		{
-			Main.Bot.JunimoNote.ExitMenu();
+			Main.Bot.JunimoNote.RemoveMenu();
 		}
 	}
 

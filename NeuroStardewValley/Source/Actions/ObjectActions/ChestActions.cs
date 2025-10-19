@@ -146,7 +146,7 @@ public static class ChestActions
 		{
 			if (Chest is null) return;
 			Main.Bot.Chest.CloseChest();
-			Main.Bot.ItemGrabMenu.RemoveUi(); // do this as colour changing is in here
+			Main.Bot.ItemGrabMenu.RemoveMenu(); // do this as colour changing is in here
 		}
 	}
 	

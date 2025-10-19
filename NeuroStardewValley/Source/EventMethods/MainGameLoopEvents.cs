@@ -96,7 +96,7 @@ public static class MainGameLoopEvents
 				RegisterStoreActions.RegisterDefaultShop();
 				break;
 			case CarpenterMenu carpenterMenu:
-				Main.Bot.FarmBuilding.SetCarpenterUI(carpenterMenu);
+				Main.Bot.FarmBuilding.SetCarpenterUi(carpenterMenu);
 				RegisterStoreActions.RegisterCarpenterActions();
 				break;
 			case GeodeMenu geodeMenu:
@@ -138,7 +138,7 @@ public static class MainGameLoopEvents
 				{
 					Context.Send($"These are the event that are happening this season, {BillBoardInteraction.GetCalendarContext()}" +
 					             $"\nThere are: {billboard.calendarDays.Count} days in this season. It is currently day {SDate.Now().Day} of {SDate.Now().Season}.");
-					DelayedAction.functionAfterDelay(Main.Bot.BillBoard.ExitMenu, 6500);
+					DelayedAction.functionAfterDelay(Main.Bot.BillBoard.RemoveMenu, 6500);
 				}
 				break;
 			case LetterViewerMenu letterViewerMenu:

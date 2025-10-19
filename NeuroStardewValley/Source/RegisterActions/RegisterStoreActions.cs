@@ -16,10 +16,15 @@ public static class RegisterStoreActions
 
 		window.AddAction(new ShopActions.CloseShop()).AddAction(new ShopActions.BuyItem());
 
-		// mainly just to stop warnings
-		if (Main.Bot.Shop._currentShop is null)
+		// in case this is somehow null
+		try
 		{
-			Game1.activeClickableMenu = null;
+			Main.Bot.Shop.ListAllItems();
+		}
+		catch (Exception e)
+		{
+			Logger.Error($"Issue with shop {e}");
+			Main.Bot.Shop.RemoveMenu();
 			RegisterMainActions.RegisterPostAction();
 			return;
 		}
@@ -45,16 +50,16 @@ public static class RegisterStoreActions
 			}
 		}
 		
-		if (Main.Bot.Shop._currentShop.inventory.actualInventory.Any(item =>
-			    item is not null && Main.Bot.Shop._currentShop.inventory.highlightMethod(item)))
+		if (Main.Bot.Shop.Menu.inventory.actualInventory.Any(item =>
+			    item is not null && Main.Bot.Shop.Menu.inventory.highlightMethod(item)))
 		{
 			window.AddAction(new ShopActions.SellBackItem());
 		}
 		
 		itemString += "\nThese are the items you can sell to the shop: ";
 		
-		foreach (var item in Main.Bot.Shop._currentShop.inventory.actualInventory.Where(item =>
-			         item is not null && Main.Bot.Shop._currentShop.inventory.highlightMethod(item)))
+		foreach (var item in Main.Bot.Shop.Menu.inventory.actualInventory.Where(item =>
+			         item is not null && Main.Bot.Shop.Menu.inventory.highlightMethod(item)))
 		{
 				itemString += $"\n{item.DisplayName} sell price: {item.sellToStorePrice()}";
 		}
@@ -66,29 +71,23 @@ public static class RegisterStoreActions
 	public static void RegisterCarpenterActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
-
-		if (Main.Bot.FarmBuilding._carpenterMenu is null)
-		{
-			Logger.Error($"_carpenter menu is null");
-			return;
-		}
 		
 		window.AddAction(new CarpenterActions.DemolishBuilding()).AddAction(new CarpenterActions.CreateBuilding())
 			.AddAction(new CarpenterActions.ChangeBuildingBlueprint());
 
-		if (Main.Bot.FarmBuilding._carpenterMenu.Blueprint.IsUpgrade)
+		if (Main.Bot.FarmBuilding.CarpenterMenu.Blueprint.IsUpgrade)
 		{
 			window.AddAction(new CarpenterActions.UpgradeBuilding());
 		}
 		
 		if (Main.Bot.FarmBuilding.Building.CanBeReskinned())
 		{
-			Main.Bot.FarmBuilding.SetBuildingUI(new BuildingSkinMenu(Main.Bot.FarmBuilding.Building, true));
+			Main.Bot.FarmBuilding.SetSkinUi(new BuildingSkinMenu(Main.Bot.FarmBuilding.Building, true));
 			window.AddAction(new CarpenterActions.ChangeBuildingSkin());	
 		}
 
 		string state = "These are the possible buildings that you can either build, upgrade or demolish: ";
-		foreach (var entry in Main.Bot.FarmBuilding._carpenterMenu!.Blueprints)
+		foreach (var entry in Main.Bot.FarmBuilding.CarpenterMenu.Blueprints)
 		{
 			state += $"\n-Building name: {entry.DisplayName}\n-- Time to build: {entry.BuildDays} days\n-- Cost to build: {entry.BuildCost}g";
 			if (entry.BuildMaterials is null) continue;

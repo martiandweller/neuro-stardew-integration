@@ -257,8 +257,7 @@ public static class ShippingBinActions
 		}
 		protected override void Execute()
 		{
-			Main.Bot.ShippingBinInteraction.RemoveUi();
-			Game1.activeClickableMenu = null;
+			Main.Bot.ShippingBinInteraction.RemoveMenu();
 		}
 	}
 }

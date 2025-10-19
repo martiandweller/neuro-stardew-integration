@@ -169,19 +169,19 @@ namespace NeuroStardewValley.Source.Actions;
             GameMenu? menu = Game1.activeClickableMenu as GameMenu;
             if (menu?.GetCurrentPage() is not InventoryPage page) return;
             
-            Main.Bot.Inventory.setPage(page);
+            Main.Bot.Inventory.SetPage(page);
             int stack = resultData.Value == 0 ? resultData.Key.Stack : resultData.Value;
             
             int index = Main.Bot.Inventory.Inventory.IndexOf(resultData.Key);
             Main.Bot.Inventory.SelectSingleCursorItem(index,true);
             for (int i = 0; i <= stack; i++)
             {
-                Logger.Info($"clicking");
                 Main.Bot.Inventory.SelectSingleCursorItem(index);
             }
             
             if (_selectedOption == "bin")
             {
+                Main.Bot.Inventory.Hover(Main.Bot.Inventory.Page.trashCan,5);
                 Main.Bot.Inventory.ClickBin();
             }
             else

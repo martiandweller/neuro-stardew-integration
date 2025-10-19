@@ -92,7 +92,6 @@ public class CraftingActions
 
 		protected override void Execute(KeyValuePair<CraftingRecipe, int> resultData)
 		{
-			if (Main.Bot.CraftingMenu.Menu is null) return;
 			for (int i = 0; i < Main.Bot.CraftingMenu.GetAllItems().Count; i++) // change page
 			{
 				if (!Main.Bot.CraftingMenu.GetAllItems()[i].Values.Contains(resultData.Key)) continue;
@@ -143,13 +142,23 @@ public class CraftingActions
 		protected override JsonSchema Schema => new();
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
-			if (Main.Bot.CraftingMenu.Menu is null) return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,"CraftingMenu.Menu"));
+			// if is null
+			try
+			{
+				Main.Bot.CraftingMenu.Menu.readyToClose();
+			}
+			catch (Exception e)
+			{
+				Logger.Error($"Issue with crafting menu: {e}");
+				return ExecutionResult.Failure(string.Format(ResultStrings.ModVarFailure,"CraftingMenu.Menu"));
+			}
+			
 			return ExecutionResult.Success($"Exiting crafting menu.");
 		}
 
 		protected override void Execute()
 		{
-			Main.Bot.CraftingMenu.ExitUI();
+			Main.Bot.CraftingMenu.RemoveMenu();
 		}
 	}
 
@@ -170,7 +179,6 @@ public class CraftingActions
 
 	private static string CanCraftContext()
 	{
-		if (Main.Bot.CraftingMenu.Menu is null) return "";
 		var recipes = Main.Bot.CraftingMenu.GetAllItems();
 
 		string itemStrings = "";

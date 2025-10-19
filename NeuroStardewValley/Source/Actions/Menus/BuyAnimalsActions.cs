@@ -70,14 +70,13 @@ public static class BuyAnimalsActions
 
 		protected override void Execute()
 		{
-			if (Main.Bot.AnimalMenu.Menu is null) return;
 			if (Main.Bot.AnimalMenu.Menu.onFarm)
 			{
 				Main.Bot.AnimalMenu.ExitFarmMenu();
 				return;
 			}
 
-			Main.Bot.AnimalMenu.ExitStoreMenu();
+			Main.Bot.AnimalMenu.RemoveMenu();
 		}
 	}
 

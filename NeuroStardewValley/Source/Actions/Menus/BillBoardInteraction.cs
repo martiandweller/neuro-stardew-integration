@@ -22,7 +22,7 @@ public static class BillBoardInteraction
 		protected override void Execute()
 		{
 			Main.Bot.BillBoard.AcceptDailyQuest();
-			Main.Bot.BillBoard.ExitMenu();
+			Main.Bot.BillBoard.RemoveMenu();
 		}
 	}
 
