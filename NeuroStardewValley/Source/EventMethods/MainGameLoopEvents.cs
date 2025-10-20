@@ -25,7 +25,7 @@ public static class MainGameLoopEvents
 	public static void OnWarped(object? sender, BotWarpedEventArgs e)
 	{
 		TileContext.ActionableTiles.Clear();
-		AlgorithmBase.IPathing.collisionMap.Clear();
+		AlgorithmBase.IPathing.CollisionMap.Clear();
 		AlgorithmBase.IPathing pathing = new AStar.Pathing();
 		pathing.BuildCollisionMap(Main.Bot._currentLocation);
 
@@ -138,7 +138,7 @@ public static class MainGameLoopEvents
 				{
 					Context.Send($"These are the event that are happening this season, {BillBoardInteraction.GetCalendarContext()}" +
 					             $"\nThere are: {billboard.calendarDays.Count} days in this season. It is currently day {SDate.Now().Day} of {SDate.Now().Season}.");
-					DelayedAction.functionAfterDelay(Main.Bot.BillBoard.RemoveMenu, 6500);
+					DelayedAction.functionAfterDelay(() => Main.Bot.BillBoard.RemoveMenu(), 6500);
 				}
 				break;
 			case LetterViewerMenu letterViewerMenu:
@@ -163,7 +163,7 @@ public static class MainGameLoopEvents
 							Main.Bot.LetterViewer.NextPage();
 						}
 					}
-					Main.Bot.LetterViewer.ExitMenu();
+					Main.Bot.LetterViewer.ClickCloseButton();
 				}
 
 				break;

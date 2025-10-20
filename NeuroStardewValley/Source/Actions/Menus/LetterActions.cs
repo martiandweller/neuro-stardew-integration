@@ -21,7 +21,7 @@ public static class LetterActions
 		protected override void Execute()
 		{
 			Main.Bot.LetterViewer.AcceptQuest();
-			Main.Bot.LetterViewer.ExitMenu();
+			Main.Bot.LetterViewer.ClickCloseButton();
 		}
 	}
 
@@ -82,7 +82,7 @@ public static class LetterActions
 
 		protected override void Execute()
 		{
-			Main.Bot.LetterViewer.ExitMenu();
+			Main.Bot.LetterViewer.ClickCloseButton();
 		}
 	}
 

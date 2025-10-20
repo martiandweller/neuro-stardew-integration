@@ -150,7 +150,7 @@ public static class ShopActions
 
 		protected override void Execute()
 		{
-			Main.Bot.Shop.CloseShop();
+			Main.Bot.Shop.RemoveMenu();
 		}
 	}
 }
