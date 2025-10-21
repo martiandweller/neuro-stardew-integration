@@ -94,7 +94,6 @@ public static class TileContext
                                 continue;
                         }
                         tileString += $": {string.Join(" ", action)}";
-                        Logger.Info($"tile: {x},{y}  length: {action.Length}  action: {string.Join(" ", action)}");
                     }
                     tileList.Add(tileString);
                     continue;
@@ -183,7 +182,6 @@ public static class TileContext
                                 objectTiles.Add(new Point(x,y),"Action");
                                 continue;
                         }
-                        Logger.Info($"tile: {x},{y}  length: {action.Length}  action: {string.Join(" ", action)}");
                         objectTiles.Add(new Point(x,y),"Action");
                     }
                     continue;
@@ -376,7 +374,6 @@ public static class TileContext
         for (int i = 0; i < warpExtracts.Length; i += 5) // divide by five to only get tile locations
         {
             Point tile = new Point(int.Parse(warpExtracts[i]), int.Parse(warpExtracts[i + 1]));
-            Logger.Info($"tile: {tile}   name: {warpExtracts[i+2]}");
             
             string locationName = warpExtracts[i + 2];
             warpLocation.Add(tile,locationName);
@@ -388,28 +385,14 @@ public static class TileContext
     public static string GetWarpTilesString(string warpTiles)
     {
         var warpLocation = GetWarpsAsPoint(warpTiles);
-        
-        string s = "";
-        foreach (var kvp in warpLocation)
-        {
-            Logger.Info($"key: {kvp.Key.ToString()}  value: {kvp.Value}");
-            s += $"\n{kvp.Value}: {kvp.Key}";
-        }
 
-        return s;
+        return warpLocation.Aggregate("", (current, kvp) => current + $"\n{kvp.Value}: {kvp.Key}");
     }
 
     public static List<string> GetWarpTilesStrings(string warpTiles)
     {
         var warpLocation = GetWarpsAsPoint(warpTiles);
-        
-        List<string> s = new();
-        foreach (var kvp in warpLocation)
-        {
-            Logger.Info($"key: {kvp.Key.ToString()}  value: {kvp.Value}");
-            s.Add($"{kvp.Value}: {kvp.Key.X},{kvp.Key.Y}");
-        }
 
-        return s;
+        return warpLocation.Select(kvp => $"{kvp.Value}: {kvp.Key.X},{kvp.Key.Y}").ToList();
     }
 }

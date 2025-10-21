@@ -20,7 +20,7 @@ public class CraftingActions
 		}
 
 		protected override void Execute()
-		{
+		{ 
 			Main.Bot.CraftingMenu.SetPageUI();
 		}
 	}

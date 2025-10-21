@@ -228,7 +228,7 @@ public static class RegisterMainActions
 		foreach (var kvp in TileContext.GetObjectsInLocation(Main.Bot._currentLocation))
 		{
 			string name = TileContext.SimpleObjectName(kvp.Value);
-			if (name == "" || context.Contains(name) || building.Contains(name)) continue;
+			if (name == "" || context.Contains(name) || building.Contains(name) || name.ToLower().Contains("error")) continue;
 			switch (kvp.Value)
 			{
 				case Building:

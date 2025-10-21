@@ -61,6 +61,14 @@ public static class PathFindingActions
                 goal = null;
                 return ExecutionResult.Failure(reason);
             }
+
+            goal = new Goal.GoalPosition(int.Parse(xStr), int.Parse(yStr));
+            AlgorithmBase.IPathing pathing = new AStar.Pathing();
+            if (pathing.FindPath(new PathNode(Main.Bot._farmer.TilePoint.X, Main.Bot._farmer.TilePoint.Y, null),
+                    goal, Game1.currentLocation, 10000,_destructive).Result.Count == 0)
+            {
+                return ExecutionResult.Failure("You cannot make it to the provided tile, you should either try to go somewhere else or allow destruction.");
+            }
             
             goal = new Goal.GoalPosition(int.Parse(xStr), int.Parse(yStr));
             _destructive = (bool)destructive;

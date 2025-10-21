@@ -1,5 +1,6 @@
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
+using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions.Menus;
@@ -35,15 +36,18 @@ namespace NeuroStardewValley.Source.Actions;
     private class ExitInventory : NeuroAction
     {
         public override string Name => "close_inventory";
-        protected override string Description => "Close your inventory and go back to playing the game, this will make time start again.";
+        protected override string Description => "Close your inventory and go back to playing the game, this will make time start again and also send you the inventory.";
         protected override JsonSchema Schema => new();
         protected override ExecutionResult Validate(ActionData actionData)
         {
+            
             return ExecutionResult.Success();
         }
 
         protected override void Execute()
         {
+            string nameList = InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true, true);
+            Context.Send($"These are the items in your inventory as of when you last closed it: {nameList}");
             Main.Bot.PlayerInformation.ExitMenu();
         }
     }
@@ -55,6 +59,7 @@ namespace NeuroStardewValley.Source.Actions;
     private class MoveItem : NeuroAction<Item>
     {
         private int _position;
+        private static Inventory Inventory => Main.Bot.Inventory.Inventory;
         public override string Name => "move_item";
         protected override string Description => $"Move an item in inventory to another slot, you have {Main.Bot.Inventory.MaxInventory}" +
                                                  $" slots in your inventory. If there is already an item in the provided slot, the item will occupy the provided item's previous slot.";
@@ -63,16 +68,17 @@ namespace NeuroStardewValley.Source.Actions;
             Type = JsonSchemaType.Object,
             Required = new List<string> { "item", "position" },
             Properties = new Dictionary<string, JsonSchema>
-            {
-                ["item"] = QJS.Type(JsonSchemaType.Integer),
+        {
+                ["item"] = QJS.Enum(Inventory.Where(item => item is not null)
+                    .Select(item => $"{Inventory.IndexOf(item)}: {item.DisplayName}")),
                 ["position"] = QJS.Type(JsonSchemaType.Integer)
             }
         };
         
         protected override ExecutionResult Validate(ActionData actionData, out Item? resultData)
         {
+            string? movingItem = actionData.Data?.Value<string>("item");
             int? itemPosition = actionData.Data?.Value<int>("position");
-            int? movingItem = actionData.Data?.Value<int>("item");
 
             if (itemPosition is null || movingItem is null)
             {
@@ -86,13 +92,14 @@ namespace NeuroStardewValley.Source.Actions;
                 return ExecutionResult.Failure($"You have given a position that is larger or smaller than the size of your inventory");
             }
 
-            if (movingItem > Main.Bot.Inventory.MaxInventory || movingItem < 0 || Main.Bot.Inventory.Inventory[(int)movingItem] == null)
+            Item? item = StringToItem(movingItem);
+            if (item is null)
             {
                 resultData = null;
-                return ExecutionResult.Failure($"There is not an item in the provided index");
+                return ExecutionResult.Failure($"The item you selected to move does not exist.");
             }
 
-            resultData = Main.Bot.Inventory.Inventory[(int)movingItem];
+            resultData = item;
             _position = (int)itemPosition;
             
             return ExecutionResult.Success();
@@ -104,14 +111,27 @@ namespace NeuroStardewValley.Source.Actions;
             Main.Bot.Inventory.MoveItem(resultData, _position);
             RegisterInventoryActions();
         }
+        
+        private static Item? StringToItem(string str)
+        {
+            Item? item = null;
+            for (int i = 0; i < Inventory.Count; i++)
+            {
+                if (Inventory[i] is null) continue;
+
+                if (str == $"{i}: {Inventory[i].DisplayName}") item = Inventory[i];
+            }
+
+            return item;
+        }
     }
     private class RemoveItem : NeuroAction<KeyValuePair<Item,int>>
     {
-        private IEnumerable<string> Options => new[] { "drop", "bin" };
+        private IEnumerable<string> Options => new[] { "bin", "drop" };
         private string _selectedOption = "";
         public override string Name => "remove_item";
         protected override string Description => "remove an item from your inventory, this can be done by either dropping" +
-                                                 " it or putting it in the bin. If you specify 0 as the amount, the whole stack will be removed";
+                                                 " it or putting it in the bin. If you specify 0 as the amount, the whole stack will be removed.";
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
@@ -213,7 +233,7 @@ namespace NeuroStardewValley.Source.Actions;
         
         public override string Name => "interact_with_trinkets";
         protected override string Description =>
-            "This will allow you to interact with trinkets, you can either remove or equip trinkets";
+            "This will allow you to interact with trinkets, you can either remove or equip trinkets. If you do not specify an inventory slot, it will be placed in the first empty slot.";
         protected override JsonSchema Schema => new ()
         {
             Type = JsonSchemaType.Object,
@@ -579,13 +599,13 @@ namespace NeuroStardewValley.Source.Actions;
         List<string> trinkets = Main.Bot.Inventory.GetCurrentEquippedTrinkets(Game1.player)
             .Where(trinket => trinket is not null).Select(trinket => trinket.DisplayName).ToList();
         
-        string state = $"These are the items in your inventory: {nameList}." +
-                       $"\nThese are the clothes you have equipped {string.Concat(itemList)}.";
+        string state = $"These are the items in your inventory: {nameList}" +
+                       $"\nThese are the clothes you have equipped {string.Concat(itemList)}";
         if (trinkets.Count > 0)
         {
             state += $"\nThis is the trinket you have equipped currently: {string.Concat(trinkets)}";
         }
-        actionWindow.SetForce(0, "You are in your inventory.", state);
+        actionWindow.SetForce(0, "You are in your inventory.", state,true);
         actionWindow.Register();
     }
 

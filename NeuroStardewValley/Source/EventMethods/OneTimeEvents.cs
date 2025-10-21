@@ -49,6 +49,7 @@ public static class OneTimeEvents
 		// the game doesn't really stick to what is used in the switch statement so just doing this for now.
 		context = $"A banner message has appeared it says: {message}";
 
+		// TODO: causes stutter, I think from async and stuff
 		Context.Send(context);
 	}
 	

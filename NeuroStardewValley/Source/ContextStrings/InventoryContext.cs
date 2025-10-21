@@ -36,16 +36,16 @@ public static class InventoryContext
 
 		if (includeAttachments && item is Tool tool)
 		{
-			contextString += $" Allowed attachment amount: {tool.AttachmentSlotsCount} Equipped attachments: ";
 			var attachments = tool.attachments.Where(obj => obj is not null && !string.IsNullOrEmpty(obj.Name))
 				.Select(obj => $"{obj.Name} amount: {obj.Stack}").ToList();
 			if (attachments.Count > 0)
 			{
-				contextString += string.Concat(attachments);
+				contextString += $", Allowed attachment amount: {tool.AttachmentSlotsCount} Equipped attachments: {string.Concat(attachments)}";
 			}
-			else
+
+			if (tool.AttachmentSlotsCount > 0 && attachments.Count == 0)
 			{
-				contextString += "None";
+				contextString += ", This item can have attachments";
 			}
 		}
 
