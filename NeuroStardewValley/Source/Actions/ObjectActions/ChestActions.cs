@@ -133,16 +133,10 @@ public static class ChestActions
 		protected override ExecutionResult Validate(ActionData actionData)
 		{
 			if (Chest is null) return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
-			return ExecutionResult.Success();
+			return ExecutionResult.Success($"Closed the chest at {Chest.TileLocation}");
 		}
 
 		protected override void Execute()
-		{
-			Close();
-			RegisterMainActions.RegisterPostAction();
-		}
-		
-		private static void Close()
 		{
 			if (Chest is null) return;
 			Main.Bot.Chest.CloseChest();
@@ -150,12 +144,12 @@ public static class ChestActions
 		}
 	}
 	
-	private class AddItemsToChest : NeuroAction<List<Item>>
+	private class AddItemsToChest : NeuroAction<KeyValuePair<List<Item>,List<int>>>
 	{
 		public override string Name => "insert_items";
 		protected override string Description => $"Insert items in this chest, you should make sure the amount of items" +
 		                                         $" you send can be fit in this chest. The max capacity of this chest" +
-		                                         $" assuming no items is {Chest?.GetActualCapacity()}";
+		                                         $" assuming no items is {Chest?.GetActualCapacity() - 1}";
 		protected override JsonSchema Schema => new ()
 		{
 			Type = JsonSchemaType.Object,
@@ -165,59 +159,110 @@ public static class ChestActions
 				["item_index"] = new()
 				{
 					Type = JsonSchemaType.Array,
+					Items = new JsonSchema { Enum = ItemEnum()},
+				},
+				["amount"] = new()
+				{
+					Type = JsonSchemaType.Array,
 					Items = new JsonSchema { Type = JsonSchemaType.Integer },
 				}
 			}
 		};
-		protected override ExecutionResult Validate(ActionData actionData,out List<Item> resultData)
+		protected override ExecutionResult Validate(ActionData actionData,out KeyValuePair<List<Item>,List<int>> resultData)
 		{
 			if (Chest is null)
 			{
 				resultData = new();
 				return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
 			}
-			var objArray = actionData.Data?.Value<object>("item_index");
+			var itemArray = actionData.Data?.Value<object>("item_index");
+			var amountArray = actionData.Data?.Value<object>("amount");
 
 			resultData = new();
-			if (objArray is null)
+			if (itemArray is null || amountArray is null)
 			{
 				return ExecutionResult.Failure($"item index is null");
 			}
 
-			List<int> array = new();
-			foreach (var token in (JArray)objArray)
+			List<int> amount = (from token in (JArray)amountArray select token.Value<int>()).Select(i => i).ToList();
+
+			List<string> itemStrings = new();
+			foreach (var token in (JArray)itemArray)
 			{
-				if (token.Value<int?>() is null) continue;
+				if (token.Value<string?>() is null) continue;
 				
-				if (token.Value<int>() < 0 || token.Value<int>() > Main.Bot.Inventory.Inventory.Count - 1 || Main.Bot.Inventory.Inventory[token.Value<int>()] is null)
-					return ExecutionResult.Failure($"{token.Value<int>()} cannot be accessed.");
+				// if (token.Value<string>() < 0 || token.Value<string>() > Main.Bot.Inventory.Inventory.Count - 1 || Main.Bot.Inventory.Inventory[token.Value<string>()] is null)
+					// return ExecutionResult.Failure($"{token.Value<int>()} cannot be accessed.");
 				
-				array.Add(token.Value<int>());
+				itemStrings.Add(token.Value<string>() ?? string.Empty);
+			}
+
+			List<Item> items = EnumToItem(itemStrings);
+			
+			if (items.Count != amount.Count) return ExecutionResult.Failure($"You have specified {items.Count} items and only specified {amount.Count} item's amount, you need to specify the same amount of each.");
+
+			Logger.Info($"item amount: {Chest.Items.Count}    amount: {amount.Count}");
+			for (int i = 0; i < items.Count; i++)
+			{
+				Logger.Info($"item: {items[i].Stack}   {items[i].DisplayName}    amount: {amount[i]}");
+				if (items[i].Stack >= amount[i] && amount[i] > 0) continue;
+				
+				return ExecutionResult.Failure($"You do not have {amount[i]} {items[i].DisplayName}");
 			}
 			
-			if (array.Count > Chest.GetActualCapacity() - Chest.Items.Count(item => item is not null))
+			if (items.Count > Chest.GetActualCapacity() - Chest.Items.Count(item => item is not null))
 			{
 				return ExecutionResult.Failure($"You have tried to add too many items to this chest.");
 			}
 
-			resultData.AddRange(array.Select(item => Main.Bot.Inventory.Inventory[item]));
-
+			resultData = new(items,amount);
+			
 			List<string> itemNames = new();
-			resultData.ToList().ForEach(item => itemNames.Add(item.DisplayName));
+			resultData.Key.ForEach(item => itemNames.Add(item.DisplayName));
 			return ExecutionResult.Success($"You have added: {string.Concat(itemNames,"\n")} to the chest");
 		}
 
-		protected override void Execute(List<Item>? resultData)
+		protected override void Execute(KeyValuePair<List<Item>,List<int>> resultData)
 		{
-			if (Chest is null || resultData is null) return;
-			foreach (var item in resultData)
+			if (Chest is null) return;
+			for (int i = 0; i < resultData.Key.Count; i++)
 			{
-				Main.Bot.Chest.PutItemInChest(Chest,item,Game1.player);
+				Main.Bot.ItemGrabMenu.AddItemAmount(resultData.Key[i],resultData.Value[i]);
 			}
+			
 			RegisterChestActions();
 		}
+
+		private List<object> ItemEnum()
+		{
+			List<object> items = new();
+			for (int i = 0; i < Main.Bot.Inventory.Inventory.Count; i++)
+			{
+				if (Main.Bot.Inventory.Inventory[i] is null) continue;
+				items.Add($"{i}: {Main.Bot.Inventory.Inventory[i].DisplayName}");
+			}
+
+			return items;
+		}
+
+		private List<Item> EnumToItem(List<string> select)
+		{
+			List<Item> items = new();
+			foreach (var str in select)
+			{
+				for (int i = 0; i < Main.Bot.Inventory.Inventory.Count; i++)
+				{
+					if (Main.Bot.Inventory.Inventory[i] is null || str != $"{i}: {Main.Bot.Inventory.Inventory[i].DisplayName}") continue;
+					
+					items.Add(Main.Bot.Inventory.Inventory[i]);
+					break;
+				}
+			}
+			
+			return items;
+		}
 	}
-	
+
 	private class TakeItemsFromChest : NeuroAction<List<Item>>
 	{
 		public override string Name => "take_items";
