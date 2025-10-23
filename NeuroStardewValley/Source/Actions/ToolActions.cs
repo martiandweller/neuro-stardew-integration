@@ -373,8 +373,8 @@ public static class ToolActions
 	public class Fishing : NeuroAction<int>
 	{
 		public override string Name => "use_fishing_rod";
-		protected override string Description => "Use a fishing rod in your inventory to fish, power should be between 1" +
-		                                         " and 100 if the value provided does not adhere to that the value will " +
+		protected override string Description => "Use a fishing rod in your inventory to fish, power should be between 0 and 1" +
+		                                         " if the value provided does not adhere to that the value will " +
 		                                         "be clamped. You must be looking towards water tiles to fish or it will not work.";
 
 		protected override JsonSchema Schema => new()
@@ -383,7 +383,7 @@ public static class ToolActions
 			Required = new List<string> { "power" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["power"] = QJS.Type(JsonSchemaType.Integer)
+				["power"] = QJS.Type(JsonSchemaType.Float)
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out int resultData)
@@ -391,7 +391,7 @@ public static class ToolActions
 			int? selectedPower = actionData.Data?.Value<int>("power");
 
 			resultData = -1;
-			if (!Game1.player.Items.Any(item => item is FishingRod))
+			if (!Main.Bot._farmer.Items.Any(item => item is FishingRod))
 			{
 				return ExecutionResult.Failure($"You do not have a fishing rod in your inventory, you can buy one from the beach.");
 			}
@@ -402,33 +402,33 @@ public static class ToolActions
 				power = selectedPower.Value;
 			}
 
-			if (power > 100 || power < 1)
+			if (power > 1 || power < 0)
 			{
-				power = Math.Clamp(power, 1, 100);
+				power = Math.Clamp(power, 0, 1);
 			}
 
-			int x = Game1.player.TilePoint.X;
-			int y = Game1.player.TilePoint.Y;
+			int x = Main.Bot._farmer.TilePoint.X;
+			int y = Main.Bot._farmer.TilePoint.Y;
 			Point startValue;
-			switch (Game1.player.FacingDirection)
+			switch (Main.Bot._farmer.FacingDirection)
 			{
 				case 0:
-					startValue = new Point(x,y + 3);
-					break;
-				case 1:
-					startValue = new Point(x - 3,y);
-					break;
-				case 2:
 					startValue = new Point(x,y - 3);
 					break;
-				case 4:
+				case 1:
 					startValue = new Point(x + 3,y);
+					break;
+				case 2:
+					startValue = new Point(x,y + 3);
+					break;
+				case 3:
+					startValue = new Point(x - 3,y);
 					break;
 				default:
 					startValue = new Point(x,y);
 					break;
 			}
-			if (!Game1.currentLocation.isTileFishable(startValue.X,startValue.Y))
+			if (!Main.Bot._currentLocation.isTileFishable(startValue.X,startValue.Y))
 			{
 				return ExecutionResult.Failure($"You cannot fish at the provided tile.");
 			}
@@ -439,18 +439,24 @@ public static class ToolActions
 
 		protected override void Execute(int resultData)
 		{
+			SwapItemHandler.SwapItem(typeof(FishingRod),"");
+			if (Main.Bot._farmer.CurrentItem is not FishingRod) return;
+			
 			Task.Run(async () =>
 			{
-				if (!Main.Bot.FishingBar.Fish(resultData))
+				// random for fun :) .Item is also swapped in here
+				if (!Main.Bot.FishingBar.Fish(Math.Clamp(Random.Shared.Next(resultData - 5, resultData + 5),0,98)))
 				{
+					await TaskDispatcher.SwitchToMainThread();
 					RegisterMainActions.RegisterPostAction();
 				}
 
 				await Task.Delay(1500);
-				if (Game1.player.CurrentTool is FishingRod rod && (rod.isCasting || rod.isFishing || rod.isNibbling || rod.isReeling) )
+				if (Main.Bot._farmer.CurrentTool is FishingRod rod && Main.Bot._farmer.UsingTool)
 				{
 					return;
 				}
+				await TaskDispatcher.SwitchToMainThread();
 				RegisterMainActions.RegisterPostAction(); // could not fish due to small pond
 			});
 		}

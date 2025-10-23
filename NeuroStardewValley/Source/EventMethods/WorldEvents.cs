@@ -1,7 +1,7 @@
 using System.Collections;
 using NeuroSDKCsharp.Messages.Outgoing;
+using NeuroStardewValley.Source.ContextStrings;
 using StardewBotFramework.Source.Events.World_Events;
-using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley.Objects;
 using StardewValley.TerrainFeatures;
 using Object = StardewValley.Object;
@@ -75,24 +75,26 @@ public static class WorldEvents
 	{
 		while (enumerator.MoveNext())
 		{
-			string contextString = "";
+			string contextString;
 			switch (enumerator.Current)
 			{
 				case KeyValuePair<Vector2,Object> kvp:
-					contextString = String.Format(context, kvp.Value.Name);
+					contextString = string.Format(context, kvp.Value.Name);
 					break;
 				case Furniture furniture:
-					contextString = String.Format(context, furniture.DisplayName);
+					contextString = string.Format(context, furniture.DisplayName);
 					break;
 				case LargeTerrainFeature largeTerrainFeature:
-					contextString = String.Format(context, largeTerrainFeature);
+					contextString = string.Format(context, TileContext.SimpleObjectName(largeTerrainFeature));
 					break;
 				case TerrainFeature terrainFeature:
-					contextString = String.Format(context, terrainFeature);
+					contextString = string.Format(context, TileContext.SimpleObjectName(terrainFeature));
 					break;
+				default:
+					continue;
 			}
 			
-			Context.Send(contextString);
+			Context.Send(contextString,true);
 		}
 	}
 }

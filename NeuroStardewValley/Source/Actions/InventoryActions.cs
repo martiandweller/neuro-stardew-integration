@@ -1,6 +1,5 @@
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
-using NeuroSDKCsharp.Messages.Outgoing;
 using NeuroSDKCsharp.Websocket;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Actions.Menus;
@@ -10,6 +9,7 @@ using StardewValley.Inventories;
 using StardewValley.Menus;
 using StardewValley.Objects;
 using StardewValley.Objects.Trinkets;
+using Context = NeuroSDKCsharp.Messages.Outgoing.Context;
 using Object = StardewValley.Object;
 
 namespace NeuroStardewValley.Source.Actions;
@@ -192,16 +192,10 @@ namespace NeuroStardewValley.Source.Actions;
             Main.Bot.Inventory.SetPage(page);
             int stack = resultData.Value == 0 ? resultData.Key.Stack : resultData.Value;
             
-            int index = Main.Bot.Inventory.Inventory.IndexOf(resultData.Key);
-            Main.Bot.Inventory.SelectSingleCursorItem(index,true);
-            for (int i = 0; i <= stack; i++)
-            {
-                Main.Bot.Inventory.SelectSingleCursorItem(index);
-            }
-            
+            Main.Bot.Inventory.SetHeldItem(resultData.Key,stack);
             if (_selectedOption == "bin")
             {
-                Main.Bot.Inventory.Hover(Main.Bot.Inventory.Page.trashCan,5);
+                Main.Bot.Inventory.Hover(Main.Bot.Inventory.Page.trashCan,1);
                 Main.Bot.Inventory.ClickBin();
             }
             else

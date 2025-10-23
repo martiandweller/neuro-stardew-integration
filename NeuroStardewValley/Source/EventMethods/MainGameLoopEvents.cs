@@ -58,6 +58,7 @@ public static class MainGameLoopEvents
 		{
 			// handled by caughtFish event
 			case BobberBar:
+				return;
 			// we need to check if old is dialogue box to stop issues with changing menus while standing in bed
 			case DialogueBox when Game1.player.isInBed.Value:
 				if (!Game1.fadeToBlack) break; // in case says no to going to sleep
@@ -117,7 +118,7 @@ public static class MainGameLoopEvents
 						Main.Bot.ItemGrabMenu.SetUI(itemGrabMenu);
 						Main.Bot.Chest.SetChest(chest);
 						ChestActions.Chest = chest;
-						ChestActions.RegisterChestActions(true);
+						ChestActions.RegisterChestActions();
 						return;
 					case ShippingBin:
 						Main.Bot.ShippingBinInteraction.SetUI(itemGrabMenu);
@@ -187,8 +188,12 @@ public static class MainGameLoopEvents
 				Main.Bot.NamingMenu.setUI(namingMenu);
 				NamingMenuActions.RegisterActions();
 				break;
+			case QuestLog questLog:
+				Main.Bot.QuestLog.SetMenu(questLog);
+				QuestLogActions.RegisterActions();
+				break;
 			default:
-				if (e.NewMenu is null or QuestLog) break;
+				if (e.NewMenu is null or BobberBar) break;
 				Context.Send(string.Format(ResultStrings.InvalidClickableMenu,$"{e.NewMenu}"));
 				e.NewMenu.exitThisMenu(false);
 				break;

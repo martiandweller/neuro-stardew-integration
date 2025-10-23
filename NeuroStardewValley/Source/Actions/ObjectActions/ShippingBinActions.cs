@@ -71,7 +71,13 @@ public static class ShippingBinActions
 				await Main.Bot.Pathfinding.Goto(new Goal.GoalNearby(resultData.tileX.Value, resultData.tileY.Value, 1));
 				await TaskDispatcher.SwitchToMainThread();
 				_bin = resultData;
-				HandleShippingBinUi();
+				Main.Bot.ShippingBinInteraction.OpenBin(_bin);
+				// if the farmer is not facing will not open so double check
+				await Task.Delay(1000);
+				if (Game1.activeClickableMenu is not null) return;
+				
+				await TaskDispatcher.SwitchToMainThread();
+				RegisterMainActions.RegisterPostAction();
 			}
 			catch (Exception e)
 			{
@@ -105,48 +111,6 @@ public static class ShippingBinActions
 			}
 
 			return points;
-		}
-		
-		// TODO: I would rather not do this, however opening relies on Game1.input.mouseState and we cannot change that rn.
-		private static void HandleShippingBinUi()
-		{
-			ItemGrabMenu itemGrabMenu = new ItemGrabMenu(null, true, false, Utility.highlightShippableObjects, ShipItemReplica, "", null, true, true, false, true, false, 0, null, -1, _bin);
-			itemGrabMenu.initializeUpperRightCloseButton();
-			itemGrabMenu.setBackgroundTransparency(false);
-			itemGrabMenu.setDestroyItemOnClick(true);
-			itemGrabMenu.initializeShippingBin();
-			Game1.activeClickableMenu = itemGrabMenu;
-			Game1.playSound("shwip");
-			if (Game1.player.FacingDirection == 1)
-			{
-				Game1.player.Halt();
-			}
-			Game1.player.showCarrying();
-			Farm farm = (Farm)Game1.currentLocation;
-			if (farm.getShippingBin(Game1.player).Count == 0)
-			{
-				return;
-			}
-			_bin.showShipment(farm.getShippingBin(Game1.player)[farm.getShippingBin(Game1.player).Count - 1]);
-		}
-		private static void ShipItemReplica(Item? i,Farmer farmer)
-		{
-			Farm? farm = Game1.currentLocation as Farm;
-			if (farm is null) return;
-			if (i is not null)
-			{
-				Game1.player.removeItemFromInventory(i);
-				Farm obj = farm;
-				obj.getShippingBin(Game1.player).Add(i);
-				
-				_bin.showShipment(i, false);
-				farm.lastItemShipped = i;
-				if (Game1.player.ActiveItem == null)
-				{
-					Game1.player.showNotCarrying();
-					Game1.player.Halt();
-				}
-			}
 		}
 	}
 

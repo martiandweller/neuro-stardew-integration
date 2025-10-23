@@ -65,18 +65,12 @@ public static class RegisterMainActions
 
 	private static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null,GameLocation? location = null)
 	{
-		GameLocation newLocation;
-		if (e is not null)
+		GameLocation? newLocation = location ?? e?.NewLocation;
+		if (newLocation is null) return;
+		
+		if (Main.Bot._currentLocation.canFishHere() && Main.Bot.Inventory.Inventory.Any(item => item is FishingRod))
 		{
-			newLocation = e.NewLocation;
-		}
-		else if (location is not null)
-		{
-			newLocation = location;
-		}
-		else
-		{
-			return;
+			window.AddAction(new ToolActions.Fishing());
 		}
 		switch (newLocation)
 		{
@@ -108,12 +102,6 @@ public static class RegisterMainActions
 							{
 								madeDestroyAction = true;
 								window.AddAction(new ToolActions.DestroyObject());
-							}
-							break;
-						case FishingRod:
-							if (Game1.currentLocation.canFishHere())
-							{
-								window.AddAction(new ToolActions.Fishing());
 							}
 							break;
 					}

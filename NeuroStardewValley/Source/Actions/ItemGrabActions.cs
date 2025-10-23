@@ -14,8 +14,8 @@ namespace NeuroStardewValley.Source.Actions;
 
 public static class ItemGrabActions
 {
-	public static ItemGrabMenu? Menu { get; set; }
-	public class TakeItem : NeuroAction<Dictionary<Item,int>>
+	private static ItemGrabMenu? Menu { get; set; }
+	private class TakeItem : NeuroAction<Dictionary<Item,int>>
 	{
 		public override string Name => "take_items";
 		protected override string Description => "Take Items from this menu.";
@@ -71,7 +71,7 @@ public static class ItemGrabActions
 	
 	public class SelectColour : NeuroAction<int>
 	{
-		private static Dictionary<int, Color> Colours = new Dictionary<int, Color>()
+		private static readonly Dictionary<int, Color> Colours = new()
 		{
 			{0, Color.Black},
 			{1, new Color(85, 85, 255) },
@@ -95,8 +95,6 @@ public static class ItemGrabActions
 			{19, new Color(200, 200, 200)},
 			{20, new Color(254, 254, 254)},
 		};
-		
-		private static ItemGrabMenu? Menu = Game1.activeClickableMenu as ItemGrabMenu;
 		
 		public override string Name => "select_colour";
 		protected override string Description => "Select a colour to make this object.";
@@ -133,18 +131,18 @@ public static class ItemGrabActions
 		{
 			Color color = GetColours()[resultData];
 			Main.Bot.ItemGrabMenu.ChangeColour(DiscreteColorPicker.getSelectionFromColor(color));
-			ChestActions.RegisterChestActions(true);
+			ChestActions.RegisterChestActions();
 		}
 
 		private static List<Color> GetColours()
 		{
 			List<Color> colours = new();
-			colours.AddRange(Colours.Values);
+			colours.AddRange(SelectColour.Colours.Values);
 			return colours;
 		}
 	}
 
-	public class AddItem : NeuroAction<Item>
+	private class AddItem : NeuroAction<Item>
 	{
 		public override string Name => "add_items";
 		protected override string Description => "Add items to this menu";

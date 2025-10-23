@@ -23,7 +23,6 @@ public static class QuestLogActions
 		protected override void Execute()
 		{
 			Game1.activeClickableMenu = new QuestLog();
-			RegisterActions();
 		}
 	}
 	
@@ -142,7 +141,7 @@ public static class QuestLogActions
 		}
 	}
 
-	private static void RegisterActions()
+	public static void RegisterActions()
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 		window.AddAction(new GetQuestReward()).AddAction(new CloseLog()).AddAction(new SaveContext());

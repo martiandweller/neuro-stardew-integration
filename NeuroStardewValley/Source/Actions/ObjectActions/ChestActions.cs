@@ -9,6 +9,7 @@ using NeuroStardewValley.Source.Utilities;
 using Newtonsoft.Json.Linq;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
 using StardewValley;
+using StardewValley.Inventories;
 using StardewValley.Menus;
 using StardewValley.Objects;
 using Object = StardewValley.Object;
@@ -159,7 +160,7 @@ public static class ChestActions
 				["item_index"] = new()
 				{
 					Type = JsonSchemaType.Array,
-					Items = new JsonSchema { Enum = ItemEnum()},
+					Items = new JsonSchema { Enum = ItemEnum(Main.Bot.Inventory.Inventory)},
 				},
 				["amount"] = new()
 				{
@@ -197,7 +198,7 @@ public static class ChestActions
 				itemStrings.Add(token.Value<string>() ?? string.Empty);
 			}
 
-			List<Item> items = EnumToItem(itemStrings);
+			List<Item> items = EnumToItem(Main.Bot.Inventory.Inventory,itemStrings);
 			
 			if (items.Count != amount.Count) return ExecutionResult.Failure($"You have specified {items.Count} items and only specified {amount.Count} item's amount, you need to specify the same amount of each.");
 
@@ -219,7 +220,7 @@ public static class ChestActions
 			
 			List<string> itemNames = new();
 			resultData.Key.ForEach(item => itemNames.Add(item.DisplayName));
-			return ExecutionResult.Success($"You have added: {string.Concat(itemNames,"\n")} to the chest");
+			return ExecutionResult.Success($"You have added: {string.Join("\n",itemNames)} to the chest");
 		}
 
 		protected override void Execute(KeyValuePair<List<Item>,List<int>> resultData)
@@ -232,38 +233,9 @@ public static class ChestActions
 			
 			RegisterChestActions();
 		}
-
-		private List<object> ItemEnum()
-		{
-			List<object> items = new();
-			for (int i = 0; i < Main.Bot.Inventory.Inventory.Count; i++)
-			{
-				if (Main.Bot.Inventory.Inventory[i] is null) continue;
-				items.Add($"{i}: {Main.Bot.Inventory.Inventory[i].DisplayName}");
-			}
-
-			return items;
-		}
-
-		private List<Item> EnumToItem(List<string> select)
-		{
-			List<Item> items = new();
-			foreach (var str in select)
-			{
-				for (int i = 0; i < Main.Bot.Inventory.Inventory.Count; i++)
-				{
-					if (Main.Bot.Inventory.Inventory[i] is null || str != $"{i}: {Main.Bot.Inventory.Inventory[i].DisplayName}") continue;
-					
-					items.Add(Main.Bot.Inventory.Inventory[i]);
-					break;
-				}
-			}
-			
-			return items;
-		}
 	}
 
-	private class TakeItemsFromChest : NeuroAction<List<Item>>
+	private class TakeItemsFromChest : NeuroAction<KeyValuePair<List<Item>,List<int>>>
 	{
 		public override string Name => "take_items";
 		protected override string Description => $"Take items from this chest, indexes are calculated from 0 - amount of items, the amount being in this case {Chest?.Items.Count - 1}.";
@@ -276,70 +248,118 @@ public static class ChestActions
 				["item_index"] = new()
 				{
 					Type = JsonSchemaType.Array,
-					Items = new JsonSchema { Type = JsonSchemaType.Integer }
-				}
+					Items = new JsonSchema { Enum =  ItemEnum(Main.Bot.Chest.GetItems(Chest!))}
+				},
+				["amount"] = new()
+				{
+					Type = JsonSchemaType.Array,
+					Items = new JsonSchema { Type = JsonSchemaType.Integer}
+ 				}
 			}
 		};
-		protected override ExecutionResult Validate(ActionData actionData,out List<Item> resultData)
+		protected override ExecutionResult Validate(ActionData actionData,out KeyValuePair<List<Item>,List<int>> resultData)
 		{
 			if (Chest is null)
 			{
 				resultData = new();
 				return ExecutionResult.ModFailure($"A chest is not currently opened, that means this action should not have been registered. Sorry.");
 			}
-			var objArray = actionData.Data?.Value<JArray>("item_index");
+			var itemArray = actionData.Data?.Value<object>("item_index");
+			var amountArray = actionData.Data?.Value<object>("amount");
 
 			resultData = new();
-			if (objArray is null)
+			if (itemArray is null || amountArray is null)
 			{
-				return ExecutionResult.Failure($"item index is null");
+				return ExecutionResult.Failure($"you have either not specified any items or any amounts.");
 			}
 
-			List<int> array = new();
-			foreach (var token in objArray)
-			{
-				if (token.Value<int?>() is null) continue;
+			List<int> amount = (from token in (JArray)amountArray select token.Value<int>()).Select(i => i).ToList();
 
+			List<string> itemStrings = new();
+			foreach (var token in (JArray)itemArray)
+			{
+				if (token.Value<string?>() is null) continue;
 				
-				array.Add(token.Value<int>());
+				itemStrings.Add(token.Value<string>() ?? string.Empty);
 			}
 
-			foreach (var index in array)
+			List<Item> items = EnumToItem(Main.Bot.ItemGrabMenu.Menu.ItemsToGrabMenu.actualInventory.ToList(),itemStrings);
+			
+			if (items.Count != amount.Count) return ExecutionResult.Failure($"You have specified {items.Count} items and only specified {amount.Count} item's amount, you need to specify the same amount of each.");
+
+			Logger.Info($"item amount: {Chest.Items.Count}    amount: {amount.Count}");
+			for (int i = 0; i < items.Count; i++)
 			{
-				if (index < 0) return ExecutionResult.Failure($"You cannot provide an index less than one.");
-				if (index > Chest.Items.Count - 1) return ExecutionResult.Failure($"You cannot provide an index larger than the amount of items in this chest.");
+				Logger.Info($"item: {items[i].Stack}   {items[i].DisplayName}    amount: {amount[i]}");
+				if (items[i].Stack >= amount[i] && amount[i] > 0) continue;
 				
-				if (Chest.Items[index] is null)
-				{
-					return ExecutionResult.Failure($"{index} is not a valid item in this chest.");
-				}
+				return ExecutionResult.Failure($"The chest does not have {amount[i]} {items[i].DisplayName}");
 			}
 
-			resultData.AddRange(array.Select(item => Chest.Items[item]));
-
+			resultData = new(items,amount);
+			
 			List<string> itemNames = new();
-			resultData.ToList().ForEach(item => itemNames.Add(item.DisplayName));
-			return ExecutionResult.Success($"You have added: {string.Join("\n",itemNames)} to the chest");
+			for (int i = 0; i < resultData.Key.Count; i++)
+			{
+				itemNames.Add($"{resultData.Value[i]}: {resultData.Key[i].DisplayName}");
+			}
+			return ExecutionResult.Success($"You have removed: {string.Join("\n",itemNames)} from the chest.");
 		}
 
-		protected override void Execute(List<Item>? resultData)
+		protected override void Execute(KeyValuePair<List<Item>,List<int>> resultData)
 		{
-			if (Chest is null || resultData is null) return;
-			foreach (var item in resultData)
+			if (Chest is null) return;
+			for (int i = 0; i < resultData.Key.Count; i++)
 			{
-				Main.Bot.Chest.TakeItemFromChest(Chest,item,Game1.player);
+				Item? item = Main.Bot.ItemGrabMenu.GetItemAmount(Chest.Items.ToList(),resultData.Key[i], resultData.Value[i]);
+				if (item is null) continue;
+				// Can't find a way to take and add :(
+				Main.Bot.Chest.TakeItemFromChest(Chest,item,Main.Bot._farmer);
+				Main.Bot._farmer.addItemToInventory(item);
 			}
+			
 			RegisterChestActions();
 		}
 	}
 	
-	public static void RegisterChestActions(bool includeColourPicker = false)
+	private static List<object> ItemEnum(IInventory inventory)
+	{
+		List<object> items = new();
+		for (int i = 0; i < inventory.Count; i++)
+		{
+			if (inventory[i] is null) continue;
+			items.Add($"{i}: {inventory[i].DisplayName}");
+		}
+
+		return items;
+	}
+
+	private static List<Item> EnumToItem(IInventory inventory,List<string> select) => EnumToItem(inventory.GetRange(0,inventory.Count).ToList(), select);
+	
+	private static List<Item> EnumToItem(List<Item?> inventory,List<string> select)
+	{
+		List<Item> items = new();
+		foreach (var str in select)
+		{
+			for (int i = 0; i < inventory.Count; i++)
+			{
+				if (inventory[i] is null || str != $"{i}: {inventory[i]?.DisplayName}") continue;
+
+				items.Add(inventory[i]!);
+				break;
+			}
+		}
+			
+		return items;
+	}
+	
+	public static void RegisterChestActions()
 	{
 		Logger.Info($"registering chest actions");
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
 		window.AddAction(new CloseChest()).AddAction(new AddItemsToChest()).AddAction(new TakeItemsFromChest());
-		if (includeColourPicker) window.AddAction(new ItemGrabActions.SelectColour());
+		if (Main.Bot.ItemGrabMenu.Menu.colorPickerToggleButton.visible) window.AddAction(new ItemGrabActions.SelectColour());
 		
 		string nameList = InventoryContext.GetInventoryString(Chest!.Items, true);
 		window.SetForce(0,$"You are now interacting with a chest", 
