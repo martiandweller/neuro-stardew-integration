@@ -176,10 +176,8 @@ public static class TileContext
                             case "MessageOnce":
                             case "NPCMessage":
                             case "MessageSpeech":
-                                objectTiles.Add(new Point(x,y),"Action");
-                                continue;
                             case "Letter":
-                                objectTiles.Add(new Point(x,y),"Action");
+                                objectTiles.Add(new Point(x,y),action[0]);
                                 continue;
                         }
                         objectTiles.Add(new Point(x,y),"Action");
@@ -207,6 +205,7 @@ public static class TileContext
         foreach (var kvp in objects)
         {
             string name = SimpleObjectName(kvp.Value);
+            // if (kvp.Value is string str && str == "Action") name = "Action";
             // can find an error item in town, using object displayName doesn't work
             if (name == "" || name.ToLower().Contains("error")) continue;
             
@@ -220,6 +219,21 @@ public static class TileContext
         return amountOfObject;
     }
 
+    /// <summary>
+    /// Gets the object at the provided tile and returns a string for that type of object, if there is no object it will be an empty string.
+    /// </summary>
+    /// <param name="location"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="simple">This will return a more simplified version of an object's context.</param>
+    public static string? GetTileContext(GameLocation location, int x, int y, bool simple = false)
+    {
+        _location = location;
+        object? obj = TileUtilities.GetTileType(location, new Point(x, y));
+        if (obj is null) return null;
+        return simple ? SimpleObjectName(obj) : GetObjectContext(obj,x,y);
+    }
+    
     /// <summary>
     /// The bare minimum name for an object, this is used in <see cref="GetNameAmountInLocation"/> 
     /// </summary>
@@ -247,24 +261,12 @@ public static class TileContext
             case Building building:
                 name = StringUtilities.GetBuildingName(building);
                 break;
+            case string str:
+                name = str;
+                break;
         }
 
         return name;
-    }
-
-    /// <summary>
-    /// Gets the object at the provided tile and returns a string for that type of object, if there is no object it will be an empty string.
-    /// </summary>
-    /// <param name="location"></param>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <param name="simple">This will return a more simplified version of an object's context.</param>
-    public static string? GetTileContext(GameLocation location, int x, int y, bool simple = false)
-    {
-        _location = location;
-        object? obj = TileUtilities.GetTileType(location, new Point(x, y));
-        if (obj is null) return null;
-        return simple ? SimpleObjectName(obj) : GetObjectContext(obj,x,y);
     }
 
     private static string? GetObjectContext(object obj,int x,int y)
@@ -281,7 +283,7 @@ public static class TileContext
                 return $"Name: {furniture.DisplayName}, X: {furniture.GetBoundingBox().X / 64} Y: {furniture.GetBoundingBox().Y / 64}" +
                        $" Width: {furniture.GetBoundingBox().Width / 64} Height: {furniture.GetBoundingBox().Height / 64}";
             case Object objectValue:
-                return $"{x},{y}, Name: {objectValue.DisplayName}";
+                return $"{x},{y}, Name: {objectValue.DisplayName}{(objectValue.heldObject.Value is not null ? $", holding an {objectValue.heldObject.Value.DisplayName}" : "")}"; 
             case Building building:
                 if (building.isActionableTile(x, y, Main.Bot._farmer))
                 {
@@ -305,17 +307,19 @@ public static class TileContext
                 switch (terrainFeature)
                 {
                     case HoeDirt dirt:
-                        string context = $"{dirt.Tile}: empty dirt";
+                        string context = $"{dirt.Tile.X},{dirt.Tile.Y}: empty dirt";
                         if (dirt.crop is not null)
                         {
                             Item item = ItemRegistry.Create(dirt.crop.indexOfHarvest.Value);
-                            context = $"{dirt.Tile}: {item.DisplayName} fully grown: {dirt.crop.fullyGrown.Value}";
+                            context = $"{dirt.Tile.X},{dirt.Tile.Y}: {item.DisplayName} fully grown: {dirt.crop.fullyGrown.Value}";
                         }
                         return context;
                     default:
                         string substring = StringUtilities.CorrectObjectName(terrainFeature);
                         return $"{substring} is at: {x},{y}";
                 }
+            case string str:
+                return $"{str}: {x},{y}";
         }
         
         return "";

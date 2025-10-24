@@ -309,7 +309,8 @@ namespace NeuroStardewValley.Source.Actions;
         }
 
         public override string Name => "change_equipped";
-        protected override string Description => "This allows you to change equipped clothing and items";
+        protected override string Description => "This allows you to change equipped clothing and items, if you are " +
+                                                 "equipping an item, you should make sure the inventory slot you specify is a valid item.";
         protected override JsonSchema Schema => new()
         {
             Type = JsonSchemaType.Object,
@@ -323,14 +324,14 @@ namespace NeuroStardewValley.Source.Actions;
         };
         protected override ExecutionResult Validate(ActionData actionData, out Dictionary<string,string>? resultData)
         {
-            string slot = actionData.Data?.Value<string>("slot")!;
-            string action = actionData.Data?.Value<string>("action")!;
+            string? slot = actionData.Data?.Value<string>("slot");
+            string? action = actionData.Data?.Value<string>("action");
             string? inventory = actionData.Data?.Value<string>("inventory_slot");
 
-            if (action == "equip")
+            if (action is null || slot is null)
             {
                 resultData = new();
-                return ExecutionResult.Failure("should not be null");
+                return ExecutionResult.Failure("You gave an invalid value to either slot or action.");
             }
 
             if (!Slots().Contains(slot))
@@ -345,14 +346,14 @@ namespace NeuroStardewValley.Source.Actions;
                 return ExecutionResult.Failure("action was not set correctly");
             }
 
-            if (inventory is not null && Enumerable.Range(0, Main.Bot.Inventory.MaxInventory).Contains(int.Parse(inventory)) && action == "Equip")
+            if (inventory is not null && action == "Equip" &&
+                (!Enumerable.Range(0, Main.Bot.Inventory.MaxInventory).Contains(int.Parse(inventory)) ||
+                 Main.Bot.Inventory.Inventory[int.Parse(inventory)] is not Clothing or Ring or Boots or Hat))
             {
                 resultData = new();
-                return ExecutionResult.Failure("inventory was not set correctly");
+                return ExecutionResult.Failure($"inventory slot was not set correctly, you can only give a slot that is between 0 and {Main.Bot.Inventory.MaxInventory} and is a piece of clothing.");
             }
             
-            
-            Logger.Info($"slot keys: {slot}   action keys: {action}   inventory keys: {inventory}");
             resultData = new()
             {
                 { "slot", slot },
@@ -578,8 +579,8 @@ namespace NeuroStardewValley.Source.Actions;
     public static void RegisterInventoryActions()
     {
         ActionWindow actionWindow = ActionWindow.Create(Main.GameInstance);
-        actionWindow.AddAction(new MoveItem()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())
-            .AddAction(new ExitInventory()).AddAction(new CraftingActions.GoToCrafting()).AddAction(new RemoveItem());
+        actionWindow.AddAction(new MoveItem()).AddAction(new ExitInventory()).AddAction(new InteractWithTrinkets()).AddAction(new ChangeClothing())
+            .AddAction(new CraftingActions.GoToCrafting()).AddAction(new RemoveItem());
         
         bool attach = Main.Bot.Inventory.Inventory.Any(item => item is Tool tool && tool.AttachmentSlotsCount > 0);
         if (attach) actionWindow.AddAction(new AttachItem());

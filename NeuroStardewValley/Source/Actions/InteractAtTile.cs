@@ -19,7 +19,7 @@ public class InteractAtTile : NeuroAction<Point>
 {
 	private static List<Point> ActionTiles => TileContext.ActionableTiles.ToList();
 	public override string Name => "interact_at_tile";
-	protected override string Description => "Interact with the object at the specified tile";
+	protected override string Description => "Interact with the object at the specified tile, these also include buildings whose tiles have an action.";
 	protected override JsonSchema Schema => new()
 	{
 		Type = JsonSchemaType.Object,
@@ -120,6 +120,11 @@ public class InteractAtTile : NeuroAction<Point>
 			case Point point:
 				Logger.Info($"interacting with action tile");
 				Main.Bot.ActionTiles.DoActionTile(point);
+				string[] action = ArgUtility.SplitBySpace(Main.Bot._currentLocation.doesTileHaveProperty(point.X, point.Y, "Action", "Buildings"));
+				foreach (var ac in action)
+				{
+					Logger.Info($"ac: {ac}");
+				}
 				if (Game1.activeClickableMenu is null)
 				{
 					RegisterMainActions.RegisterPostAction();

@@ -30,19 +30,24 @@ public static class RegisterMainActions
 			window.AddAction(new WaitForTime());
 		}
 
-		if (Main.Bot._currentLocation.Objects.Length > 0 || TileContext.ActionableTiles.Count > 0 ||
-		    Game1.currentLocation.buildings.Count > 0)
+		if (TileContext.GetNameAmountInLocation(Main.Bot._currentLocation).Any())
 		{
-			window.AddAction(new QueryWorldActions.GetObjectsInRadius()).AddAction(new QueryWorldActions.GetObjectTypeInRadius());
+			window.AddAction(new QueryWorldActions.GetObjectsInRadius())
+				.AddAction(new QueryWorldActions.GetObjectTypeInRadius());
+		}
+		
+		if (Main.Bot._currentLocation.Objects.Any() || TileContext.ActionableTiles.Any() ||
+		    Main.Bot._currentLocation.buildings.Any() || Main.Bot._currentLocation.furniture.Any())
+		{
+			window.AddAction(new InteractAtTile());
 		}
 
 		if (Main.Bot._farmer.Items.Any(item => item is not null && item.isPlaceable()))
 		{
-			window.AddAction(new WorldObjectActions.PlaceObjects()).AddAction(new WorldObjectActions.PlaceObject())
-				.AddAction(new InteractAtTile());
+			window.AddAction(new WorldObjectActions.PlaceObjects()).AddAction(new WorldObjectActions.PlaceObject());
 		}
 		
-		if (Game1.currentLocation.characters.Any(monster => monster.IsMonster))
+		if (Main.Bot._currentLocation.characters.Any(monster => monster.IsMonster))
 		{
 			window.AddAction(new PathFindingActions.AttackMonster());
 		}
@@ -52,12 +57,12 @@ public static class RegisterMainActions
 			window.AddAction(new PathFindingActions.InteractCharacter());
 		}
 		
-		if (Game1.player.CurrentItem is not null)
+		if (Main.Bot._farmer.CurrentItem is not null)
 		{
 			window.AddAction(new ToolActions.UseItem());
 		}
 
-		if (Game1.player.questLog.Count > 0)
+		if (Main.Bot._farmer.questLog.Any())
 		{
 			window.AddAction(new QuestLogActions.OpenLog());
 		}
@@ -68,10 +73,6 @@ public static class RegisterMainActions
 		GameLocation? newLocation = location ?? e?.NewLocation;
 		if (newLocation is null) return;
 		
-		if (Main.Bot._currentLocation.canFishHere() && Main.Bot.Inventory.Inventory.Any(item => item is FishingRod))
-		{
-			window.AddAction(new ToolActions.Fishing());
-		}
 		switch (newLocation)
 		{
 			case Farm:
@@ -194,10 +195,11 @@ public static class RegisterMainActions
 		{
 			if (query == "")
 			{
-				query = $"You are at the tile {Main.Bot.Player.BotTilePosition()}" +
-				        $" The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
-				        $" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true)}" +
-				        $"\nIf you want more information about your items you should open your inventory.";
+				query =
+					$"You are at the tile {Main.Bot.Player.BotTilePosition()}, if you are unsure about what's around" +
+					"you in the world, you should use the query actions to learn more about that." +
+					$" The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
+					$" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true)}";
 			}
 			if (state == "")
 			{

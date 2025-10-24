@@ -29,7 +29,9 @@ public static class QueryWorldActions
 				["excluded_names"] = new()
 				{
 					Type = JsonSchemaType.Array,
-					Items = new JsonSchema {Type = JsonSchemaType.String}
+					Items = new JsonSchema {Enum = TileContext.GetNameAmountInLocation(Main.Bot._currentLocation)
+						.Select(object (kvp) => kvp.Key).ToList()
+					}
 				}
 			}
 		};
@@ -43,14 +45,10 @@ public static class QueryWorldActions
 			List<string> names = new();
 			if (jArray is not null)
 			{
-				foreach (var token in jArray)
-				{
-					string? tokenStr = token.Value<string?>();
-					if (tokenStr is null) continue;
-				
-					names.Add(tokenStr);
-				}	
+				names.AddRange(jArray.Select(token => token.Value<string?>()).OfType<string>()
+					.Where(token => TileContext.GetNameAmountInLocation(Main.Bot._currentLocation).ContainsKey(token)));
 			}
+			
 			if (radius == int.MaxValue) return ExecutionResult.Failure($"You cannot specify a null radius");
 
 			if (radius < MinRadius || radius > MaxRadius)
@@ -63,40 +61,29 @@ public static class QueryWorldActions
 			
 			if (tiles.Count < 1) return ExecutionResult.Failure($"There are no objects around you in that radius.");
 
-			if (jArray != null) _objectNames = names.ToArray();
+			_objectNames = names.ToArray();
 			resultData = radius;
 			return ExecutionResult.Success($"");
 		}
 
 		protected override void Execute(int resultData)
 		{
-			string contextString = $"These are the objects in a radius of {resultData} at {Main.Bot._farmer.TilePoint} at {Main.Bot._currentLocation.DisplayName}";
+			string contextString = $"These are the objects in a radius of {resultData} at {Main.Bot._farmer.TilePoint} at {Main.Bot._currentLocation.DisplayName}. Tiles are sent in the format of X,Y";
 			
 			var tiles = TileContext.GetObjectsInLocation(Main.Bot._currentLocation, Main.Bot._farmer.TilePoint,
 				resultData);
 
-			foreach (var kvp in tiles)
+			foreach (var name in tiles.Select(kvp =>
+				         TileContext.GetTileContext(Main.Bot._currentLocation, kvp.Key.X, kvp.Key.Y)).OfType<string>())
 			{
-				Logger.Info($"tile: {kvp.Key.X} {kvp.Key.Y}");
-				string? name = TileContext.GetTileContext(Main.Bot._currentLocation, kvp.Key.X, kvp.Key.Y);
-				if (name is null) continue;
-
 				if (_objectNames is null)
 				{
 					contextString += $"\n{name}";
 					continue;
 				}
-
-				bool contains = false;
-				foreach (var nonValidNames in _objectNames)
-				{
-					if (name.Contains(nonValidNames))
-					{
-						contains = true;
-					}
-				}
-
-				if (contains) continue;
+				
+				if (_objectNames.Any(obj => name.Contains(obj))) continue;
+				
 				contextString += $"\n{name}";
 			}
 			// should probably find a better way to do this
@@ -156,7 +143,7 @@ public static class QueryWorldActions
 		protected override void Execute(KeyValuePair<string, int> resultData)
 		{
 			string contextString = $"These are the {resultData.Key}s in a radius of {resultData.Value} around " +
-			 $"{Main.Bot._farmer.TilePoint} at {Main.Bot._currentLocation.DisplayName}:";
+			 $"{Main.Bot._farmer.TilePoint} at {Main.Bot._currentLocation.DisplayName}. Tiles are sent in the format of X,Y:";
 			
 			contextString += TileContext.GetSpecifiedObjects(resultData.Key, Main.Bot._farmer.TilePoint,
 				resultData.Value, Main.Bot._currentLocation);
