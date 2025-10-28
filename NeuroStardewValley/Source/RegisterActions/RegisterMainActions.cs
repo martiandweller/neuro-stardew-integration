@@ -66,6 +66,8 @@ public static class RegisterMainActions
 		{
 			window.AddAction(new QuestLogActions.OpenLog());
 		}
+
+		if (Main.Bot._farmer.CanEmote()) window.AddAction(new ChatActions.UseEmote());
 	}
 
 	private static void RegisterToolActions(ActionWindow window, BotWarpedEventArgs? e = null,GameLocation? location = null)
@@ -83,17 +85,21 @@ public static class RegisterMainActions
 				{
 					if (!hasItem)
 					{
-						window.AddAction(new ToolActions.UseToolInRect());
+						if (Main.Config.UseRange) window.AddAction(new ToolActions.UseToolInRadius());
+						else window.AddAction(new ToolActions.UseToolInRect());
 						hasItem = true;
 					}
 					switch (item)
 					{
 						case WateringCan wateringCan:
 						{
-							if (!wateringCan.isBottomless.Value || wateringCan.WaterLeft < wateringCan.waterCanMax)
+							if ((!wateringCan.isBottomless.Value || wateringCan.WaterLeft < wateringCan.waterCanMax)
+							    && newLocation.waterTiles.waterTiles.Length > 0) 
 								window.AddAction(new ToolActions.RefillWateringCan());
+
+							if (Main.Config.UseRange) window.AddAction(new ToolActions.WaterFarmLandInRadius());
+							else window.AddAction(new ToolActions.WaterFarmLand());
 							
-							window.AddAction(new ToolActions.WaterFarmLand());
 							break;
 						}
 						case Pickaxe:
@@ -196,8 +202,8 @@ public static class RegisterMainActions
 			if (query == "")
 			{
 				query =
-					$"You are at the tile {Main.Bot.Player.BotTilePosition()}, if you are unsure about what's around" +
-					"you in the world, you should use the query actions to learn more about that." +
+					$"You are at the tile {Main.Bot.Player.BotTilePosition()} facing {PlayerContext.DirectionNames[Main.Bot.Player.FacingDirection].ToLower()}," +
+					$" if you are unsure about what's around you in the world, you should use the query actions to learn more." +
 					$" The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
 					$" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot.Inventory.Inventory, true)}";
 			}
@@ -213,7 +219,7 @@ public static class RegisterMainActions
 	private static string GetSeparatedState()
 	{
 		var names = TileContext.GetNameAmountInLocation(Main.Bot._currentLocation);
-		string context = "These are the objects around you: ";
+		string context = "";
 		string building = "";
 		foreach (var kvp in TileContext.GetObjectsInLocation(Main.Bot._currentLocation))
 		{
@@ -230,10 +236,10 @@ public static class RegisterMainActions
 			}
 		}
 
-		if (building.Length == 0) return context;
+		if (building.Length == 0) return $"These are the objects around you: {context}";
 		
 		building = $"\nThese are the buildings around you: {building}";
-		context += $"{building}";
+		context = $"These are the objects around you: {context}{building}";
 		return context;
 	}
 }

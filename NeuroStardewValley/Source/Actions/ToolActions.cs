@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using NeuroSDKCsharp.Actions;
 using NeuroSDKCsharp.Json;
@@ -17,6 +18,9 @@ namespace NeuroStardewValley.Source.Actions;
 
 public static class ToolActions
 {
+	private const int MinRange = 3;
+	private const int MaxRange = 30;
+	
     public class UseItem : NeuroAction<Item?>
     {
         private static bool _pathfind;
@@ -342,6 +346,56 @@ public static class ToolActions
 		}
 	}
 	
+	public class WaterFarmLandInRadius : NeuroAction<int>
+	{
+		public override string Name => "water_farm_land";
+		protected override string Description =>
+			"This will water farm land in the provided radius, the farmland will not" +
+			" be watered if it has already been and will automatically refill watering can.";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "radius" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["radius"] = QJS.Type(JsonSchemaType.Integer)
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out int resultData)
+		{
+			int? radius = actionData.Data?.Value<int>("radius");
+
+			resultData = -1;
+			if (radius is null)
+			{
+				return ExecutionResult.Failure("You cannot have a null radius.");
+			}
+			
+			if (radius < MinRange || radius > MaxRange) 
+			{
+				return ExecutionResult.Failure($"The radius you provided was not in the range of {MinRange}-{MaxRange}.");
+			}
+
+			var tile = Main.Bot.Player.BotTilePosition();
+			if (tile.X - radius < 0 || tile.Y - radius < 0 || tile.X + radius > TileUtilities.MaxX || tile.Y + radius > TileUtilities.MaxY)
+			{
+				return ExecutionResult.Failure($"If you used this radius it would either contain a value less than or greater than the size of the map.");
+			}
+			
+			resultData = (int)radius;
+			return ExecutionResult.Success($"You are now watering the farm-land");
+		}
+
+		protected override void Execute(int resultData)
+		{
+			int pixelRadius = resultData * 64;
+			Point start = Main.Bot.Player.BotTilePosition();
+			Rectangle rect = new(start.X - pixelRadius, start.Y - pixelRadius, pixelRadius * 2, pixelRadius * 2);
+			Main.Bot.Tool.WaterSelectPatches(rect);
+			RegisterMainActions.RegisterPostAction();
+		}
+	}
+	
 	public class DestroyObject : NeuroAction<Point>
 	{
 		public override string Name => "destroy_object";
@@ -471,25 +525,90 @@ public static class ToolActions
 
 		protected override void Execute(KeyValuePair<Tool, Rectangle> resultData)
 		{
-			SwapItemHandler.SwapItem(resultData.Key.GetType(),"");
-			if (resultData.Key is Hoe)
-			{
-				var tiles = Main.Bot.Tool.CreateFarmLandTiles(resultData.Value);
-				Main.Bot.Tool.MakeFarmLand(tiles);
-				RegisterMainActions.RegisterPostAction();
-				return;
-			}
-
-			if (resultData.Key is WateringCan)
-			{
-				Main.Bot.Tool.WaterSelectPatches(resultData.Value);
-				RegisterMainActions.RegisterPostAction();
-				return;
-			}
-
-			Rectangle rect = resultData.Value;
-			Main.Bot.Tool.RemoveObjectsInDimension(rect);
-			RegisterMainActions.RegisterPostAction();
+			UseToolExecute(resultData.Key,resultData.Value);
 		}
+	}
+	
+	public class UseToolInRadius : NeuroAction<KeyValuePair<Tool, int>>
+	{
+		public override string Name => "use_tool_in_radius";
+		protected override string Description =>
+			"Use the selected tool in the specified radius, if you want to water farmland you can do that with another action." +
+			$" You should use this if you want to create farmland or use another tool for a similar purpose. The radius should be between {MinRange} and {MaxRange}";
+		protected override JsonSchema Schema => new()
+		{
+			Type = JsonSchemaType.Object,
+			Required = new List<string> { "tool", "radius" },
+			Properties = new Dictionary<string, JsonSchema>
+			{
+				["tool"] = QJS.Enum(Main.Bot.Inventory.Inventory.Where(item => item is Tool).Select(tool => tool.DisplayName)
+					.ToList()),
+				["radius"] = QJS.Type(JsonSchemaType.Integer)
+			}
+		};
+		protected override ExecutionResult Validate(ActionData actionData, out KeyValuePair<Tool, int> resultData)
+		{
+			string? toolName = actionData.Data?.Value<string>("tool");
+			int? radius = actionData.Data?.Value<int>("radius");
+
+			resultData = new ();
+			if (toolName is null || radius is null)
+			{
+				return ExecutionResult.Failure("You did not provide a correct schema");
+			}
+
+			List<Item> items = Main.Bot.Inventory.Inventory.Where(item1 => item1 is Tool tool && tool.DisplayName == toolName).ToList();
+			if (items.Count < 1)
+			{
+				return ExecutionResult.Failure($"The value you provided as the tool name does not exist.");
+			}
+			Item toolItem = items[0];
+			if (radius < MinRange || radius > MaxRange) 
+			{
+				return ExecutionResult.Failure($"The value you provided is not between the range of {MinRange} and {MaxRange}");
+			}
+
+			Tool? tool = null;
+			if (toolItem is Tool item) tool = item;
+			if (tool is WateringCan) return ExecutionResult.Failure($"You should use either the water_farm_land or refill_watering_can action instead.");
+
+			if (tool is null) return ExecutionResult.Failure($"The tool you provided is not available");
+			
+			resultData = new (tool, (int)radius);
+			return ExecutionResult.Success($"You are now using the {tool.Name}");
+		}
+
+		protected override void Execute(KeyValuePair<Tool, int> resultData)
+		{
+			var point = Main.Bot._farmer.Position;
+			int range = resultData.Value * 64;
+			Rectangle rect = new((int)point.X - range, (int)point.Y - range, range * 2, range * 2);
+			
+			UseToolExecute(resultData.Key,rect);
+		}
+	}
+
+	private static void UseToolExecute(Tool tool, Rectangle rect)
+	{
+		string weaponString = "";
+		if (tool is MeleeWeapon weapon) weaponString = weapon.isScythe() ? "Scythe" : "Weapon";
+		SwapItemHandler.SwapItem(tool.GetType(),weaponString);
+			
+		switch (tool)
+		{
+			case Hoe:
+				var tiles = Main.Bot.Tool.CreateFarmLandTiles(rect);
+				Logger.Info($"tiles: {tiles.Count}");
+				Main.Bot.Tool.MakeFarmLand(tiles);
+				break;
+			case WateringCan:
+				Main.Bot.Tool.WaterSelectPatches(rect);
+				break;
+			default:
+				Main.Bot.Tool.RemoveObjectsInDimension(rect);
+				break;
+		}
+		
+		RegisterMainActions.RegisterPostAction();
 	}
 }

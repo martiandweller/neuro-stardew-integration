@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.Xna.Framework;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Utilities;
@@ -278,6 +279,10 @@ public static class TileContext
                 string tileString = $"{name} tile: {x},{y}";
                 if (!chest.giftbox.Value) tileString += $", colour: {chest.getCategoryColor()}";
                 return tileString;
+            case Sign sign when sign.displayItem.Value is not null:
+                return $"{sign.DisplayName}: {x},{y}. This holds a {sign.displayItem.Value.DisplayName}";
+            case Object signObject when signObject.IsTextSign():
+                return $"{signObject.DisplayName}: {x},{y}. This says: {signObject.SignText}";
             case Furniture furniture:
                 if (!SentFurniture.Add(furniture)) return "";
                 return $"Name: {furniture.DisplayName}, X: {furniture.GetBoundingBox().X / 64} Y: {furniture.GetBoundingBox().Y / 64}" +

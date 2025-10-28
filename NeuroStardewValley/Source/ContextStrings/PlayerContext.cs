@@ -3,6 +3,14 @@ namespace NeuroStardewValley.Source.ContextStrings;
 
 public static class PlayerContext
 {
+	public static readonly Dictionary<int, string> DirectionNames = new()
+	{
+		{ 0, "North" },
+		{ 1, "East" },
+		{ 2, "South" },
+		{ 3, "West" }
+	};
+	
 	public static string GetAllCharactersLevel()
 	{
 		string charString = "";

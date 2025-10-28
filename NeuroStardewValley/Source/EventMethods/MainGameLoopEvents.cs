@@ -45,10 +45,13 @@ public static class MainGameLoopEvents
 			: $"These are the warps to other places in {e.NewLocation.DisplayName} when you entered it: {warpsString}";
 		
 		Context.Send($"{warpsString}\n{characterContext}", true);
-		RegisterMainActions.RegisterPostAction(e, 0,
+		string query =
+			$"You are at the tile {Main.Bot.Player.BotTilePosition()} facing {PlayerContext.DirectionNames[Main.Bot.Player.FacingDirection].ToLower()}," +
+			$" if you are unsure about what's around you in the world, you should use the query actions to learn more." +
 			$"You are at {e.NewLocation.DisplayName} from {e.OldLocation.DisplayName}, The current weather is {Main.Bot.WorldState.GetCurrentLocationWeather().Weather}." +
 			$" These are the items in your inventory: {InventoryContext.GetInventoryString(Main.Bot._farmer.Items, true)} " +
-			$"\nIf you want more information about your items should open your inventory.");
+			$"\nIf you want more information about your items should open your inventory."; 
+		RegisterMainActions.RegisterPostAction(e, 0, query);
 	}
 
 	public static void OnMenuChanged(object? sender, BotMenuChangedEventArgs e)
@@ -193,7 +196,7 @@ public static class MainGameLoopEvents
 				QuestLogActions.RegisterActions();
 				break;
 			default:
-				if (e.NewMenu is null or BobberBar) break;
+				if (e.NewMenu is null or BobberBar || Main.Config.Debug) break;
 				Context.Send(string.Format(ResultStrings.InvalidClickableMenu,$"{e.NewMenu}"));
 				e.NewMenu.exitThisMenu(false);
 				break;

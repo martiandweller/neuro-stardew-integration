@@ -19,6 +19,8 @@ public class ModConfig
     // When Neuro uses a query action it will ask her for a radius, this limits the size of what she can receive.
     public int MinQueryRange { get; set; } = 3;
     public int MaxQueryRange { get; set; } = 100;
+    // for actions that have both a rectangle and range variant this will register the range version if true.
+    public bool UseRange { get; set; } = true;
     public Dictionary<string, bool> CharacterCreationOptions { get; set; } = new()
     {
         { "skin", true },
