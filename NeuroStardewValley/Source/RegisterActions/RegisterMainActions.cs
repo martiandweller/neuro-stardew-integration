@@ -79,39 +79,25 @@ public static class RegisterMainActions
 		{
 			case Farm:
 			{
-				bool madeDestroyAction = false;
-				bool hasItem = false;
-				foreach (var item in Main.Bot.PlayerInformation.Inventory) // use this instead of .Any as can't declare wateringCan in any
+				if (Main.Config.UseRange) window.AddAction(new ToolActions.UseToolInRadius());
+				else window.AddAction(new ToolActions.UseToolInRect());
+				
+				if (Main.Bot.PlayerInformation.Inventory.Any(item => item is WateringCan))
 				{
-					if (!hasItem)
-					{
-						if (Main.Config.UseRange) window.AddAction(new ToolActions.UseToolInRadius());
-						else window.AddAction(new ToolActions.UseToolInRect());
-						hasItem = true;
-					}
-					switch (item)
-					{
-						case WateringCan wateringCan:
-						{
-							if ((!wateringCan.isBottomless.Value || wateringCan.WaterLeft < wateringCan.waterCanMax)
-							    && newLocation.waterTiles.waterTiles.Length > 0) 
-								window.AddAction(new ToolActions.RefillWateringCan());
+					var wateringCan = Main.Bot.PlayerInformation.Inventory.OfType<WateringCan>().ToList()[0];
+					
+					if ((!wateringCan.isBottomless.Value || wateringCan.WaterLeft < wateringCan.waterCanMax)
+					    && newLocation.waterTiles.waterTiles.Length > 0) 
+						window.AddAction(new ToolActions.RefillWateringCan());
 
-							if (Main.Config.UseRange) window.AddAction(new ToolActions.WaterFarmLandInRadius());
-							else window.AddAction(new ToolActions.WaterFarmLand());
+					if (Main.Config.UseRange) window.AddAction(new ToolActions.WaterFarmLandInRadius());
+					else window.AddAction(new ToolActions.WaterFarmLand());
 							
-							break;
-						}
-						case Pickaxe:
-						case Axe:
-						case MeleeWeapon:
-							if (!madeDestroyAction)
-							{
-								madeDestroyAction = true;
-								window.AddAction(new ToolActions.DestroyObject());
-							}
-							break;
-					}
+				}
+
+				if (Main.Bot.PlayerInformation.Inventory.Any(item => item is Pickaxe or Axe or MeleeWeapon))
+				{
+					window.AddAction(new ToolActions.DestroyObject());
 				}
 
 				break;
@@ -224,13 +210,15 @@ public static class RegisterMainActions
 		foreach (var kvp in TileContext.GetObjectsInLocation(Main.Bot._currentLocation))
 		{
 			string name = TileContext.SimpleObjectName(kvp.Value);
-			if (name == "" || context.Contains(name) || building.Contains(name) || name.ToLower().Contains("error")) continue;
+			if (name == "" || name.Contains("Error")) continue;
 			switch (kvp.Value)
 			{
 				case Building:
+					if (building.Contains(name)) continue;
 					building += $"\n{name} amount: {names[name]}";
 					break;
 				default:
+					if (context.Contains(name)) continue;
 					context += $"\n{name} amount: {names[name]}";
 					break;
 			}

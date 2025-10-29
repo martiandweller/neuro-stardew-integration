@@ -8,6 +8,7 @@ using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.RegisterActions;
 using NeuroStardewValley.Source.Utilities;
 using StardewBotFramework.Source.Modules.Pathfinding.Base;
+using StardewBotFramework.Source.Modules.Pathfinding.GroupTiles;
 using StardewBotFramework.Source.ObjectDestruction;
 using StardewBotFramework.Source.ObjectToolSwaps;
 using StardewValley;
@@ -276,10 +277,25 @@ public static class ToolActions
 			return ExecutionResult.Success("Refilling watering can.");
 		}
 
-		protected override void Execute()
+		protected override async void Execute()
 		{
-			Main.Bot.Tool.RefillWateringCan();
-			RegisterMainActions.RegisterPostAction();	
+			try
+			{
+				var refillWatch = Stopwatch.StartNew();
+				await Main.Bot.Tool.RefillWateringCan();
+				refillWatch.Stop();
+				var taskWatch = Stopwatch.StartNew();
+				await TaskDispatcher.SwitchToMainThread();
+				taskWatch.Stop();
+				var actionWatch = Stopwatch.StartNew();
+				RegisterMainActions.RegisterPostAction();
+				actionWatch.Stop();
+				Logger.Error($"refill: {refillWatch.ElapsedMilliseconds}     task: {taskWatch.ElapsedMilliseconds}      action: {actionWatch.ElapsedMilliseconds}");
+			}
+			catch (Exception e)
+			{
+				Logger.Error($"{e}");
+			}
 		}
 	}
 	public class WaterFarmLand : NeuroAction<List<int>>
@@ -523,9 +539,16 @@ public static class ToolActions
 			return ExecutionResult.Success($"You are now using the {tool.Name}");
 		}
 
-		protected override void Execute(KeyValuePair<Tool, Rectangle> resultData)
+		protected override async void Execute(KeyValuePair<Tool, Rectangle> resultData)
 		{
-			UseToolExecute(resultData.Key,resultData.Value);
+			try
+			{
+				await UseToolExecute(resultData.Key,resultData.Value);
+			}
+			catch (Exception e)
+			{
+				Logger.Error($"{e}");
+			}
 		}
 	}
 	
@@ -578,17 +601,24 @@ public static class ToolActions
 			return ExecutionResult.Success($"You are now using the {tool.Name}");
 		}
 
-		protected override void Execute(KeyValuePair<Tool, int> resultData)
+		protected override async void Execute(KeyValuePair<Tool, int> resultData)
 		{
-			var point = Main.Bot._farmer.Position;
-			int range = resultData.Value * 64;
-			Rectangle rect = new((int)point.X - range, (int)point.Y - range, range * 2, range * 2);
+			try
+			{
+				var point = Main.Bot._farmer.Position;
+				int range = resultData.Value * 64;
+				Rectangle rect = new((int)point.X - range, (int)point.Y - range, range * 2, range * 2);
 			
-			UseToolExecute(resultData.Key,rect);
+				await UseToolExecute(resultData.Key,rect);
+			}
+			catch (Exception e)
+			{
+				Logger.Error($"{e}");
+			}
 		}
 	}
 
-	private static void UseToolExecute(Tool tool, Rectangle rect)
+	private static async Task UseToolExecute(Tool tool, Rectangle rect)
 	{
 		string weaponString = "";
 		if (tool is MeleeWeapon weapon) weaponString = weapon.isScythe() ? "Scythe" : "Weapon";
@@ -599,16 +629,26 @@ public static class ToolActions
 			case Hoe:
 				var tiles = Main.Bot.Tool.CreateFarmLandTiles(rect);
 				Logger.Info($"tiles: {tiles.Count}");
-				Main.Bot.Tool.MakeFarmLand(tiles);
+				Main.Bot.Tool.HoeFarmLand(tiles.Select(ITile (tile) => tile).ToList());
+				// await Main.Bot.Tool.MakeFarmLand(tiles);
 				break;
 			case WateringCan:
-				Main.Bot.Tool.WaterSelectPatches(rect);
+				await Main.Bot.Tool.WaterSelectPatches(rect);
 				break;
 			default:
-				Main.Bot.Tool.RemoveObjectsInDimension(rect);
+				List<GroundTile> groundTiles = Main.Bot.Tool.RemoveObjectsInDimension(rect);
+				Main.Bot.Tool.RemoveObjects(new List<ITile>(groundTiles));
 				break;
 		}
-		
-		RegisterMainActions.RegisterPostAction();
+
+		await Task.Run(() =>
+		{
+			while (Main.Bot.Tool.Running)
+			{
+			}
+
+			TaskDispatcher.SwitchToMainThread();
+			RegisterMainActions.RegisterPostAction();
+		});
 	}
 }

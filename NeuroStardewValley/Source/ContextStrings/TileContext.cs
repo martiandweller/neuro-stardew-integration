@@ -1,4 +1,3 @@
-using System.Data;
 using Microsoft.Xna.Framework;
 using NeuroStardewValley.Debug;
 using NeuroStardewValley.Source.Utilities;
@@ -153,36 +152,30 @@ public static class TileContext
                 }
                 object? obj = TileUtilities.GetTileType(location, new Point(x, y));
                 
-                if (!Main.Bot._currentLocation.isCollidingPosition(rect, Game1.viewport, true, 0, 
-                        false, Main.Bot._farmer, true,false,false,true)
-                    && obj is null)
-                    continue;
-
                 if (obj is null)
                 {
-                    if (location.isActionableTile(x, y, Main.Bot._farmer))
+                    if (!location.isActionableTile(x,y,Main.Bot._farmer)) continue;
+                    
+                    ActionableTiles.Add(new Point(x, y));
+                    string[] action = ArgUtility.SplitBySpace(Main.Bot._currentLocation.doesTileHaveProperty(x, y, "Action", "Buildings"));
+                    if (action.Length < 1)
                     {
-                        ActionableTiles.Add(new Point(x, y));
-                        string[] action = ArgUtility.SplitBySpace(Main.Bot._currentLocation.doesTileHaveProperty(x, y, "Action", "Buildings"));
-                        if (action.Length < 1)
-                        {
-                            objectTiles.Add(new Point(x,y),"Action");
-                            continue;
-                        }
-                        
-                        switch (action[0])
-                        {
-                            case "Dialogue":
-                            case "Message":
-                            case "MessageOnce":
-                            case "NPCMessage":
-                            case "MessageSpeech":
-                            case "Letter":
-                                objectTiles.Add(new Point(x,y),action[0]);
-                                continue;
-                        }
                         objectTiles.Add(new Point(x,y),"Action");
+                        continue;
                     }
+                    
+                    switch (action[0])
+                    {
+                        case "Dialogue":
+                        case "Message":
+                        case "MessageOnce":
+                        case "NPCMessage":
+                        case "MessageSpeech":
+                        case "Letter":
+                            objectTiles.Add(new Point(x,y),action[0]);
+                            continue;
+                    }
+                    objectTiles.Add(new Point(x,y),"Action");
                     continue;
                 }
                 object? tileObj = TileUtilities.GetTileType(location, new Point(x, y));
