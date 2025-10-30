@@ -89,7 +89,7 @@ internal sealed class Main : Mod
                 break;
             case SButton.I:
                 Logger.Info(
-                    $"pixel tile: {(Game1.currentCursorTile.X * Game1.tileSize)}  {(Game1.currentCursorTile.Y * Game1.tileSize)}");
+                    $"pixel tile: {Game1.currentCursorTile.X * Game1.tileSize}  {Game1.currentCursorTile.Y * Game1.tileSize}");
                 break;
             case SButton.Y:
                 foreach (var building in Game1.getFarm().buildings)
@@ -107,8 +107,7 @@ internal sealed class Main : Mod
             case SButton.H:
                 MouseState mouseState = Game1.input.GetMouseState();
                 Logger.Info($"mouse state: {mouseState}");
-                Logger.Info(
-                    $"{new Vector2((int)((Utility.ModifyCoordinateFromUIScale(mouseState.X) + Game1.viewport.X) / 64f), (int)((Utility.ModifyCoordinateFromUIScale(mouseState.Y) + Game1.viewport.Y) / 64f))}");
+                Logger.Info($"{new Vector2((int)((Utility.ModifyCoordinateFromUIScale(mouseState.X) + Game1.viewport.X) / 64f), (int)((Utility.ModifyCoordinateFromUIScale(mouseState.Y) + Game1.viewport.Y) / 64f))}");
                 break;
             case SButton.R:
                 foreach (var building in Game1.currentLocation.buildings)
@@ -157,8 +156,8 @@ internal sealed class Main : Mod
         TaskDispatcher.RunPending();
         // this is for if neuro has been frozen for too long
         Vector2 newPos = Bot._farmer.Position;
-        // this covers most stuff like EventUp and current menu not null
-        if (Context.IsPlayerFree && Config.RegisterIfPausedForLong)
+        // this covers most stuff like EventUp and current menu not null. We include waiting time in case Neuro decides to wait for a long time.  
+        if (Context.IsPlayerFree && Config.RegisterIfPausedForLong && LessImportantEvents.WaitingTime == -1)
         {
             if (_lastPlayerPos == newPos)
             {

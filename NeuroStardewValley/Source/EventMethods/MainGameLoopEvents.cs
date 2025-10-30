@@ -154,20 +154,30 @@ public static class MainGameLoopEvents
 				}
 				else
 				{
-					for (int i = 0; i <= Main.Bot.LetterViewer.GetMessage().Count; i++)
+					int waitTime = 9000 * Main.Bot.LetterViewer.GetMessage().Count;
+					for (int i = 0; i < Main.Bot.LetterViewer.GetMessage().Count; i++)
 					{
-						string message = LetterContext.GetStringContext(Main.Bot.LetterViewer.GetMessage()[i],
-								i == Main.Bot.LetterViewer.GetMessage().Count - 1,i + 1); // only send extra on last page
-						Context.Send($"{message}");
-						var t = Task.Run(async () => await Task.Delay(9000)); // surely 9 seconds per page is enough :Glueless:
-						t.Wait();
-						
-						if (i != Main.Bot.LetterViewer.GetMessage().Count - 1)
+						int j = i;
+						// ugly, but it works, sorry.
+						Task.Run(async () =>
 						{
-							Main.Bot.LetterViewer.NextPage();
-						}
+							await TaskDispatcher.SwitchToMainThread();
+							Logger.Info($"{Main.Bot.LetterViewer.GetMessage().Count}");
+							string message = LetterContext.GetStringContext(Main.Bot.LetterViewer.GetMessage()[j],
+								j == Main.Bot.LetterViewer.GetMessage().Count - 1, j); // only send extra on last page
+							Context.Send($"{message}");
+
+							await Task.Delay(9000);
+							await TaskDispatcher.SwitchToMainThread();
+							if (j != Main.Bot.LetterViewer.GetMessage().Count - 1)
+							{
+								Main.Bot.LetterViewer.NextPage();
+							}
+						});
 					}
-					Main.Bot.LetterViewer.ClickCloseButton();
+
+					// this gets ran after all the tasks are set up
+					DelayedAction.functionAfterDelay(() => Main.Bot.LetterViewer.ClickCloseButton(), waitTime + 9000);
 				}
 
 				break;
@@ -307,6 +317,11 @@ public static class MainGameLoopEvents
 		{
 			contextString += $" There is a festival today! It is located at {Game1.whereIsTodaysFest}, it will start at {startTime} and end at {endTime}," +
 			                $" but you should try to go there as soon as possible so you can fully experience it.";
+		}
+
+		if (Main.Bot._farmer.mailbox.Any())
+		{
+			contextString += $" There is some mail in your mailbox!";
 		}
 		
 		contextString += $" This is the level of your relationship with all the characters you have interacted with: " +

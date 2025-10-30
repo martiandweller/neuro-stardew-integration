@@ -82,9 +82,9 @@ public static class RegisterMainActions
 				if (Main.Config.UseRange) window.AddAction(new ToolActions.UseToolInRadius());
 				else window.AddAction(new ToolActions.UseToolInRect());
 				
-				if (Main.Bot.PlayerInformation.Inventory.Any(item => item is WateringCan))
+				if (Main.Bot.Inventory.Inventory.Any(item => item is WateringCan))
 				{
-					var wateringCan = Main.Bot.PlayerInformation.Inventory.OfType<WateringCan>().ToList()[0];
+					var wateringCan = Main.Bot.Inventory.Inventory.OfType<WateringCan>().ToList()[0];
 					
 					if ((!wateringCan.isBottomless.Value || wateringCan.WaterLeft < wateringCan.waterCanMax)
 					    && newLocation.waterTiles.waterTiles.Length > 0) 
@@ -95,7 +95,7 @@ public static class RegisterMainActions
 							
 				}
 
-				if (Main.Bot.PlayerInformation.Inventory.Any(item => item is Pickaxe or Axe or MeleeWeapon))
+				if (Main.Bot.Inventory.Inventory.Any(item => item is Pickaxe or Axe or MeleeWeapon))
 				{
 					window.AddAction(new ToolActions.DestroyObject());
 				}
@@ -104,11 +104,11 @@ public static class RegisterMainActions
 			}
 			case Mine:
 			{
-				if (Main.Bot.PlayerInformation.Inventory.Any(item => item.GetType() == typeof(Pickaxe)))
+				if (Main.Bot.Inventory.Inventory.Any(item => item.GetType() == typeof(Pickaxe)))
 				{
 					window.AddAction(new ToolActions.DestroyObject());
 				}
-
+				
 				break;
 			}
 		}
@@ -124,13 +124,10 @@ public static class RegisterMainActions
 				switch (kvp.Value)
 				{
 					case Chest:
-						if (Game1.activeClickableMenu is null)
+						if (!madeChestAction && Game1.activeClickableMenu is null)
 						{
-							if (!madeChestAction)
-							{
-								window.AddAction(new ChestActions.OpenChest());
-								madeChestAction = true;
-							}
+							window.AddAction(new ChestActions.OpenChest());
+							madeChestAction = true;
 						}
 						break;
 				}
@@ -148,14 +145,14 @@ public static class RegisterMainActions
 
 				break;
 			case AnimalHouse:
-				if (propertyTile.Count < 1) break;
+				if (!propertyTile.Any()) break;
 				NeuroSDKCsharp.Messages.Outgoing.Context.Send($"These are the locations of troughs in this area," +
 				                                              $" you can should put hay in them to feed your animals: {string.Join(",",propertyTile)}");
 				
 				window.AddAction(new WorldObjectActions.InteractWithTileProperty("interact_with_trough"));
 				break;
 			case MineShaft:
-				if (propertyTile.Count < 1) break;
+				if (!propertyTile.Any()) break;
 				NeuroSDKCsharp.Messages.Outgoing.Context.Send($"These are the locations of the ladders in this cave," +
 				                                              $" you may need to destroy the object over them to use them." +
 				                                              $" {string.Join(",",propertyTile)}");
@@ -202,32 +199,33 @@ public static class RegisterMainActions
 		window.Register();
 	}
 
+	private const string ObjectPrefix = "These are the objects around you: {0}{1}";
 	private static string GetSeparatedState()
 	{
-		var names = TileContext.GetNameAmountInLocation(Main.Bot._currentLocation);
+		var objects = TileContext.GetObjectsInLocation(Main.Bot._currentLocation);
+		Dictionary<string,int> nameAmount = TileContext.GetNameAmountInLocation(objects);
 		string context = "";
 		string building = "";
-		foreach (var kvp in TileContext.GetObjectsInLocation(Main.Bot._currentLocation))
+		foreach (var kvp in objects)
 		{
 			string name = TileContext.SimpleObjectName(kvp.Value);
-			if (name == "" || name.Contains("Error")) continue;
+			if (name.Length == 0 || name.Contains("Error",StringComparison.Ordinal)) continue;
 			switch (kvp.Value)
 			{
 				case Building:
 					if (building.Contains(name)) continue;
-					building += $"\n{name} amount: {names[name]}";
+					building += $"\n{name} amount: {nameAmount[name]}";
 					break;
 				default:
 					if (context.Contains(name)) continue;
-					context += $"\n{name} amount: {names[name]}";
+					context += $"\n{name} amount: {nameAmount[name]}";
 					break;
 			}
 		}
-
-		if (building.Length == 0) return $"These are the objects around you: {context}";
+		if (building.Length == 0) return string.Format(ObjectPrefix,context, "");
 		
 		building = $"\nThese are the buildings around you: {building}";
-		context = $"These are the objects around you: {context}{building}";
+		context = string.Format(ObjectPrefix,context, building);
 		return context;
 	}
 }

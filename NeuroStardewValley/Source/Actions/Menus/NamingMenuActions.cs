@@ -5,26 +5,29 @@ using StardewValley.Menus;
 
 namespace NeuroStardewValley.Source.Actions.Menus;
 
-public class NamingMenuActions
+public static class NamingMenuActions
 {
-	public class SetName : NeuroAction<string>
+	// We use text instead of name as this is also used for signs and having it be more universal is probably better
+	// than made for something like naming a horse as I doubt she can reach that on her own.
+	private class SetText : NeuroAction<string>
 	{
-		public override string Name => "set_name";
-		protected override string Description => $"Set the name for this, you can use a maximum of " +
+		public override string Name => "change_text";
+
+		protected override string Description => $"Set the text for this, you can use a maximum of " +
 		                                         $"{Main.Bot.NamingMenu.Menu.textBox.textLimit} characters with a " +
 		                                         $"minimum of {Main.Bot.NamingMenu.Menu.minLength} character";
 		protected override JsonSchema Schema => new()
 		{
 			Type = JsonSchemaType.Object,
-			Required = new List<string> { "name" },
+			Required = new List<string> { "text" },
 			Properties = new Dictionary<string, JsonSchema>
 			{
-				["name"] = QJS.Type(JsonSchemaType.String)
+				["text"] = QJS.Type(JsonSchemaType.String)
 			}
 		};
 		protected override ExecutionResult Validate(ActionData actionData, out string? resultData)
 		{
-			string? name = actionData.Data?.Value<string>("name");
+			string? name = actionData.Data?.Value<string>("text");
 
 			resultData = null;
 			if (name is null)
@@ -52,7 +55,7 @@ public class NamingMenuActions
 			Main.Bot.NamingMenu.DoneNaming();
 		}
 	}
-	public class RandomName : NeuroAction
+	private class RandomName : NeuroAction
 	{
 		public override string Name => "randomize_name";
 		protected override string Description => "Press the random name button and get a random name from the game.";
@@ -73,7 +76,7 @@ public class NamingMenuActions
 	{
 		ActionWindow window = ActionWindow.Create(Main.GameInstance);
 
-		window.AddAction(new SetName());
+		window.AddAction(new SetText());
 		if (Main.Bot.NamingMenu.Menu.randomButton.visible) window.AddAction(new RandomName());
 
 		string state = $"{Main.Bot.NamingMenu.Menu.title}";

@@ -23,8 +23,8 @@ public static class LetterContext
 	public static string GetStringContext(string message,bool addExtraContext = true, int page = -1)
 	{
 		string letterText = FormatLetterString(message);
-		string context = $"This is what {0} says \"{letterText}\"";
-		context = page != -1 ? string.Format(context, $"page: {page} of this letter") : string.Format(context, "the letter");
+		string context = "This is what {0} says \"{1}\"";
+		context = page != -1 ? string.Format(context, $"page {page} of this letter",letterText) : string.Format(context, "the letter",letterText);
 		if (!addExtraContext)
 		{
 			return context;

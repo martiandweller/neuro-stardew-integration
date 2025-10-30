@@ -64,6 +64,16 @@ public static class WorldObjectActions
 			
 			// This one should not happen as we only send placeable items
 			if (!obj.isPlaceable()) return ExecutionResult.Failure($"The object you specified is not placeable.");
+
+			if (Main.Bot._currentLocation.terrainFeatures.TryGetValue(point.ToVector2(), out var feature) && feature is HoeDirt dirt)
+			{
+				string id = Crop.ResolveSeedId(obj.ItemId, Main.Bot._currentLocation);
+				if (!dirt.canPlantThisSeedHere(id, obj.Category == -19)) 
+					return ExecutionResult.Failure(obj.Category == -74 ?
+						$"This item cannot be placed at the tile you specified," +
+						$" this most likely means the seed you selected cannot be planted in this season."
+						: $"The item you selected cannot be used at this tile.");
+			}
 			
 			resultData = new(obj,point);
 			return ExecutionResult.Success($"Placing {obj.DisplayName} at {point}");
@@ -73,15 +83,22 @@ public static class WorldObjectActions
 		{
 			var placeTile = new PlaceTile(resultData.Value,Main.Bot._currentLocation,itemToPlace: resultData.Key);
 
-			Main.Bot.Tool.PlaceObjectsAtTiles(new List<PlaceTile> { placeTile },false);
+			Main.Bot.Tool.PlaceObjects(new List<ITile> { placeTile },false);
 			
-			if (TileUtilities.GetTileType(Main.Bot._currentLocation, resultData.Value) != resultData.Key)
+			Task.Run(async () =>
 			{
-				Context.Send($"The object you selected to place may not have been placed where you wanted" +
-				             $" it to be, you should check to see if there is anything blocked it or blocking your" +
-				             $" way from it.",true);
-			}
-			RegisterMainActions.RegisterPostAction();
+				while (Main.Bot.Tool.Running) {}
+
+				await TaskDispatcher.SwitchToMainThread();
+				if (TileUtilities.GetTileType(Main.Bot._currentLocation, resultData.Value) != resultData.Key)
+				{
+					Context.Send($"The object you selected to place may not have been placed where you wanted" +
+					             $" it to be, you should check to see if there is anything blocked it or blocking your" +
+					             $" way from it.",true);
+				}
+				
+				RegisterMainActions.RegisterPostAction();
+			});
 		}
 	}
 	
@@ -134,11 +151,21 @@ public static class WorldObjectActions
 
 		protected override void Execute(KeyValuePair<Object, int> resultData)
 		{
-			Main.Bot.Tool.PlaceObjectsInRadius(Main.Bot._farmer.TilePoint, resultData.Key, resultData.Value);
-			RegisterMainActions.RegisterPostAction();
+			var tiles = Main.Bot.Tool.PlaceObjectsInRadius(Main.Bot._farmer.TilePoint, resultData.Key, resultData.Value);
+			Main.Bot.Tool.PlaceObjects(tiles);
+
+			Task.Run(async () =>
+			{
+				while (Main.Bot.Tool.Running)
+				{}
+
+				await TaskDispatcher.SwitchToMainThread();
+				RegisterMainActions.RegisterPostAction();
+			});
 		}
 	}
 	
+	[Obsolete("Use InteractAtTile instead")]
 	public class InteractWithObject : NeuroAction<Point>
 	{
 		private bool _useHeld;
@@ -230,6 +257,7 @@ public static class WorldObjectActions
 		}
 	}
 	
+	[Obsolete("Use InteractAtTile instead")]
 	public class InteractWithActionTile : NeuroAction<Point>
 	{
 		private static List<Point> ActionTiles => TileContext.ActionableTiles.ToList();
@@ -385,7 +413,8 @@ public static class WorldObjectActions
 		protected override void Execute()
 		{
 			Main.Bot._farmer.StopSitting();
-			DelayedAction.functionAfterDelay(() => RegisterMainActions.RegisterPostAction(), 3000);
+			// character will not be controllable for a bit
+			DelayedAction.functionAfterDelay(() => RegisterMainActions.RegisterPostAction(), 1000);
 		}
 	}
 }

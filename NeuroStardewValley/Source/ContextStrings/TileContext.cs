@@ -164,8 +164,10 @@ public static class TileContext
                         continue;
                     }
                     
+                    Logger.Error($"action 0: {action[0]}");
                     switch (action[0])
                     {
+                        
                         case "Dialogue":
                         case "Message":
                         case "MessageOnce":
@@ -195,20 +197,26 @@ public static class TileContext
         var objects = GetObjectsInLocation(location, startTile, radius);
 
         Dictionary<string, int> amountOfObject = new();
-        Logger.Info($"amount of objects: {objects.Count}");
         foreach (var kvp in objects)
         {
             string name = SimpleObjectName(kvp.Value);
-            // if (kvp.Value is string str && str == "Action") name = "Action";
-            // can find an error item in town, using object displayName doesn't work
-            if (name == "" || name.ToLower().Contains("error")) continue;
             
-            if (!amountOfObject.TryGetValue(name, out _))
-            {
-                amountOfObject.Add(name,1);
-                continue;
-            }
-            amountOfObject[name] += 1;
+            // ordinal should make it faster :prayge:
+            if (name.Length == 0 || name.Contains("Error",StringComparison.Ordinal)) continue;
+            if (!amountOfObject.TryAdd(name, 1)) amountOfObject[name]++;
+        }
+        return amountOfObject;
+    }
+    
+    public static Dictionary<string, int> GetNameAmountInLocation(Dictionary<Point,object> objects)
+    {
+        Dictionary<string, int> amountOfObject = new();
+        foreach (var kvp in objects)
+        {
+            string name = SimpleObjectName(kvp.Value);
+            
+            if (name.Length == 0 || name.Contains("Error",StringComparison.Ordinal)) continue;
+            if (!amountOfObject.TryAdd(name, 1)) amountOfObject[name]++;
         }
         return amountOfObject;
     }
