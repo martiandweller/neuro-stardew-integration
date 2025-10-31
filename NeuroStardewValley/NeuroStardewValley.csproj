@@ -15,9 +15,7 @@
       <Reference Include="NeuroSDKCsharp">
         <HintPath>..\..\NeuroSDKCsharp\NeuroSDKCsharp\bin\Debug\net6.0\NeuroSDKCsharp.dll</HintPath>
       </Reference>
-      <Reference Include="StardewBotFramework">
-        <HintPath>..\..\StardewPathfinding\StardewBotFramework\bin\Debug\net6.0\StardewBotFramework.dll</HintPath>
-      </Reference>
+	<Reference Include="StardewBotFramework" HintPath="$(GamePath)\Mods\StardewBotFramework\StardewBotFramework.dll" Private="false" />
     </ItemGroup>
 
 </Project>
