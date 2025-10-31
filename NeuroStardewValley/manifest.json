@@ -6,5 +6,11 @@
   "UniqueID": "Panda.NeuroStardewValley",
   "EntryDll": "NeuroStardewValley.dll",
   "MinimumApiVersion": "4.0.0",
-  "UpdateKeys": []
+  "UpdateKeys": [],
+  "Dependencies": [
+      {
+         "UniqueID": "Panda.BotFramework"
+      }
+  ]
+  
 }
